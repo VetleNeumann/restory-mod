@@ -1,0 +1,17 @@
+# Build output
+bin/
+obj/
+artifacts/
+
+# Machine-local config (copy GamePaths.props.example)
+GamePaths.props
+
+# dev.sh state
+.game-build
+
+# IDE
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo

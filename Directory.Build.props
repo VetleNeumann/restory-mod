@@ -1,0 +1,12 @@
+<Project>
+  <!-- Machine-local paths. Copy GamePaths.props.example to GamePaths.props and edit. -->
+  <Import Project="$(MSBuildThisFileDirectory)GamePaths.props" Condition="Exists('$(MSBuildThisFileDirectory)GamePaths.props')" />
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <GameManaged Condition="'$(GameDir)' != ''">$(GameDir)/Restory_Data/Managed</GameManaged>
+    <GameBepInEx Condition="'$(GameDir)' != ''">$(GameDir)/BepInEx</GameBepInEx>
+  </PropertyGroup>
+</Project>

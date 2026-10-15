@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pure logic only: no Unity, Rewired, or game references, so CI can build and test it. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>RestoryMod.Core</RootNamespace>
+  </PropertyGroup>
+</Project>

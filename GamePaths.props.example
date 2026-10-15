@@ -1,0 +1,6 @@
+<Project>
+  <!-- Copy to GamePaths.props (gitignored) and point at your ReStory install. -->
+  <PropertyGroup>
+    <GameDir>/mnt/c/Program Files (x86)/Steam/steamapps/common/Restory</GameDir>
+  </PropertyGroup>
+</Project>

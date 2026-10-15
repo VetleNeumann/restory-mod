@@ -22,6 +22,8 @@ public static class PatchTargets
     private const string VirtualCursorView = "Restory.UserInterface.VirtualCursorView";
     private const string SettingsMenu = "Restory.UI.Presenters.SettingsMenu.GUI_SettingsMenu";
     private const string SettingsMenuSoundView = "Restory.UI.Views.SettingsMenu.GUI_SettingsMenuSoundView";
+    private const string InventoryPanel = "Restory.UI.Presenters.Inventory.InventoryPanel";
+    private const string InventoryItemsView = "Restory.UI.Views.Inventory.InventoryItemsView";
 
     // Cursor speed: the game resets PlayerMouse.pointerSpeed in this handler on every controls-type change.
     public static readonly PatchTarget CursorControlsTypeChanged = new(VirtualCursorView, "ResolveControlsManagerOnControlsTypeChanged");
@@ -32,6 +34,17 @@ public static class PatchTargets
     public static readonly PatchTarget SettingsMenuShow = new(SettingsMenu, "Show");
     public static readonly PatchTarget SettingsMenuSoundSettingsView = new(SettingsMenu, "soundSettingsView");
     public static readonly PatchTarget SoundViewDialogueVolumeSlider = new(SettingsMenuSoundView, "dialogueVolumeSlider");
+
+    // Parts box: re-sorted after the game's sort; headers placed after the slot views are parented.
+    public static readonly PatchTarget InventoryPanelConstruct = new(InventoryPanel, "Construct");
+    public static readonly PatchTarget InventoryPanelShow = new(InventoryPanel, "Show");
+    public static readonly PatchTarget InventoryPanelSortItems = new(InventoryPanel, "SortItems");
+    public static readonly PatchTarget InventoryPanelUpdateItemsView = new(InventoryPanel, "UpdateItemsView");
+    public static readonly PatchTarget InventoryPanelFilteredItems = new(InventoryPanel, "filteredItems");
+    public static readonly PatchTarget InventoryPanelFilter = new(InventoryPanel, "filter");
+    public static readonly PatchTarget InventoryPanelDeviceService = new(InventoryPanel, "deviceService");
+    public static readonly PatchTarget InventoryPanelView = new(InventoryPanel, "view");
+    public static readonly PatchTarget InventoryItemsViewContainer = new(InventoryItemsView, "container");
 
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
@@ -49,5 +62,22 @@ public static class PatchTargets
         SettingsMenuShow,
         SettingsMenuSoundSettingsView,
         SoundViewDialogueVolumeSlider,
+        InventoryPanelConstruct,
+        InventoryPanelShow,
+        InventoryPanelSortItems,
+        InventoryPanelUpdateItemsView,
+        InventoryPanelFilteredItems,
+        InventoryPanelFilter,
+        InventoryPanelDeviceService,
+        InventoryPanelView,
+        InventoryItemsViewContainer,
+        // Read directly (compiled against) by BenchState; listed so updates that move them are caught.
+        new PatchTarget("Restory.UI.Presenters.Inventory.InventoryPanelFilter", "Sort"),
+        new PatchTarget("Restory.Gameplay.Devices.DeviceService", "PlacedDeviceContainer"),
+        new PatchTarget("Restory.Gameplay.Devices.Device", "SortedSockets"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementSocket", "NestedElement"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementSocket", "CompatibleElementInfo"),
+        new PatchTarget("Restory.Gameplay.Workplace.WorkSurface", "PlacedElements"),
+        new PatchTarget("Restory.Gameplay.Devices.DismantledDevicePack", "PlacedElements"),
     };
 }

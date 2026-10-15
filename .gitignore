@@ -15,3 +15,6 @@ GamePaths.props
 .vscode/
 *.user
 *.suo
+
+# scripts/screenshot.sh output
+screenshots/

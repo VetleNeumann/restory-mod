@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
+using RestoryMod.Features.PartsBox;
 
 namespace RestoryMod;
 
@@ -23,12 +24,18 @@ public class Plugin : BaseUnityPlugin
 
         CursorSpeedFeature.Bind(Config);
         SettingsMenuDumpPatch.Bind(Config);
+        PartsBoxFeature.Bind(Config);
+        DebugTiming.Bind(Config);
         WatchConfigFile();
 
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         FeaturePatcher.Apply(harmony, Logger,
             typeof(CursorSpeedPatch),
             typeof(CursorSpeedSliderPatch),
+            typeof(PartsBoxSortPatch),
+            typeof(PartsBoxHeadersPatch),
+            typeof(PartsBoxShowTimingPatch),
+            typeof(PartsBoxPrewarmPatch),
             typeof(SettingsMenuDumpPatch));
     }
 

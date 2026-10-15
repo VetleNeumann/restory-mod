@@ -4,41 +4,44 @@ namespace RestoryMod.Core.Tests;
 
 public class CursorSpeedTests
 {
-    [Theory]
-    [InlineData(0f, CursorSpeed.Min)]
-    [InlineData(0.5f, 1f)]
-    [InlineData(1f, CursorSpeed.Max)]
-    [InlineData(-1f, CursorSpeed.Min)]
-    [InlineData(2f, CursorSpeed.Max)]
-    public void FromSlider_maps_ends_and_middle(float t, float expected)
+    [Fact]
+    public void Steps_cover_range_in_tenths()
     {
-        Assert.Equal(expected, CursorSpeed.FromSlider(t), precision: 4);
-    }
-
-    [Theory]
-    [InlineData(0.25f)]
-    [InlineData(0.5f)]
-    [InlineData(1f)]
-    [InlineData(1.7f)]
-    [InlineData(4f)]
-    public void ToSlider_inverts_FromSlider(float speed)
-    {
-        Assert.Equal(speed, CursorSpeed.FromSlider(CursorSpeed.ToSlider(speed)), precision: 4);
+        Assert.Equal(38, CursorSpeed.SliderSteps);
+        Assert.Equal(CursorSpeed.Min, CursorSpeed.FromStep(0));
+        Assert.Equal(CursorSpeed.Max, CursorSpeed.FromStep(CursorSpeed.SliderSteps));
+        Assert.Equal(1f, CursorSpeed.FromStep(CursorSpeed.ToStep(CursorSpeed.Default)));
     }
 
     [Fact]
-    public void Halving_and_doubling_are_equidistant_from_default()
+    public void Every_step_is_a_clean_tenth_and_round_trips()
     {
-        var mid = CursorSpeed.ToSlider(1f);
-        Assert.Equal(mid - CursorSpeed.ToSlider(0.5f), CursorSpeed.ToSlider(2f) - mid, precision: 4);
+        for (var step = 0; step <= CursorSpeed.SliderSteps; step++)
+        {
+            var speed = CursorSpeed.FromStep(step);
+            Assert.Equal(step, CursorSpeed.ToStep(speed));
+            Assert.Equal((0.2m + step * 0.1m).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture),
+                CursorSpeed.Format(speed));
+        }
     }
 
     [Theory]
+    [InlineData(1.74f, 1.7f)]
+    [InlineData(1.87f, 1.9f)]
     [InlineData(0f, CursorSpeed.Min)]
     [InlineData(100f, CursorSpeed.Max)]
     [InlineData(float.NaN, CursorSpeed.Default)]
-    public void Clamp_handles_out_of_range(float input, float expected)
+    public void Normalize_clamps_and_snaps_to_tenths(float input, float expected)
     {
-        Assert.Equal(expected, CursorSpeed.Clamp(input));
+        Assert.Equal(expected, CursorSpeed.Normalize(input));
+    }
+
+    [Theory]
+    [InlineData(1f, "1.0")]
+    [InlineData(2.3f, "2.3")]
+    [InlineData(4f, "4.0")]
+    public void Format_uses_one_decimal_without_suffix(float speed, string expected)
+    {
+        Assert.Equal(expected, CursorSpeed.Format(speed));
     }
 }

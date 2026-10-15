@@ -21,7 +21,7 @@ internal static class SettingsMenuDumpPatch
 
     public static void Bind(ConfigFile config)
     {
-        Enabled = config.Bind("Debug", "DumpSettingsMenu", true,
+        Enabled = config.Bind("Debug", "DumpSettingsMenu", false,
             "Log the settings menu hierarchy the first time it opens each session.");
     }
 

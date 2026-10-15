@@ -27,6 +27,7 @@
     <Reference Include="Rewired_Core" HintPath="$(GameManaged)/Rewired_Core.dll" Private="false" />
     <Reference Include="Zenject" HintPath="$(GameManaged)/Zenject.dll" Private="false" />
     <Reference Include="UnityEngine.UI" HintPath="$(GameManaged)/UnityEngine.UI.dll" Private="false" />
+    <Reference Include="Unity.TextMeshPro" HintPath="$(GameManaged)/Unity.TextMeshPro.dll" Private="false" />
   </ItemGroup>
 
   <Target Name="RequireGameDir" BeforeTargets="ResolveAssemblyReferences" Condition="'$(GameManaged)' == '' Or !Exists('$(GameManaged)/Restory.Assembly.dll')">

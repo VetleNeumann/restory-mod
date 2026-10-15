@@ -30,7 +30,7 @@ internal static class CursorSpeedFeature
         Speed.SettingChanged += (_, _) => ReapplyToActiveCursors();
     }
 
-    public static float Current => Core.CursorSpeed.Clamp(Speed.Value);
+    public static float Current => Core.CursorSpeed.Normalize(Speed.Value);
 
     /// <summary>Re-runs the game's handler on every live cursor so our postfix sets the new speed.</summary>
     private static void ReapplyToActiveCursors()

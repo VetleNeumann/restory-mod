@@ -31,7 +31,7 @@ public static class PatchTargets
     // Settings menu: rows are prefab-wired, so new rows are cloned from an existing slider on Show().
     public static readonly PatchTarget SettingsMenuShow = new(SettingsMenu, "Show");
     public static readonly PatchTarget SettingsMenuSoundSettingsView = new(SettingsMenu, "soundSettingsView");
-    public static readonly PatchTarget SoundViewMasterVolumeSlider = new(SettingsMenuSoundView, "masterVolumeSlider");
+    public static readonly PatchTarget SoundViewDialogueVolumeSlider = new(SettingsMenuSoundView, "dialogueVolumeSlider");
 
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
@@ -48,6 +48,6 @@ public static class PatchTargets
         CursorControlsManager,
         SettingsMenuShow,
         SettingsMenuSoundSettingsView,
-        SoundViewMasterVolumeSlider,
+        SoundViewDialogueVolumeSlider,
     };
 }

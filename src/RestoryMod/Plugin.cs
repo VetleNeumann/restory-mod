@@ -28,6 +28,7 @@ public class Plugin : BaseUnityPlugin
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         FeaturePatcher.Apply(harmony, Logger,
             typeof(CursorSpeedPatch),
+            typeof(CursorSpeedSliderPatch),
             typeof(SettingsMenuDumpPatch));
     }
 

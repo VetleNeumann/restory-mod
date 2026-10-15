@@ -1,38 +1,43 @@
 using System;
+using System.Globalization;
 
 namespace RestoryMod.Core;
 
 /// <summary>
 /// Gamepad cursor speed multiplier. The game hardcodes Rewired's PlayerMouse.pointerSpeed to 1
-/// for gamepads; the mod replaces it with a value in [<see cref="Min"/>, <see cref="Max"/>].
-/// The slider maps logarithmically so 1x sits in the middle and halving/doubling feel symmetric.
+/// for gamepads; the mod replaces it with a value in [<see cref="Min"/>, <see cref="Max"/>],
+/// adjusted on the settings slider in steps of <see cref="Step"/>.
 /// </summary>
 public static class CursorSpeed
 {
-    public const float Min = 0.25f;
+    public const float Min = 0.2f;
     public const float Max = 4f;
     public const float Default = 1f;
+    public const float Step = 0.1f;
 
-    public static float Clamp(float speed)
+    /// <summary>Number of slider steps between <see cref="Min"/> and <see cref="Max"/>.</summary>
+    public static int SliderSteps { get; } = (int)Math.Round((Max - Min) / Step);
+
+    /// <summary>Clamps to the range and snaps to the nearest <see cref="Step"/>.</summary>
+    public static float Normalize(float speed)
     {
         if (float.IsNaN(speed)) return Default;
-        return Math.Min(Max, Math.Max(Min, speed));
+        return FromStep(ToStep(speed));
     }
 
-    /// <summary>Slider position in [0, 1] to speed multiplier. 0 → Min, 0.5 → 1x, 1 → Max.</summary>
-    public static float FromSlider(float t)
+    public static float FromStep(int step)
     {
-        t = Math.Min(1f, Math.Max(0f, t));
-        return Min * (float)Math.Pow(Max / Min, t);
+        step = Math.Min(SliderSteps, Math.Max(0, step));
+        return (float)Math.Round(Min + step * Step, 1);
     }
 
-    /// <summary>Speed multiplier to slider position in [0, 1]. Inverse of <see cref="FromSlider"/>.</summary>
-    public static float ToSlider(float speed)
+    public static int ToStep(float speed)
     {
-        speed = Clamp(speed);
-        return (float)(Math.Log(speed / Min) / Math.Log(Max / Min));
+        if (float.IsNaN(speed)) speed = Default;
+        var step = (int)Math.Round((speed - Min) / Step);
+        return Math.Min(SliderSteps, Math.Max(0, step));
     }
 
-    /// <summary>Speed rounded to two decimals for display and storage.</summary>
-    public static float Round(float speed) => (float)Math.Round(Clamp(speed), 2);
+    /// <summary>One decimal, invariant culture: "1.0", "2.3".</summary>
+    public static string Format(float speed) => Normalize(speed).ToString("0.0", CultureInfo.InvariantCulture);
 }

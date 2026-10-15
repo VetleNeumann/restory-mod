@@ -99,8 +99,22 @@ cmd_deploy() {
 }
 
 cmd_launch() {
+  # Remove the previous session's log so the startup wait below cannot match stale lines.
+  local log="$GAME_DIR/BepInEx/LogOutput.log"
+  rm -f "$log"
+
   # Run from /mnt/c so cmd.exe does not start in a UNC working directory.
   (cd /mnt/c && cmd.exe /c start "" "steam://rungameid/$APP_ID")
+
+  echo "waiting for BepInEx startup..."
+  for _ in $(seq 1 90); do
+    if grep -q "Chainloader startup complete" "$log" 2>/dev/null; then
+      grep -E "\[(Warning|Error|Fatal) *:|:RestoryMod\]" "$log" || true
+      return 0
+    fi
+    sleep 1
+  done
+  echo "warn: no BepInEx startup within 90s; check $log" >&2
 }
 
 case "${1:-run}" in

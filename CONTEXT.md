@@ -40,12 +40,24 @@ _Avoid_: Wheel scroll, stick navigation
 A part the player carries with the cursor at the workbench while holding the game's grab input (A on Xbox, Cross on PlayStation); letting go drops it where the cursor points.
 _Avoid_: dragged part, selected part
 
+**Carried object**:
+Something the player carries away from the workbench while holding the grab input: a box, a device, rubbish, bought parts.
+_Avoid_: held object, dragged object
+
+**Rubbish**:
+A carried object the game lets the player throw away, such as an empty box.
+_Avoid_: trash object, junk
+
+**Bought parts**:
+A carried object holding parts bought in the shop; dropped on the parts box, its parts move into it.
+_Avoid_: shipment, delivery (those are devices)
+
 **Destination**:
-A place at the workbench that takes a held part away from the bench in one move: the parts box, the washing bin, the tool cup, the trash can or the shredder. A device socket and the bench surface are not destinations; the player aims at those.
+A place that takes a held part or carried object away in one move. At the workbench: the parts box, the washing bin, the tool cup, the trash can or the shredder. Away from it: the parts box (bought parts) and the trash can or shredder (rubbish). A device socket, the bench surface, shelves and other spots the player aims at are not destinations.
 _Avoid_: drop target, slot
 
 **Send**:
-Moving a held part straight to a destination with one D-pad press instead of carrying it there. A send the destination would refuse does nothing, and the part stays held.
+Moving a held part or carried object straight to a destination with one D-pad press instead of carrying it there. A send the destination would refuse does nothing, and the thing stays held.
 _Avoid_: quick drop, throw
 
 **Parts box**:
@@ -61,10 +73,10 @@ The spot right of the bench where a part is cleaned or soldered by hand. It take
 _Avoid_: cleaner
 
 **Trash can**:
-Where damaged parts are thrown away. It takes nothing else.
+Where damaged parts and rubbish are thrown away. It takes nothing else.
 
 **Shredder**:
-Bought equipment that destroys damaged parts for coins. It takes nothing else, and once owned it stands in the trash can's place: the workbench has one or the other, never both.
+Bought equipment that destroys damaged parts for coins, and rubbish for nothing. It takes nothing else, and once owned it stands in the trash can's place: the workbench has one or the other, never both.
 
 ### Gamepad in dropdowns
 

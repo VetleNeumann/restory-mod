@@ -54,6 +54,43 @@ public class PartSendTests
     }
 
     [Theory]
+    [InlineData(DpadDirection.Left, false, Destination.PartsBox)]
+    [InlineData(DpadDirection.Down, false, Destination.TrashCan)]
+    [InlineData(DpadDirection.Down, true, Destination.Shredder)]
+    public void Away_from_the_workbench_left_and_down_send_carried_objects(
+        DpadDirection direction, bool shredderOwned, Destination expected)
+    {
+        Assert.Equal(expected, PartSend.CarriedDestinationFor(direction, shredderOwned));
+    }
+
+    [Theory]
+    [InlineData(DpadDirection.Up)]
+    [InlineData(DpadDirection.Right)]
+    public void Away_from_the_workbench_up_and_right_send_nothing(DpadDirection direction)
+    {
+        // The washing bin and tool cup only work on parts at the workbench.
+        Assert.Null(PartSend.CarriedDestinationFor(direction, shredderOwned: false));
+    }
+
+    [Fact]
+    public void Rubbish_is_thrown_away_and_bought_parts_go_to_the_parts_box()
+    {
+        var rubbish = new CarriedObject(Rubbish: true, HoldsParts: false);
+        var delivery = new CarriedObject(Rubbish: false, HoldsParts: true);
+        var device = new CarriedObject(Rubbish: false, HoldsParts: false);
+
+        Assert.True(PartSend.Accepts(Destination.TrashCan, rubbish));
+        Assert.True(PartSend.Accepts(Destination.Shredder, rubbish));
+        Assert.False(PartSend.Accepts(Destination.PartsBox, rubbish));
+
+        Assert.True(PartSend.Accepts(Destination.PartsBox, delivery));
+        Assert.False(PartSend.Accepts(Destination.TrashCan, delivery));
+
+        Assert.False(PartSend.Accepts(Destination.PartsBox, device));
+        Assert.False(PartSend.Accepts(Destination.TrashCan, device));
+    }
+
+    [Theory]
     [InlineData(DpadDirection.Up, true)]
     [InlineData(DpadDirection.Right, true)]
     [InlineData(DpadDirection.Down, true)]

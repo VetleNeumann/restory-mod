@@ -32,7 +32,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   to the parts box, a clean part to the tool cup, a full or locked washing bin), nothing happens and you
   keep holding it. In the parts box, hold Cross / A on a part and press the D-pad to send it straight
   away, without moving the stick first (a tap still selects the part). Left on a part still showing as
-  its parts box icon puts it back.
+  its parts box icon puts it back. Away from the workbench, while carrying something, D-pad left
+  stores bought parts in the parts box and D-pad down throws rubbish (empty boxes and the like) away.
 
 ## Configuration
 

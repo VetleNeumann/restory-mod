@@ -133,6 +133,20 @@ public static class PatchTargets
     public static readonly PatchTarget SlotOnPointerDown = new(StorageSlot, "OnPointerDown");
     public static readonly PatchTarget SlotOnPointerMove = new(StorageSlot, "OnPointerMove");
     public static readonly PatchTarget SlotIsHolding = new(StorageSlot, "isHolding");
+    // D-pad send away from the workbench: after the work drag state's update, the matching branch of
+    // the game's drop resolver runs (destination's drop call, then the resolver's private CompleteDrag).
+    private const string WorkDraggingState = "Restory.Gameplay.Work.StateMachine.DraggingWorkState";
+    private const string Resolver = "Restory.Gameplay.Work.Dragging.DragResolver";
+    public static readonly PatchTarget WorkDraggingSelectedObject = new(WorkDraggingState, "selectedObject");
+    public static readonly PatchTarget WorkDraggingIsWaitingForConfirmation = new(WorkDraggingState, "isWaitingForConfirmation");
+    public static readonly PatchTarget WorkDraggingStateMachine = new(WorkDraggingState, "stateMachine");
+    public static readonly PatchTarget WorkDraggingResolver = new(WorkDraggingState, "dragResolver");
+    public static readonly PatchTarget ResolverCompleteDrag = new(Resolver, "CompleteDrag");
+    public static readonly PatchTarget ResolverRecycleService = new(Resolver, "recycleService");
+    public static readonly PatchTarget ResolverShredderService = new(Resolver, "shredderService");
+    public static readonly PatchTarget ResolverConsumers = new(Resolver, "dragToObjectConsumersHandler");
+    public static readonly PatchTarget ConsumersInventoryDetector = new("Restory.Gameplay.Inventory.InteractiveObjectsToObjectConsumersDragHandlingService", "inventoryDetector");
+    public static readonly PatchTarget InventoryDetectorIsDetected = new("Restory.Gameplay.Equipment.InventoryBoxDetector", "IsDetected");
     public static readonly PatchTarget UltrasonicSonicBath = new("Restory.Gameplay.Equipment.Ultrasonic.UltrasonicService", "sonicBath");
     public static readonly PatchTarget RecycleTrashCan = new("Restory.Gameplay.Recycle.RecycleService", "trashCan");
     public static readonly PatchTarget ShredderServiceShredder = new("Restory.Gameplay.Shredders.ShredderService", "shredder");
@@ -210,6 +224,16 @@ public static class PatchTargets
         SlotOnPointerDown,
         SlotOnPointerMove,
         SlotIsHolding,
+        WorkDraggingSelectedObject,
+        WorkDraggingIsWaitingForConfirmation,
+        WorkDraggingStateMachine,
+        WorkDraggingResolver,
+        ResolverCompleteDrag,
+        ResolverRecycleService,
+        ResolverShredderService,
+        ResolverConsumers,
+        ConsumersInventoryDetector,
+        InventoryDetectorIsDetected,
         UltrasonicSonicBath,
         RecycleTrashCan,
         ShredderServiceShredder,
@@ -274,6 +298,15 @@ public static class PatchTargets
         new PatchTarget("Restory.UI.Views.ToggleButton", "IsSelected"),
         new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "Id"),
         new PatchTarget("Restory.Gameplay.Inventory.StorageElasticElementsDragService", "IsPointerOverInventory"),
+        new PatchTarget("Restory.Gameplay.InteractiveObjects.InteractiveObject", "CompleteDrag"),
+        new PatchTarget("Restory.Gameplay.InteractiveObjects.TrashObject"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementsContainer"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementsBox"),
+        new PatchTarget("Restory.Gameplay.Recycle.RecycleService", "TryToRecycleInteractiveObject"),
+        new PatchTarget("Restory.Gameplay.Shredders.ShredderService", "TryToShredInteractiveObject"),
+        new PatchTarget("Restory.Gameplay.Inventory.InteractiveObjectsToObjectConsumersDragHandlingService", "TryToDropDraggedObjectIntoInventory"),
+        new PatchTarget("Restory.Infrastructure.StateMachines.StateMachineMonoBase", "Enter"),
+        new PatchTarget("Restory.Gameplay.Work.StateMachine.DetectionWorkState"),
         new PatchTarget("Restory.Gameplay.Elements.ElementBase", "ConditionHandler"),
         new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsDragging"),
         new PatchTarget("Restory.Gameplay.Elements.ElementConditionHandler", "ElementData"),

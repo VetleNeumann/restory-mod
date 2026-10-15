@@ -68,8 +68,8 @@ internal static class DpadSendPatch
     private static Action<DraggingDisassembleState, InputActionEventData>? release;
     private static FieldInfo? dragStateField;
     private static AccessTools.FieldRef<UltrasonicService, SonicBath>? sonicBathOf;
-    private static AccessTools.FieldRef<RecycleService, TrashCan>? trashCanOf;
-    private static AccessTools.FieldRef<ShredderService, Shredder>? shredderOf;
+    internal static AccessTools.FieldRef<RecycleService, TrashCan>? trashCanOf;
+    internal static AccessTools.FieldRef<ShredderService, Shredder>? shredderOf;
 
     private static bool Prepare() => GameTargets.AllPresent(
         PatchTargets.DraggingOnUpdate,
@@ -255,17 +255,24 @@ internal static class DpadSendPatch
     /// </summary>
     private static void ReleaseOver(DraggingDisassembleState state, bool alreadyDetected,
         Action<UnityEngine.EventSystems.PointerEventData> enter,
-        Action<UnityEngine.EventSystems.PointerEventData> exit)
+        Action<UnityEngine.EventSystems.PointerEventData> exit) =>
+        WhilePointerOver(alreadyDetected, enter, exit, () => Release(state));
+
+    /// <summary>Runs <paramref name="act"/> with a pointer-detected destination lent as under the cursor.</summary>
+    internal static void WhilePointerOver(bool alreadyDetected,
+        Action<UnityEngine.EventSystems.PointerEventData> enter,
+        Action<UnityEngine.EventSystems.PointerEventData> exit,
+        Action act)
     {
         if (alreadyDetected)
         {
-            Release(state);
+            act();
             return;
         }
         enter(null!);
         try
         {
-            Release(state);
+            act();
         }
         finally
         {
@@ -273,7 +280,7 @@ internal static class DpadSendPatch
         }
     }
 
-    private static void Bind()
+    internal static void Bind()
     {
         dragStateField ??= GameTargets.Field(PatchTargets.DragServiceState);
         release ??= AccessTools.MethodDelegate<Action<DraggingDisassembleState, InputActionEventData>>(

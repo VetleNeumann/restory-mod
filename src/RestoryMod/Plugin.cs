@@ -64,6 +64,7 @@ public class Plugin : BaseUnityPlugin
             typeof(DpadSendPatch),
             typeof(DpadSendFallbackGuardPatch),
             typeof(DpadSendSlotPressPatch),
+            typeof(DpadSendCarryPatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump));
         if (StickScrollFeature.TargetsPresent()) gameObject.AddComponent<StickScrollDriver>();

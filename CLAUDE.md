@@ -6,7 +6,8 @@ Rewired input, Zenject DI). Personal repo. Game installed on this box; `GamePath
 ## Dev loop
 
 - `scripts/dev.sh run`: closes the game gracefully, builds, deploys to `BepInEx/plugins/RestoryMod/`,
-  relaunches via Steam, prints the mod's startup lines. Force-close asks first (`KILL_GAME=1` to skip).
+  relaunches via Steam, prints the mod's startup lines, then brings the game window to the front
+  (Windows would leave it behind Big Picture). `scripts/dev.sh focus` does only that last step. Force-close asks first (`KILL_GAME=1` to skip).
 - `scripts/screenshot.sh`: DPI-aware capture of the Windows screen; read the PNG to see the game.
 - Log: `$GameDir/BepInEx/LogOutput.log`. Config: `$GameDir/BepInEx/config/com.zantox.restorymod.cfg`;
   the plugin watches it, so hand edits apply live.

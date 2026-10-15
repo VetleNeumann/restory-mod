@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Dev loop for the ReStory mod: build -> deploy into BepInEx/plugins -> launch via Steam.
 #
-# Usage: scripts/dev.sh [build|deploy|launch|kill|check|run]   (default: run)
+# Usage: scripts/dev.sh [build|deploy|launch|focus|kill|check|run]   (default: run)
 #   build   dotnet build (Debug)
 #   deploy  kill game if running, copy plugin output into $GameDir/BepInEx/plugins/RestoryMod
 #   launch  start the game through Steam
+#   focus   bring the game window to the front
 #   kill    close the game normally; if it hangs, force-close (asks first; KILL_GAME=1 skips the prompt)
 #   check   report whether the installed game build changed since the last run
 #   run     check + build + deploy + launch
@@ -12,8 +13,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Non-interactive WSL shells (e.g. over ssh) lack the Windows PATH; we need cmd/tasklist/taskkill.
-export PATH="$PATH:/mnt/c/Windows/System32"
-for exe in cmd.exe tasklist.exe taskkill.exe; do
+export PATH="$PATH:/mnt/c/Windows/System32:/mnt/c/Windows/System32/WindowsPowerShell/v1.0"
+for exe in cmd.exe tasklist.exe taskkill.exe powershell.exe; do
   command -v "$exe" >/dev/null || { echo "error: $exe not found; is WSL interop enabled?" >&2; exit 1; }
 done
 APP_ID=3812600
@@ -106,6 +107,30 @@ cmd_deploy() {
   cp -v "$out"/RestoryMod*.pdb "$PLUGIN_DEST/" 2>/dev/null || true
 }
 
+# Windows refuses focus to a window launched from a background process (this script), so the
+# game starts behind Steam Big Picture. A synthetic Alt press lifts that lock for SetForegroundWindow.
+cmd_focus() {
+  (cd /mnt/c && powershell.exe -NoProfile -Command '
+    Add-Type -Namespace Dev -Name W -MemberDefinition @"
+      [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+      [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int c);
+      [DllImport("user32.dll")] public static extern void keybd_event(byte k, byte s, uint f, UIntPtr e);
+      [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+"@
+    for ($i = 0; $i -lt 40; $i++) {
+      $p = Get-Process Restory -ErrorAction SilentlyContinue | Where-Object { $_.MainWindowHandle -ne 0 } | Select-Object -First 1
+      if ($p) {
+        [Dev.W]::keybd_event(0x12, 0, 0, [UIntPtr]::Zero); [Dev.W]::keybd_event(0x12, 0, 2, [UIntPtr]::Zero)
+        [Dev.W]::ShowWindow($p.MainWindowHandle, 9) | Out-Null
+        [Dev.W]::SetForegroundWindow($p.MainWindowHandle) | Out-Null
+        if ([Dev.W]::GetForegroundWindow() -eq $p.MainWindowHandle) { "game window focused"; exit 0 }
+      }
+      Start-Sleep -Milliseconds 500
+    }
+    "warn: could not focus the game window"
+  ') || true
+}
+
 cmd_launch() {
   # Remove the previous session's log so the startup wait below cannot match stale lines.
   local log="$GAME_DIR/BepInEx/LogOutput.log"
@@ -118,6 +143,7 @@ cmd_launch() {
   for _ in $(seq 1 90); do
     if grep -q "Chainloader startup complete" "$log" 2>/dev/null; then
       grep -E "\[(Warning|Error|Fatal) *:|:RestoryMod\]" "$log" || true
+      cmd_focus
       return 0
     fi
     sleep 1
@@ -129,8 +155,9 @@ case "${1:-run}" in
   build)  cmd_build ;;
   deploy) cmd_deploy ;;
   launch) cmd_launch ;;
+  focus)  cmd_focus ;;
   kill)   cmd_kill ;;
   check)  cmd_check ;;
   run)    cmd_check; cmd_build; cmd_deploy; cmd_launch ;;
-  *) echo "usage: $0 [build|deploy|launch|kill|check|run]" >&2; exit 2 ;;
+  *) echo "usage: $0 [build|deploy|launch|focus|kill|check|run]" >&2; exit 2 ;;
 esac

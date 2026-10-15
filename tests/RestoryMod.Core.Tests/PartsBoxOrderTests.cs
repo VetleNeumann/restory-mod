@@ -4,6 +4,7 @@ namespace RestoryMod.Core.Tests;
 
 public class PartsBoxOrderTests
 {
+    private const PartCondition Burnt = PartCondition.Burnt;
     private const PartCondition Damaged = PartCondition.Damaged;
     private const PartCondition Dirty = PartCondition.Dirty;
     private const PartCondition Perfect = PartCondition.Perfect;
@@ -37,7 +38,7 @@ public class PartsBoxOrderTests
     [Fact]
     public void Best_condition_is_picked_first_then_highest_slot()
     {
-        var slots = new[] { Slot("cap", Dirty, 5), Slot("cap", Perfect, 1), Slot("cap", Perfect, 3), Slot("cap", Damaged, 9) };
+        var slots = new[] { Slot("cap", Dirty, 5), Slot("cap", Perfect, 1), Slot("cap", Perfect, 3), Slot("cap", Burnt, 9) };
         var picked = PartsBoxOrder.PickMissingSlots(slots, new Dictionary<string, int> { ["cap"] = 2 });
         Assert.Equal(new[] { 1, 2 }, picked.OrderBy(i => i));
     }
@@ -107,9 +108,10 @@ public class PartsBoxOrderTests
         {
             ["perfect"] = Key(false, 0, Perfect, 1),
             ["damaged"] = Key(false, 0, Damaged, 2),
+            ["burnt"] = Key(false, 0, Burnt, 4),
             ["dirty"] = Key(false, 0, Dirty, 3),
         };
-        var expected = new[] { "damaged", "dirty", "perfect" };
+        var expected = new[] { "burnt", "damaged", "dirty", "perfect" };
         Assert.Equal(expected, Sort(items, reverse: false));
         Assert.Equal(expected, Sort(items, reverse: true));
     }

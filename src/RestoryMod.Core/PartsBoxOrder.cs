@@ -6,6 +6,7 @@ namespace RestoryMod.Core;
 
 public enum PartCondition
 {
+    Burnt,
     Damaged,
     Dirty,
     Perfect,
@@ -56,7 +57,7 @@ public readonly struct BoxSlot<T>
 /// Parts box ordering while a device is on the workbench:
 /// 1. Missing parts section before other parts (never reversed).
 /// 2. "How to reassemble" order (reversed by the game's sort toggle); parts the device doesn't use go last.
-/// 3. Condition: damaged, dirty, perfect (never reversed).
+/// 3. Condition: burnt, damaged, dirty, perfect (never reversed).
 /// 4. Slot index, highest first (the game's own tie-break).
 /// </summary>
 public static class PartsBoxOrder
@@ -87,7 +88,7 @@ public static class PartsBoxOrder
     /// <summary>
     /// Decides which box slots fill the missing sockets. The notepad counts per socket, so only as
     /// many parts as there are missing sockets go to the Missing section: per type, the best
-    /// candidates to install first (perfect, dirty, damaged; then highest slot index). A stacked slot
+    /// candidates to install first (perfect, dirty, damaged, burnt; then highest slot index). A stacked slot
     /// covers as many sockets as its count. Returns indices into <paramref name="slots"/>.
     /// </summary>
     public static HashSet<int> PickMissingSlots<T>(IReadOnlyList<BoxSlot<T>> slots, IReadOnlyDictionary<T, int> missing)
@@ -119,7 +120,8 @@ public static class PartsBoxOrder
         PartCondition.Perfect => 0,
         PartCondition.Dirty => 1,
         PartCondition.Damaged => 2,
-        _ => 3,
+        PartCondition.Burnt => 3,
+        _ => 4,
     };
 
     /// <summary>Rank of each part type by its first socket in the "How to reassemble" list.</summary>

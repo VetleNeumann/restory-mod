@@ -55,7 +55,7 @@ target that moved; that feature's patch skips itself at runtime until fixed.
 - Controller sensitivity: row directly under "Dialogue volume"; 0.2–4.0 in 0.1 steps, one decimal, no "x".
 - Parts box: "Missing parts" / "Other parts" headers as they are now (label + thin rule). Missing is per
   socket, matching the game's notepad. Sort: section, then "How to reassemble" order (only this flips with
-  the sort button), then damaged → dirty → perfect.
+  the sort button), then burnt → damaged → dirty → perfect.
 
 ## Background
 

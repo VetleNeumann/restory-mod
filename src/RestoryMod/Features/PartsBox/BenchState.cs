@@ -101,8 +101,10 @@ internal sealed class BenchState
 
     private static string Names(IEnumerable<ElementInfo> infos) => string.Join(", ", infos.Select(NameOf));
 
+    // Burnt derives from Dirty in the game, so it must be matched first.
     private static PartCondition ConditionOf(ElementConditionBase condition) => condition switch
     {
+        BurntElementCondition => PartCondition.Burnt,
         DamagedElementCondition => PartCondition.Damaged,
         DirtyElementCondition => PartCondition.Dirty,
         PerfectElementCondition => PartCondition.Perfect,

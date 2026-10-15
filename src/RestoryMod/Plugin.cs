@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
+using RestoryMod.Features.DropdownModes;
 using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;
 
@@ -24,16 +25,24 @@ public class Plugin : BaseUnityPlugin
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} {MyPluginInfo.PLUGIN_VERSION} is loaded!");
 
         CursorSpeedFeature.Bind(Config);
+        DropdownModesFeature.Bind(Config);
         SettingsMenuDumpPatch.Bind(Config);
         PartsBoxFeature.Bind(Config);
         PartsBoxDiagnostics.Bind(Config);
         NotepadKeyFeature.Bind(Config);
+        GamepadBindingsDump.Bind(Config);
         WatchConfigFile();
 
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         FeaturePatcher.Apply(harmony, Logger,
             typeof(CursorSpeedPatch),
             typeof(CursorSpeedSliderPatch),
+            typeof(DropdownOpenPatch),
+            typeof(DropdownFramePatch),
+            typeof(DropdownStickMovePatch),
+            typeof(DropdownSubmitPatch),
+            typeof(DropdownCursorClickPatch),
+            typeof(DropdownCursorImagePatch),
             typeof(PartsBoxSortPatch),
             typeof(PartsBoxHeadersPatch),
             typeof(PartsBoxShowTimingPatch),
@@ -62,6 +71,8 @@ public class Plugin : BaseUnityPlugin
 
     private void Update()
     {
+        GamepadBindingsDump.Tick();
+
         if (!configFileChanged) return;
         configFileChanged = false;
 

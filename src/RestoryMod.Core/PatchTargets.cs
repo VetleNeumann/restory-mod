@@ -27,11 +27,21 @@ public static class PatchTargets
     private const string InventoryPanelViewType = "Restory.UI.Views.Inventory.InventoryPanelView";
     private const string NotepadActivator = "Restory.Gameplay.OverlayActivators.NotepadActivator";
     private const string NotepadWindow = "Restory.UI.Presenters.Notepad.GUI_NotepadWindow";
+    private const string UiInputModule = "UnityEngine.EventSystems.CustomRewiredStandaloneInputModule";
 
     // Cursor speed: the game resets PlayerMouse.pointerSpeed in this handler on every controls-type change.
     public static readonly PatchTarget CursorControlsTypeChanged = new(VirtualCursorView, "ResolveControlsManagerOnControlsTypeChanged");
     public static readonly PatchTarget CursorPlayerMouse = new(VirtualCursorView, "playerMouse");
     public static readonly PatchTarget CursorControlsManager = new(VirtualCursorView, "controlsManager");
+
+    // Dropdown modes: the UI input module sends gamepad moves, submits and virtual-cursor clicks;
+    // each step is gated while a dropdown is open. The cursor image is hidden in nav mode.
+    public static readonly PatchTarget UiInputProcess = new(UiInputModule, "Process");
+    public static readonly PatchTarget UiInputSendMove = new(UiInputModule, "SendMoveEventToSelectedObject");
+    public static readonly PatchTarget UiInputSendSubmit = new(UiInputModule, "SendSubmitEventToSelectedObject");
+    public static readonly PatchTarget UiInputProcessMouseEvent = new(UiInputModule, "ProcessMouseEvent");
+    public static readonly PatchTarget CursorUpdateImageSetActive = new(VirtualCursorView, "UpdateImageSetActive");
+    public static readonly PatchTarget CursorImage = new(VirtualCursorView, "image");
 
     // Settings menu: rows are prefab-wired, so new rows are cloned from an existing slider on Show().
     public static readonly PatchTarget SettingsMenuShow = new(SettingsMenu, "Show");
@@ -71,6 +81,12 @@ public static class PatchTargets
         CursorControlsTypeChanged,
         CursorPlayerMouse,
         CursorControlsManager,
+        UiInputProcess,
+        UiInputSendMove,
+        UiInputSendSubmit,
+        UiInputProcessMouseEvent,
+        CursorUpdateImageSetActive,
+        CursorImage,
         SettingsMenuShow,
         SettingsMenuSoundSettingsView,
         SoundViewDialogueVolumeSlider,
@@ -102,6 +118,10 @@ public static class PatchTargets
         // Members the plugin reads directly (compiled against) rather than through the entries above;
         // listed so the TargetCheck tests catch a game update that moves them.
         new PatchTarget("Restory.Infrastructure.CommonServices.ControlsManager", "ControlType"),
+        new PatchTarget(UiInputModule, "RewiredPlayerIds"),
+        new PatchTarget(UiInputModule, "HorizontalActionId"),
+        new PatchTarget(UiInputModule, "VerticalActionId"),
+        new PatchTarget(UiInputModule, "SubmitActionId"),
         new PatchTarget("Restory.UI.Presenters.Inventory.InventoryPanel", "IsVisible"),
         new PatchTarget("Restory.UI.Presenters.Inventory.InventoryPanelFilter", "Sort"),
         new PatchTarget("Restory.Gameplay.Devices.DeviceService", "PlacedDeviceContainer"),

@@ -5,7 +5,7 @@
 #   build   dotnet build (Debug)
 #   deploy  kill game if running, copy plugin output into $GameDir/BepInEx/plugins/RestoryMod
 #   launch  start the game through Steam
-#   kill    stop a running game (asks first; KILL_GAME=1 skips the prompt)
+#   kill    close the game normally; if it hangs, force-close (asks first; KILL_GAME=1 skips the prompt)
 #   check   report whether the installed game build changed since the last run
 #   run     check + build + deploy + launch
 set -euo pipefail
@@ -63,14 +63,20 @@ game_running() {
 }
 
 cmd_kill() {
+  game_running || return 0
+
+  # Ask the game to close normally first (WM_CLOSE), so it can save.
+  taskkill.exe /IM Restory.exe >/dev/null 2>&1 || true
+  for _ in $(seq 1 20); do game_running || return 0; sleep 0.5; done
+
   if game_running; then
     # Force-closing loses unsaved progress, so confirm unless KILL_GAME=1.
     if [[ "${KILL_GAME:-0}" != 1 ]]; then
       if [[ -t 0 ]]; then
-        read -r -p "Restory.exe is running. Force-close it (unsaved progress is lost)? [y/N] " answer
+        read -r -p "Restory.exe did not close normally. Force-close it (unsaved progress is lost)? [y/N] " answer
         [[ "$answer" == [yY]* ]] || { echo "aborted: game still running" >&2; exit 1; }
       else
-        echo "error: Restory.exe is running. Close it, or set KILL_GAME=1 to force-close." >&2
+        echo "error: Restory.exe did not close normally. Close it, or set KILL_GAME=1 to force-close." >&2
         exit 1
       fi
     fi

@@ -19,6 +19,20 @@ public static class PatchTargets
 {
     public const string GameAssembly = "Restory.Assembly";
 
+    private const string VirtualCursorView = "Restory.UserInterface.VirtualCursorView";
+    private const string SettingsMenu = "Restory.UI.Presenters.SettingsMenu.GUI_SettingsMenu";
+    private const string SettingsMenuSoundView = "Restory.UI.Views.SettingsMenu.GUI_SettingsMenuSoundView";
+
+    // Cursor speed: the game resets PlayerMouse.pointerSpeed in this handler on every controls-type change.
+    public static readonly PatchTarget CursorControlsTypeChanged = new(VirtualCursorView, "ResolveControlsManagerOnControlsTypeChanged");
+    public static readonly PatchTarget CursorPlayerMouse = new(VirtualCursorView, "playerMouse");
+    public static readonly PatchTarget CursorControlsManager = new(VirtualCursorView, "controlsManager");
+
+    // Settings menu: rows are prefab-wired, so new rows are cloned from an existing slider on Show().
+    public static readonly PatchTarget SettingsMenuShow = new(SettingsMenu, "Show");
+    public static readonly PatchTarget SettingsMenuSoundSettingsView = new(SettingsMenu, "soundSettingsView");
+    public static readonly PatchTarget SoundViewMasterVolumeSlider = new(SettingsMenuSoundView, "masterVolumeSlider");
+
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
         new PatchTarget("UnityEngine.EventSystems.CustomRewiredStandaloneInputModule"),
@@ -28,5 +42,12 @@ public static class PatchTargets
         new PatchTarget("Restory.Gameplay.GameSettings.ActiveControllerTypeManager"),
         new PatchTarget("Restory.Gameplay.GameCursor.CursorDetectorService"),
         new PatchTarget("Restory.Gameplay.Common.CameraRotationController"),
+        new PatchTarget("Restory.Infrastructure.CommonServices.ControlsManager", "ControlType"),
+        CursorControlsTypeChanged,
+        CursorPlayerMouse,
+        CursorControlsManager,
+        SettingsMenuShow,
+        SettingsMenuSoundSettingsView,
+        SoundViewMasterVolumeSlider,
     };
 }

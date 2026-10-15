@@ -8,6 +8,7 @@ using Restory.Gameplay.Disassemble.StateMachine;
 using Restory.Gameplay.Elements;
 using Restory.Gameplay.Equipment;
 using Restory.Gameplay.Equipment.Ultrasonic;
+using Restory.Gameplay.Inventory;
 using Restory.Gameplay.PlayerInput;
 using Restory.Gameplay.Quests;
 using Restory.Gameplay.Recycle;
@@ -61,7 +62,11 @@ internal static class DpadSendPatch
     /// </summary>
     internal static bool Sending;
 
+    /// <summary>The drag service's state while a part from the parts box shows as its icon.</summary>
+    private const string SlotActiveDragState = "SlotActive";
+
     private static Action<DraggingDisassembleState, InputActionEventData>? release;
+    private static FieldInfo? dragStateField;
     private static AccessTools.FieldRef<UltrasonicService, SonicBath>? sonicBathOf;
     private static AccessTools.FieldRef<RecycleService, TrashCan>? trashCanOf;
     private static AccessTools.FieldRef<ShredderService, Shredder>? shredderOf;
@@ -83,7 +88,9 @@ internal static class DpadSendPatch
         PatchTargets.DraggingShredderService,
         PatchTargets.UltrasonicSonicBath,
         PatchTargets.RecycleTrashCan,
-        PatchTargets.ShredderServiceShredder);
+        PatchTargets.ShredderServiceShredder,
+        PatchTargets.DraggingStorageDragService,
+        PatchTargets.DragServiceState);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.DraggingOnUpdate)!;
 
@@ -100,18 +107,31 @@ internal static class DpadSendPatch
         ElementCleaner ___elementCleaner,
         UltrasonicService ___ultrasonicService,
         RecycleService ___recycleService,
-        ShredderService ___shredderService)
+        ShredderService ___shredderService,
+        StorageElasticElementsDragService ___storageElasticElementsDragService)
     {
         try
         {
             if (!DpadSendFeature.Enabled.Value) return;
             if (___isRecycling || ___isShredding) return;
-            if (!___selectedElement || !___selectedElement.isActiveAndEnabled || !___selectedElement.IsDragging) return;
+            if (!___selectedElement || !___selectedElement.IsDragging) return;
             // In a competition the game's drop skips every destination; so does the send.
             if (___disassembleGameMode.IsInCompetition) return;
-            if (PressedDirection(ReInput.players.GetPlayer(___playerInput.Id)) is not { } direction) return;
+            var pressed = PressedDirection(ReInput.players.GetPlayer(___playerInput.Id));
+            if ((pressed ?? DpadSendSlotLift.TakePending()) is not { } direction) return;
 
+            // A part dragged out of the parts box is hidden behind its icon while the cursor is over
+            // the box; any other hidden part is not the player's to send.
             Bind();
+            var drag = ___storageElasticElementsDragService;
+            var shownAsIcon = drag != null && dragStateField!.GetValue(drag)?.ToString() == SlotActiveDragState;
+            if (!___selectedElement.isActiveAndEnabled && !shownAsIcon) return;
+
+            if (PartSend.PutsBackInSlot(direction, shownAsIcon))
+            {
+                Release(__instance);
+                return;
+            }
             var shredder = shredderOf!(___shredderService);
             var destination = PartSend.DestinationFor(direction,
                 shredderOwned: shredder && shredder.gameObject.activeInHierarchy);
@@ -123,53 +143,73 @@ internal static class DpadSendPatch
                 NeedsCleaning: ___elementCleaner.DraggingElementInitialCleaningData != null);
             if (!PartSend.Accepts(destination, part)) return;
 
-            if (destination == Destination.WashingBin)
+            // Telling the drag service the cursor left the box swaps the icon for the part itself,
+            // as moving out of the box does. The real value is restored after, so the next drag out
+            // of the box starts as an icon again.
+            var wasOverInventory = shownAsIcon && drag!.IsPointerOverInventory;
+            if (shownAsIcon) drag!.IsPointerOverInventory = false;
+            try
             {
-                // Fitting is how the game seats a part over the bath; it fails while the bath is
-                // locked, full or running, and the release then inserts the fitted part.
-                var sonicBath = sonicBathOf!(___ultrasonicService);
-                if (!sonicBath) return;
-                var fitPoint = sonicBath.ElementFitter.transform.position;
-                if (!___ultrasonicService.TryFitElementToSonicBath(element, fitPoint)) return;
+                SendTo(destination, __instance, element, shredder, ___ultrasonicService, ___recycleService,
+                    ref ___isOverInventory, ref ___isOverSonicBath, ref ___isOverCleaner);
             }
-
-            // Only the chosen destination counts as under the cursor during the release.
-            ___isOverInventory = false;
-            ___isOverSonicBath = false;
-            ___isOverCleaner = false;
-
-            switch (destination)
+            finally
             {
-                case Destination.PartsBox:
-                    ___isOverInventory = true;
-                    Release(__instance);
-                    break;
-
-                case Destination.WashingBin:
-                    ___isOverSonicBath = true;
-                    Release(__instance);
-                    break;
-
-                case Destination.ToolCup:
-                    ___isOverCleaner = true;
-                    Release(__instance);
-                    break;
-
-                case Destination.TrashCan:
-                    var trashCan = trashCanOf!(___recycleService);
-                    if (!trashCan || !trashCan.gameObject.activeInHierarchy || !trashCan.IsActive) return;
-                    ReleaseOver(__instance, trashCan.IsDetected, trashCan.OnPointerEnter, trashCan.OnPointerExit);
-                    break;
-
-                case Destination.Shredder:
-                    if (!shredder || !shredder.gameObject.activeInHierarchy || !shredder.IsActive) return;
-                    ReleaseOver(__instance, shredder.IsDetected, shredder.OnPointerEnter, shredder.OnPointerExit);
-                    break;
+                if (shownAsIcon) drag!.IsPointerOverInventory = wasOverInventory;
             }
         }
         catch (Exception e)
         {
             DpadSendFeature.LogOnce(e);
+        }
+    }
+
+    private static void SendTo(Destination destination, DraggingDisassembleState state, ElementBase element,
+        Shredder? shredder, UltrasonicService ultrasonicService, RecycleService recycleService,
+        ref bool isOverInventory, ref bool isOverSonicBath, ref bool isOverCleaner)
+    {
+        if (destination == Destination.WashingBin)
+        {
+            // Fitting is how the game seats a part over the bath; it fails while the bath is
+            // locked, full or running, and the release then inserts the fitted part.
+            var sonicBath = sonicBathOf!(ultrasonicService);
+            if (!sonicBath) return;
+            var fitPoint = sonicBath.ElementFitter.transform.position;
+            if (!ultrasonicService.TryFitElementToSonicBath(element, fitPoint)) return;
+        }
+
+        // Only the chosen destination counts as under the cursor during the release.
+        isOverInventory = false;
+        isOverSonicBath = false;
+        isOverCleaner = false;
+
+        switch (destination)
+        {
+            case Destination.PartsBox:
+                isOverInventory = true;
+                Release(state);
+                break;
+
+            case Destination.WashingBin:
+                isOverSonicBath = true;
+                Release(state);
+                break;
+
+            case Destination.ToolCup:
+                isOverCleaner = true;
+                Release(state);
+                break;
+
+            case Destination.TrashCan:
+                var trashCan = trashCanOf!(recycleService);
+                if (!trashCan || !trashCan.gameObject.activeInHierarchy || !trashCan.IsActive) return;
+                ReleaseOver(state, trashCan.IsDetected, trashCan.OnPointerEnter, trashCan.OnPointerExit);
+                break;
+
+            case Destination.Shredder:
+                if (!shredder || !shredder.gameObject.activeInHierarchy || !shredder.IsActive) return;
+                ReleaseOver(state, shredder.IsDetected, shredder.OnPointerEnter, shredder.OnPointerExit);
+                break;
         }
     }
 
@@ -187,7 +227,7 @@ internal static class DpadSendPatch
     }
 
     /// <summary>A D-pad direction pressed this frame; a stick crossing the axis threshold is not one.</summary>
-    private static DpadDirection? PressedDirection(Player? player)
+    internal static DpadDirection? PressedDirection(Player? player)
     {
         if (player is null) return null;
         if (player.GetButtonDown(UiVerticalActionId) && IsDpad(player, UiVerticalActionId)) return DpadDirection.Up;
@@ -235,6 +275,7 @@ internal static class DpadSendPatch
 
     private static void Bind()
     {
+        dragStateField ??= GameTargets.Field(PatchTargets.DragServiceState);
         release ??= AccessTools.MethodDelegate<Action<DraggingDisassembleState, InputActionEventData>>(
             GameTargets.Method(PatchTargets.DraggingRelease)!);
         sonicBathOf ??= AccessTools.FieldRefAccess<UltrasonicService, SonicBath>(PatchTargets.UltrasonicSonicBath.MemberName!);

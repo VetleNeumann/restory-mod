@@ -127,6 +127,12 @@ public static class PatchTargets
     public static readonly PatchTarget DraggingUltrasonicService = new(DraggingState, "ultrasonicService");
     public static readonly PatchTarget DraggingRecycleService = new(DraggingState, "recycleService");
     public static readonly PatchTarget DraggingShredderService = new(DraggingState, "shredderService");
+    public static readonly PatchTarget DraggingStorageDragService = new(DraggingState, "storageElasticElementsDragService");
+    // A held parts box slot: the game starts the drag on the first cursor move while it is held.
+    private const string StorageSlot = "Restory.UI.Presenters.Inventory.StorageSlotElements.StorageSlotElement";
+    public static readonly PatchTarget SlotOnPointerDown = new(StorageSlot, "OnPointerDown");
+    public static readonly PatchTarget SlotOnPointerMove = new(StorageSlot, "OnPointerMove");
+    public static readonly PatchTarget SlotIsHolding = new(StorageSlot, "isHolding");
     public static readonly PatchTarget UltrasonicSonicBath = new("Restory.Gameplay.Equipment.Ultrasonic.UltrasonicService", "sonicBath");
     public static readonly PatchTarget RecycleTrashCan = new("Restory.Gameplay.Recycle.RecycleService", "trashCan");
     public static readonly PatchTarget ShredderServiceShredder = new("Restory.Gameplay.Shredders.ShredderService", "shredder");
@@ -200,6 +206,10 @@ public static class PatchTargets
         DraggingUltrasonicService,
         DraggingRecycleService,
         DraggingShredderService,
+        DraggingStorageDragService,
+        SlotOnPointerDown,
+        SlotOnPointerMove,
+        SlotIsHolding,
         UltrasonicSonicBath,
         RecycleTrashCan,
         ShredderServiceShredder,
@@ -263,6 +273,7 @@ public static class PatchTargets
         new PatchTarget("Restory.UI.Views.ToggleButtonGroup", "Buttons"),
         new PatchTarget("Restory.UI.Views.ToggleButton", "IsSelected"),
         new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "Id"),
+        new PatchTarget("Restory.Gameplay.Inventory.StorageElasticElementsDragService", "IsPointerOverInventory"),
         new PatchTarget("Restory.Gameplay.Elements.ElementBase", "ConditionHandler"),
         new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsDragging"),
         new PatchTarget("Restory.Gameplay.Elements.ElementConditionHandler", "ElementData"),

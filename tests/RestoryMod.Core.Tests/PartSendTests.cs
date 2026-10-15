@@ -54,6 +54,25 @@ public class PartSendTests
     }
 
     [Theory]
+    [InlineData(DpadDirection.Up, true)]
+    [InlineData(DpadDirection.Right, true)]
+    [InlineData(DpadDirection.Down, true)]
+    [InlineData(DpadDirection.Left, false)]
+    public void Holding_a_parts_box_slot_sends_on_any_direction_but_back_to_the_box(DpadDirection direction, bool sends)
+    {
+        // The part never left the box, so there is nothing to put back.
+        Assert.Equal(sends, PartSend.SendsFromHeldSlot(direction));
+    }
+
+    [Fact]
+    public void Left_puts_a_part_still_shown_as_a_box_icon_back_in_its_slot()
+    {
+        Assert.True(PartSend.PutsBackInSlot(DpadDirection.Left, shownAsIcon: true));
+        Assert.False(PartSend.PutsBackInSlot(DpadDirection.Left, shownAsIcon: false));
+        Assert.False(PartSend.PutsBackInSlot(DpadDirection.Up, shownAsIcon: true));
+    }
+
+    [Theory]
     [InlineData(Destination.PartsBox)]
     [InlineData(Destination.WashingBin)]
     public void Quest_item_is_refused_by_the_parts_box_and_washing_bin(Destination destination)

@@ -63,10 +63,13 @@ public class Plugin : BaseUnityPlugin
             typeof(BrowserCapturePatch),
             typeof(DpadSendPatch),
             typeof(DpadSendFallbackGuardPatch),
+            typeof(DpadSendSlotPressPatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump));
         if (StickScrollFeature.TargetsPresent()) gameObject.AddComponent<StickScrollDriver>();
         gameObject.AddComponent<ShoulderButtonsPoller>();
+        // Idle unless DpadSendSlotPressPatch applied: it is what records a pressed slot.
+        gameObject.AddComponent<DpadSendPoller>();
     }
 
     /// <summary>

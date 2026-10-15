@@ -29,6 +29,19 @@ public static class PartSend
     };
 
     /// <summary>
+    /// Grab held on a parts box slot before any drag: the press lifts the part and sends it, so the
+    /// shortcut works without first moving the cursor. Left would send it back where it already is.
+    /// </summary>
+    public static bool SendsFromHeldSlot(DpadDirection direction) => direction != DpadDirection.Left;
+
+    /// <summary>
+    /// A part dragged out of the parts box shows as an icon while the cursor is over the box; left then
+    /// puts it back in its slot, as letting go there does.
+    /// </summary>
+    public static bool PutsBackInSlot(DpadDirection direction, bool shownAsIcon) =>
+        shownAsIcon && direction == DpadDirection.Left;
+
+    /// <summary>
     /// The part-based half of the game's rules. The washing bin's own state (unlocked, full, running)
     /// is left to the game, which checks it when the part is fitted in.
     /// </summary>

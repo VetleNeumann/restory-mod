@@ -5,12 +5,17 @@
 #   build   dotnet build (Debug)
 #   deploy  kill game if running, copy plugin output into $GameDir/BepInEx/plugins/RestoryMod
 #   launch  start the game through Steam
-#   kill    stop a running game
+#   kill    stop a running game (asks first; KILL_GAME=1 skips the prompt)
 #   check   report whether the installed game build changed since the last run
 #   run     check + build + deploy + launch
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Non-interactive WSL shells (e.g. over ssh) lack the Windows PATH; we need cmd/tasklist/taskkill.
+export PATH="$PATH:/mnt/c/Windows/System32"
+for exe in cmd.exe tasklist.exe taskkill.exe; do
+  command -v "$exe" >/dev/null || { echo "error: $exe not found; is WSL interop enabled?" >&2; exit 1; }
+done
 APP_ID=3812600
 CONFIG="${CONFIG:-Debug}"
 PLUGIN_PROJECT="$ROOT/src/RestoryMod/RestoryMod.csproj"
@@ -59,6 +64,16 @@ game_running() {
 
 cmd_kill() {
   if game_running; then
+    # Force-closing loses unsaved progress, so confirm unless KILL_GAME=1.
+    if [[ "${KILL_GAME:-0}" != 1 ]]; then
+      if [[ -t 0 ]]; then
+        read -r -p "Restory.exe is running. Force-close it (unsaved progress is lost)? [y/N] " answer
+        [[ "$answer" == [yY]* ]] || { echo "aborted: game still running" >&2; exit 1; }
+      else
+        echo "error: Restory.exe is running. Close it, or set KILL_GAME=1 to force-close." >&2
+        exit 1
+      fi
+    fi
     taskkill.exe /IM Restory.exe /F >/dev/null
     # Give Windows a moment to release file locks on the plugin DLL.
     for _ in 1 2 3 4 5 6 7 8 9 10; do game_running || break; sleep 0.5; done

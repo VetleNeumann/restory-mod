@@ -16,8 +16,9 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 - **Gamepad dropdowns**: in every dropdown (settings, parts box filter, parts shop, paint palettes) the
   gamepad drives either the cursor or the list, never both. Use the stick and the cursor clicks (Cross / A)
   where it points; press the D-pad and it moves the highlighted row, Cross / A picks that row, and the
-  cursor hides until you move the stick. The cursor takes over again once it reaches another row. The list scrolls to keep the highlighted row
-  in view. A closed dropdown no longer reopens when you press Cross / A with the cursor elsewhere.
+  cursor hides until you move the stick. The cursor takes over again once it reaches another row. The list
+  scrolls to keep the highlighted row in view. A closed dropdown no longer reopens when you press Cross / A
+  with the cursor elsewhere.
 - **Smooth stick scrolling**: the right stick glides scrollable menus, faster the further you tilt it,
   instead of the game's step-pause-step scrolling. Holding it all the way speeds up for long lists. It
   scrolls the menu holding the selection, or the one under the cursor.
@@ -42,4 +43,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 
 ## Development
 
-See [CLAUDE.md](CLAUDE.md) for the dev loop, patch conventions and game-update checks.
+`scripts/dev.sh run` builds, deploys into the game's `BepInEx/plugins`, relaunches the game through Steam
+and brings its window to the front (so a Big Picture session stays on the gamepad). `dotnet test` runs the
+unit tests and, with `GamePaths.props` set up, checks every patch target against the installed game.
+
+See [CLAUDE.md](CLAUDE.md) for the full dev loop, patch conventions and game-update checks.

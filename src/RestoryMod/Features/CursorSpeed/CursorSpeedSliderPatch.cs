@@ -11,8 +11,7 @@ namespace RestoryMod.Features.CursorSpeed;
 
 /// <summary>
 /// Adds a "Controller sensitivity" row to the settings menu. The menu is prefab-wired, so the row
-/// is cloned from the dialogue volume row (for its slider look) and appended after the last row of
-/// the list, away from the audio settings, on the first Show().
+/// is cloned from the dialogue volume row and inserted right after it on the first Show().
 /// </summary>
 [HarmonyPatch]
 internal static class CursorSpeedSliderPatch
@@ -56,13 +55,6 @@ internal static class CursorSpeedSliderPatch
 
     private static void CreateRow(Slider template, Transform templateRow)
     {
-        var list = templateRow.parent;
-        if (!TryFindLastRow(list, out var lastRow, out var above))
-        {
-            Plugin.Logger.LogWarning("Controller sensitivity row: no selectable row found in the settings list.");
-            return;
-        }
-
         // Clone under an inactive holder so no Awake/OnEnable runs before we strip game components.
         // The holder is always destroyed; if anything throws before the row is moved out, the
         // half-built row goes with it.
@@ -91,36 +83,18 @@ internal static class CursorSpeedSliderPatch
             if (label != null) label.text = Label;
             var valueText = slider.GetComponentInChildren<TMP_Text>(true);
 
-            SpliceNavigation(above, slider);
+            SpliceNavigation(template, slider);
 
             row.AddComponent<ControllerSensitivityRow>().Init(slider, valueText);
-            row.transform.SetParent(list, false);
-            row.transform.SetSiblingIndex(lastRow.GetSiblingIndex() + 1);
+            row.transform.SetParent(templateRow.parent, false);
+            row.transform.SetSiblingIndex(templateRow.GetSiblingIndex() + 1);
 
-            Plugin.Logger.LogInfo($"Controller sensitivity row added after '{lastRow.name}' (navigation: {above.navigation.mode}).");
+            Plugin.Logger.LogInfo($"Controller sensitivity row added (navigation: {template.navigation.mode}).");
         }
         finally
         {
             Object.Destroy(holder);
         }
-    }
-
-    /// <summary>The last active row in the settings list that the player can select.</summary>
-    private static bool TryFindLastRow(Transform list, out Transform lastRow, out Selectable selectable)
-    {
-        for (var i = list.childCount - 1; i >= 0; i--)
-        {
-            var child = list.GetChild(i);
-            if (!child.gameObject.activeSelf || child.name == RowName) continue;
-            var found = child.GetComponentInChildren<Selectable>();
-            if (found == null) continue;
-            lastRow = child;
-            selectable = found;
-            return true;
-        }
-        lastRow = null!;
-        selectable = null!;
-        return false;
     }
 
     /// <summary>

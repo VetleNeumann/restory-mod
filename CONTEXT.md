@@ -34,6 +34,10 @@ _Avoid_: Reassembly mode, disassemble mode
 Moving a scrollable menu's view with the right stick, gliding at a speed that follows how far the stick is tilted. It moves the view, not the selected item; the D-pad and left stick move the selection.
 _Avoid_: Wheel scroll, stick navigation
 
+**Hover grace**:
+At the workbench with a gamepad, a thing the virtual cursor can act on stays hovered for a short moment after the cursor leaves it, so pressing the button just after overshooting still acts on it. It covers objects on the bench (device boxes, packs, cash, decor), loose parts, screws, and the empty slots screws go back into; not attached parts or other slots. It applies only while the cursor is over nothing else it could act on: anything it could act on now wins, including the on-screen panels, and holding the rotate button ends it. It keeps the hover highlight on for the same moment. Platformers call the same forgiveness "coyote time".
+_Avoid_: Grab grace, coyote grab, sticky cursor (that slows the cursor instead)
+
 ### Gamepad in dropdowns
 
 **Virtual cursor**:

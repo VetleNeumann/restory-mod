@@ -5,6 +5,7 @@ using HarmonyLib;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
 using RestoryMod.Features.DropdownModes;
+using RestoryMod.Features.HoverGrace;
 using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;
 using RestoryMod.Features.ShoulderButtons;
@@ -35,6 +36,7 @@ public class Plugin : BaseUnityPlugin
         ShoulderButtonsFeature.Bind(Config);
         GamepadBindingsDump.Bind(Config);
         StickScrollFeature.Bind(Config);
+        HoverGraceFeature.Bind(Config);
         WatchConfigFile();
 
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -59,6 +61,8 @@ public class Plugin : BaseUnityPlugin
             typeof(CleaningToolWindowCapturePatch),
             typeof(InventoryCapturePatch),
             typeof(BrowserCapturePatch),
+            typeof(HoverGraceDisassemblePatch),
+            typeof(HoverGraceWorkPatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump));
         if (StickScrollFeature.TargetsPresent()) gameObject.AddComponent<StickScrollDriver>();

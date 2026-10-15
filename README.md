@@ -26,6 +26,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   cursor to the screen edge does (at the workbench they still zoom). In the PC's web browser, L2/R2 switch
   between Marketplace, Home Depot and Parts, and L1/R1 step through the shown tab's categories. L1/R1 also
   step through the inventory's categories, and through the tools in the Tool window while cleaning.
+- **Hover grace at the workbench**: with a gamepad, a part, screw, screw slot or bench object stays
+  hovered for a moment after the cursor flies past it, so pressing Cross / A just after overshooting
+  still grabs or unscrews it ("coyote time"). Anything else the cursor reaches first, a panel, or
+  holding rotate cancels it.
 
 ## Configuration
 
@@ -35,6 +39,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 |---|---|---|---|
 | Controller | CursorSpeed | 1.0 | Gamepad cursor speed |
 | Controller | DropdownModes | true | Gamepad dropdowns |
+| Controller | HoverGraceMs | 150 | Hover grace window in ms (0 to 500, 0 = off) |
 | PartsBox | Sections | true | Parts box sort and sections |
 | Notepad | KeyTogglesAtWorkbench | true | Notepad key at the workbench |
 | Stick scroll | Enabled | true | Smooth stick scrolling |

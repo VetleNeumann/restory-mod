@@ -24,6 +24,7 @@ public static class PatchTargets
     private const string SettingsMenuSoundView = "Restory.UI.Views.SettingsMenu.GUI_SettingsMenuSoundView";
     private const string InventoryPanel = "Restory.UI.Presenters.Inventory.InventoryPanel";
     private const string InventoryItemsView = "Restory.UI.Views.Inventory.InventoryItemsView";
+    private const string InventoryPanelViewType = "Restory.UI.Views.Inventory.InventoryPanelView";
 
     // Cursor speed: the game resets PlayerMouse.pointerSpeed in this handler on every controls-type change.
     public static readonly PatchTarget CursorControlsTypeChanged = new(VirtualCursorView, "ResolveControlsManagerOnControlsTypeChanged");
@@ -44,18 +45,11 @@ public static class PatchTargets
     public static readonly PatchTarget InventoryPanelFilter = new(InventoryPanel, "filter");
     public static readonly PatchTarget InventoryPanelDeviceService = new(InventoryPanel, "deviceService");
     public static readonly PatchTarget InventoryPanelView = new(InventoryPanel, "view");
+    public static readonly PatchTarget InventoryPanelViewItems = new(InventoryPanelViewType, "Items");
     public static readonly PatchTarget InventoryItemsViewContainer = new(InventoryItemsView, "container");
 
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
-        new PatchTarget("UnityEngine.EventSystems.CustomRewiredStandaloneInputModule"),
-        new PatchTarget("Restory.Infrastructure.SceneInstallers.GameMechanics.GameCursorInstaller"),
-        new PatchTarget("Restory.Infrastructure.CommonInstallers.ControllersInstaller"),
-        new PatchTarget("Restory.Gameplay.PlayerInput.GameplayRewiredContextSwitcher"),
-        new PatchTarget("Restory.Gameplay.GameSettings.ActiveControllerTypeManager"),
-        new PatchTarget("Restory.Gameplay.GameCursor.CursorDetectorService"),
-        new PatchTarget("Restory.Gameplay.Common.CameraRotationController"),
-        new PatchTarget("Restory.Infrastructure.CommonServices.ControlsManager", "ControlType"),
         CursorControlsTypeChanged,
         CursorPlayerMouse,
         CursorControlsManager,
@@ -70,8 +64,13 @@ public static class PatchTargets
         InventoryPanelFilter,
         InventoryPanelDeviceService,
         InventoryPanelView,
+        InventoryPanelViewItems,
         InventoryItemsViewContainer,
-        // Read directly (compiled against) by BenchState; listed so updates that move them are caught.
+
+        // Members the plugin reads directly (compiled against) rather than through the entries above;
+        // listed so the TargetCheck tests catch a game update that moves them.
+        new PatchTarget("Restory.Infrastructure.CommonServices.ControlsManager", "ControlType"),
+        new PatchTarget("Restory.UI.Presenters.Inventory.InventoryPanel", "IsVisible"),
         new PatchTarget("Restory.UI.Presenters.Inventory.InventoryPanelFilter", "Sort"),
         new PatchTarget("Restory.Gameplay.Devices.DeviceService", "PlacedDeviceContainer"),
         new PatchTarget("Restory.Gameplay.Devices.Device", "SortedSockets"),
@@ -79,5 +78,16 @@ public static class PatchTargets
         new PatchTarget("Restory.Gameplay.Elements.ElementSocket", "CompatibleElementInfo"),
         new PatchTarget("Restory.Gameplay.Workplace.WorkSurface", "PlacedElements"),
         new PatchTarget("Restory.Gameplay.Devices.DismantledDevicePack", "PlacedElements"),
+        new PatchTarget("Restory.Gameplay.Devices.DeviceContainer", "Device"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "Info"),
+        new PatchTarget("Restory.Gameplay.Elements.PlacedElements", "ElementsOnSurface"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementTransformRecord", "Element"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementData", "Info"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementData", "Condition"),
+        new PatchTarget("Restory.Data.Elements.ElementInfo", "Category"),
+        new PatchTarget("Restory.StorageSystem.StorageElements.StorageItemElement", "ElementData"),
+        new PatchTarget("Restory.StorageSystem.IReadOnlyStorageSlot", "Item"),
+        new PatchTarget("Restory.StorageSystem.IReadOnlyStorageSlot", "Index"),
+        new PatchTarget("Restory.StorageSystem.IReadOnlyStorageSlot", "Count"),
     };
 }

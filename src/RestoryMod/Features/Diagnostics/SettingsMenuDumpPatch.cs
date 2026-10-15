@@ -11,7 +11,7 @@ namespace RestoryMod.Features.Diagnostics;
 
 /// <summary>
 /// Dev aid: logs the settings menu's transform hierarchy once per session, so slider rows can be
-/// cloned without guessing the prefab layout. Toggle with [Debug] DumpSettingsMenu.
+/// cloned without guessing the prefab layout. Toggle with [Debug] DumpSettingsMenu (needs a restart).
 /// </summary>
 [HarmonyPatch]
 internal static class SettingsMenuDumpPatch
@@ -25,13 +25,14 @@ internal static class SettingsMenuDumpPatch
             "Log the settings menu hierarchy the first time it opens each session.");
     }
 
-    private static bool Prepare() => GameTargets.Method(PatchTargets.SettingsMenuShow) is not null;
+    // Dev aid only: not patched at all unless switched on at startup.
+    private static bool Prepare() => Enabled.Value && GameTargets.AllPresent(PatchTargets.SettingsMenuShow);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.SettingsMenuShow)!;
 
     private static void Postfix(MonoBehaviour __instance)
     {
-        if (dumped || !Enabled.Value) return;
+        if (dumped) return;
         dumped = true;
 
         var sb = new StringBuilder("Settings menu hierarchy:\n");

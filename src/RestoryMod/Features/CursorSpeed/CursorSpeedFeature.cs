@@ -50,9 +50,9 @@ internal static class CursorSpeedFeature
 [HarmonyPatch]
 internal static class CursorSpeedPatch
 {
-    private static bool Prepare() =>
-        GameTargets.Method(PatchTargets.CursorControlsTypeChanged) is not null &&
-        GameTargets.Field(PatchTargets.CursorPlayerMouse) is not null;
+    private static bool Prepare() => GameTargets.AllPresent(
+        PatchTargets.CursorControlsTypeChanged,
+        PatchTargets.CursorPlayerMouse);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.CursorControlsTypeChanged)!;
 

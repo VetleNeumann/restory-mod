@@ -15,6 +15,10 @@ namespace RestoryMod.Features.PartsBox;
 
 internal static class PartsBoxFeature
 {
+    /// <summary>
+    /// Checked at runtime rather than in Prepare(), unlike the debug toggles, so the sections can be
+    /// switched on and off live from the config file without restarting the game.
+    /// </summary>
     public static ConfigEntry<bool> Enabled = null!;
 
     public static void Bind(ConfigFile config)
@@ -39,11 +43,11 @@ internal static class PartsBoxFeature
 [HarmonyPatch]
 internal static class PartsBoxSortPatch
 {
-    private static bool Prepare() =>
-        GameTargets.Method(PatchTargets.InventoryPanelSortItems) is not null &&
-        GameTargets.Field(PatchTargets.InventoryPanelFilteredItems) is not null &&
-        GameTargets.Field(PatchTargets.InventoryPanelFilter) is not null &&
-        GameTargets.Field(PatchTargets.InventoryPanelDeviceService) is not null;
+    private static bool Prepare() => GameTargets.AllPresent(
+        PatchTargets.InventoryPanelSortItems,
+        PatchTargets.InventoryPanelFilteredItems,
+        PatchTargets.InventoryPanelFilter,
+        PatchTargets.InventoryPanelDeviceService);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.InventoryPanelSortItems)!;
 
@@ -65,15 +69,16 @@ internal static class PartsBoxSortPatch
                 return;
             }
 
-            var reverse = ___filter.Sort;
+            var missing = bench.PickMissing(___filteredItems);
             var keys = new Dictionary<IReadOnlyStorageSlot, PartsBoxKey>(___filteredItems.Count);
             foreach (var slot in ___filteredItems)
             {
                 if (slot.Item is StorageItemElement item)
-                    keys[slot] = bench.KeyFor(item, slot.Index);
+                    keys[slot] = bench.KeyFor(item, slot.Index, missing.Contains(slot));
             }
 
             // Non-element items (none expected) keep their place after all parts.
+            var reverse = ___filter.Sort;
             using (PartsBoxPerf.Measure("order"))
             ___filteredItems.Sort((a, b) =>
             {
@@ -83,16 +88,9 @@ internal static class PartsBoxSortPatch
                 return PartsBoxOrder.Compare(ka, kb, reverse);
             });
 
-            var missingCount = 0;
-            foreach (var slot in ___filteredItems)
-            {
-                if (!keys.TryGetValue(slot, out var key) || !key.Missing) break;
-                missingCount++;
-            }
-
-            sections.SetSorted(bench, missingCount);
+            sections.SetSorted(bench, missing.Count);
             using (PartsBoxPerf.Measure("log"))
-                LogIfChanged(bench, ___filteredItems, missingCount);
+                LogIfChanged(bench, ___filteredItems, missing.Count);
         }
         catch (Exception e)
         {
@@ -105,7 +103,7 @@ internal static class PartsBoxSortPatch
     /// <summary>Logs the inputs and result of the missing-parts rule whenever they change.</summary>
     private static void LogIfChanged(BenchState bench, List<IReadOnlyStorageSlot> sorted, int missingCount)
     {
-        if (!PartsBoxPerf.Enabled) return;
+        if (!PartsBoxDiagnostics.Enabled) return;
         var box = string.Join(", ", sorted.Select((slot, i) =>
             (i < missingCount ? "*" : "") +
             (slot.Item is StorageItemElement item ? BenchState.NameOf(item) : "?") +
@@ -121,10 +119,11 @@ internal static class PartsBoxSortPatch
 [HarmonyPatch]
 internal static class PartsBoxHeadersPatch
 {
-    private static bool Prepare() =>
-        GameTargets.Method(PatchTargets.InventoryPanelUpdateItemsView) is not null &&
-        GameTargets.Field(PatchTargets.InventoryPanelView) is not null &&
-        GameTargets.Field(PatchTargets.InventoryItemsViewContainer) is not null;
+    private static bool Prepare() => GameTargets.AllPresent(
+        PatchTargets.InventoryPanelUpdateItemsView,
+        PatchTargets.InventoryPanelView,
+        PatchTargets.InventoryPanelViewItems,
+        PatchTargets.InventoryItemsViewContainer);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.InventoryPanelUpdateItemsView)!;
 
@@ -149,19 +148,22 @@ internal static class PartsBoxHeadersPatch
 [HarmonyPatch]
 internal static class PartsBoxPrewarmPatch
 {
-    private static bool Prepare() =>
-        GameTargets.Method(PatchTargets.InventoryPanelConstruct) is not null &&
-        GameTargets.Field(PatchTargets.InventoryPanelView) is not null;
+    private static bool Prepare() => GameTargets.AllPresent(
+        PatchTargets.InventoryPanelConstruct,
+        PatchTargets.InventoryPanelView,
+        PatchTargets.InventoryPanelViewItems,
+        PatchTargets.InventoryPanelDeviceService);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.InventoryPanelConstruct)!;
 
-    private static void Postfix(InventoryPanel __instance, InventoryPanelView ___view, DeviceService deviceService)
+    // Construct has just assigned deviceService, so read the field rather than depend on the parameter name.
+    private static void Postfix(InventoryPanel __instance, InventoryPanelView ___view, DeviceService ___deviceService)
     {
         try
         {
             using (PartsBoxPerf.Measure("prewarm"))
-                PartsBoxSections.For(__instance).Prewarm(___view.Items, deviceService);
-            if (PartsBoxPerf.Enabled) PartsBoxPerf.Report("Parts box prewarm at scene load: ");
+                PartsBoxSections.For(__instance).Prewarm(___view.Items, ___deviceService);
+            if (PartsBoxDiagnostics.Enabled) PartsBoxPerf.Report("Parts box prewarm at scene load: ");
         }
         catch (Exception e)
         {

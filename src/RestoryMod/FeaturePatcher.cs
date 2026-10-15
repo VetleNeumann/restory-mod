@@ -50,6 +50,38 @@ internal static class GameTargets
         return method;
     }
 
+    /// <summary>
+    /// True when every target resolves (type, plus member as method, field or property).
+    /// Logs each missing one; meant for patch classes' Prepare().
+    /// </summary>
+    public static bool AllPresent(params PatchTarget[] targets)
+    {
+        var all = true;
+        foreach (var target in targets)
+        {
+            var type = AccessTools.TypeByName(target.TypeName);
+            if (type is not null && (target.MemberName is null || HasMember(type, target.MemberName))) continue;
+            Plugin.Logger.LogWarning($"Patch target missing: {target}");
+            all = false;
+        }
+        return all;
+    }
+
+    /// <summary>
+    /// Any member with this name on the type or its base types. Plain reflection rather than
+    /// AccessTools.Method/Field/Property, which log a warning for every kind that doesn't match.
+    /// </summary>
+    private static bool HasMember(Type type, string name)
+    {
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic |
+                                   BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly;
+        for (var t = type; t is not null; t = t.BaseType)
+        {
+            if (t.GetMember(name, flags).Length > 0) return true;
+        }
+        return false;
+    }
+
     public static FieldInfo? Field(PatchTarget target)
     {
         var type = AccessTools.TypeByName(target.TypeName);

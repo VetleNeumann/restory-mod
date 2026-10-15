@@ -56,7 +56,7 @@ internal sealed class PartsBoxSections : MonoBehaviour
 
     private void Update()
     {
-        if (PartsBoxPerf.Enabled) PartsBoxPerf.Frame();
+        if (PartsBoxDiagnostics.Enabled) PartsBoxPerf.Frame();
         if (Time.unscaledTime < nextPoll || !panel || !panel.IsVisible) return;
         nextPoll = Time.unscaledTime + PollInterval;
 
@@ -75,11 +75,20 @@ internal sealed class PartsBoxSections : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Creates the header objects if needed. Uses Unity's null check, not ??=: a destroyed
+    /// GameObject is "fake null" and ??= would keep the dead reference.
+    /// </summary>
+    private void EnsureHeaders()
+    {
+        if (!missingHeader) missingHeader = CreateHeader("Missing parts");
+        if (!otherHeader) otherHeader = CreateHeader("Other parts");
+    }
+
     /// <summary>One-time work done at scene load instead of on first open.</summary>
     public void Prewarm(InventoryItemsView itemsView, DeviceService deviceService)
     {
-        missingHeader ??= CreateHeader("Missing parts");
-        otherHeader ??= CreateHeader("Other parts");
+        EnsureHeaders();
         if (ContainerField?.GetValue(itemsView) is RectTransform container) HideHeaders(container);
         BenchState.Prewarm(deviceService);
     }
@@ -119,20 +128,19 @@ internal sealed class PartsBoxSections : MonoBehaviour
         }
 
         LogLayoutOnce(grid, columns);
-        missingHeader ??= CreateHeader("Missing parts");
-        otherHeader ??= CreateHeader("Other parts");
+        EnsureHeaders();
 
         layout.CopyFrom(grid, columns);
-        layout.HeaderHeight = HeaderHeight(missingHeader);
+        layout.HeaderHeight = HeaderHeight(missingHeader!);
         grid.enabled = false;
         layout.enabled = true;
 
         var missing = Mathf.Min(missingCount, gameChildren.Count);
-        var order = new List<Transform> { ShowHeader(missingHeader, container) };
+        var order = new List<Transform> { ShowHeader(missingHeader!, container) };
         order.AddRange(gameChildren.Take(missing));
         if (missing < gameChildren.Count)
         {
-            order.Add(ShowHeader(otherHeader, container));
+            order.Add(ShowHeader(otherHeader!, container));
             order.AddRange(gameChildren.Skip(missing));
         }
 
@@ -237,7 +245,7 @@ internal sealed class PartsBoxSections : MonoBehaviour
             .ThenBy(t => Mathf.Abs(t.fontSize - 42f))
             .FirstOrDefault() ?? candidates.FirstOrDefault();
 
-        Plugin.Logger.LogInfo(style == null
+        if (PartsBoxDiagnostics.Enabled) Plugin.Logger.LogInfo(style == null
             ? "Parts box header: no label to copy style from."
             : $"Parts box header style from '{style.name}' (font {style.font.name}, size {style.fontSize}).");
         cachedStyle = style;
@@ -246,7 +254,7 @@ internal sealed class PartsBoxSections : MonoBehaviour
 
     private void LogLayoutOnce(GridLayoutGroup grid, int columns)
     {
-        if (layoutLogged) return;
+        if (layoutLogged || !PartsBoxDiagnostics.Enabled) return;
         layoutLogged = true;
         Plugin.Logger.LogInfo(
             $"Parts box grid: columns={columns}, cell={grid.cellSize}, spacing={grid.spacing}, " +

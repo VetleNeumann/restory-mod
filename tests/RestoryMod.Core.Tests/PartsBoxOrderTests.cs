@@ -12,14 +12,50 @@ public class PartsBoxOrderTests
     public void Empty_socket_with_no_loose_part_is_missing()
     {
         var missing = PartsBoxOrder.FindMissing(new[] { "battery", "screen" }, new[] { "screen" });
-        Assert.Equal(new[] { "battery" }, missing);
+        Assert.Equal(new Dictionary<string, int> { ["battery"] = 1 }, missing);
     }
 
     [Fact]
     public void Each_loose_part_pairs_with_only_one_empty_socket()
     {
-        var missing = PartsBoxOrder.FindMissing(new[] { "cap", "cap" }, new[] { "cap" });
-        Assert.Equal(new[] { "cap" }, missing);
+        var missing = PartsBoxOrder.FindMissing(new[] { "cap", "cap", "cap" }, new[] { "cap" });
+        Assert.Equal(new Dictionary<string, int> { ["cap"] = 2 }, missing);
+    }
+
+    private static BoxSlot<string> Slot(string type, PartCondition condition, int index, int count = 1) =>
+        new(type, condition, index, count);
+
+    [Fact]
+    public void Only_as_many_box_parts_as_missing_sockets_are_picked()
+    {
+        // One socket missing, two copies in the box: only one belongs in the Missing section.
+        var slots = new[] { Slot("speaker", Damaged, 1), Slot("speaker", Perfect, 2) };
+        var picked = PartsBoxOrder.PickMissingSlots(slots, new Dictionary<string, int> { ["speaker"] = 1 });
+        Assert.Equal(new[] { 1 }, picked);
+    }
+
+    [Fact]
+    public void Best_condition_is_picked_first_then_highest_slot()
+    {
+        var slots = new[] { Slot("cap", Dirty, 5), Slot("cap", Perfect, 1), Slot("cap", Perfect, 3), Slot("cap", Damaged, 9) };
+        var picked = PartsBoxOrder.PickMissingSlots(slots, new Dictionary<string, int> { ["cap"] = 2 });
+        Assert.Equal(new[] { 1, 2 }, picked.OrderBy(i => i));
+    }
+
+    [Fact]
+    public void A_stack_covers_as_many_sockets_as_its_count()
+    {
+        // Slot 7 (stack of 4) is tried first and already covers all 3 sockets.
+        var slots = new[] { Slot("battery", Perfect, 7, count: 4), Slot("battery", Perfect, 2, count: 2) };
+        var picked = PartsBoxOrder.PickMissingSlots(slots, new Dictionary<string, int> { ["battery"] = 3 });
+        Assert.Equal(new[] { 0 }, picked);
+    }
+
+    [Fact]
+    public void Types_that_are_not_missing_are_never_picked()
+    {
+        var slots = new[] { Slot("screen", Perfect, 1) };
+        Assert.Empty(PartsBoxOrder.PickMissingSlots(slots, new Dictionary<string, int> { ["battery"] = 1 }));
     }
 
     [Fact]

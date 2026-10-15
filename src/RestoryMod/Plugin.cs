@@ -25,7 +25,7 @@ public class Plugin : BaseUnityPlugin
         CursorSpeedFeature.Bind(Config);
         SettingsMenuDumpPatch.Bind(Config);
         PartsBoxFeature.Bind(Config);
-        DebugTiming.Bind(Config);
+        PartsBoxDiagnostics.Bind(Config);
         WatchConfigFile();
 
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -63,7 +63,7 @@ public class Plugin : BaseUnityPlugin
         try
         {
             Config.Reload();
-            Logger.LogInfo($"Config reloaded: CursorSpeed={CursorSpeedFeature.Current}");
+            Logger.LogInfo("Config reloaded from disk.");
         }
         catch (IOException e)
         {

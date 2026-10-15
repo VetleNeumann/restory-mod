@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    # The plugin itself needs the game's DLLs, which are never committed, so CI builds and tests
+    # only the Unity-free core. TargetCheck runs too, but skips without a game install.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Core tests
+        run: dotnet test tests/RestoryMod.Core.Tests --configuration Release
+
+      - name: Target check (skips without the game)
+        run: dotnet test tests/RestoryMod.TargetCheck --configuration Release

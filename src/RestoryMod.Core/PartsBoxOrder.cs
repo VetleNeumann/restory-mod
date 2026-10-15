@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RestoryMod.Core;
 
@@ -33,6 +35,23 @@ public readonly struct PartsBoxKey
     public int SlotIndex { get; }
 }
 
+/// <summary>One parts box slot, as the missing-parts picker sees it.</summary>
+public readonly struct BoxSlot<T>
+{
+    public BoxSlot(T type, PartCondition condition, int slotIndex, int count)
+    {
+        Type = type;
+        Condition = condition;
+        SlotIndex = slotIndex;
+        Count = count;
+    }
+
+    public T Type { get; }
+    public PartCondition Condition { get; }
+    public int SlotIndex { get; }
+    public int Count { get; }
+}
+
 /// <summary>
 /// Parts box ordering while a device is on the workbench:
 /// 1. Missing parts section before other parts (never reversed).
@@ -47,22 +66,61 @@ public static class PartsBoxOrder
     /// <summary>
     /// Mirrors the game's notepad rule: each empty socket pairs with one loose part of the same type
     /// on the workbench; unpaired empty sockets are missing. The parts box is not consulted.
+    /// Returns the number of missing sockets per part type.
     /// </summary>
-    public static HashSet<T> FindMissing<T>(IEnumerable<T> emptySocketTypes, IEnumerable<T> looseTypes)
+    public static Dictionary<T, int> FindMissing<T>(IEnumerable<T> emptySocketTypes, IEnumerable<T> looseTypes)
         where T : class
     {
         var loose = new List<T>(looseTypes);
-        var missing = new HashSet<T>();
+        var missing = new Dictionary<T, int>();
         foreach (var socketType in emptySocketTypes)
         {
             var index = loose.IndexOf(socketType);
             if (index >= 0)
                 loose.RemoveAt(index);
             else
-                missing.Add(socketType);
+                missing[socketType] = missing.TryGetValue(socketType, out var n) ? n + 1 : 1;
         }
         return missing;
     }
+
+    /// <summary>
+    /// Decides which box slots fill the missing sockets. The notepad counts per socket, so only as
+    /// many parts as there are missing sockets go to the Missing section: per type, the best
+    /// candidates to install first (perfect, dirty, damaged; then highest slot index). A stacked slot
+    /// covers as many sockets as its count. Returns indices into <paramref name="slots"/>.
+    /// </summary>
+    public static HashSet<int> PickMissingSlots<T>(IReadOnlyList<BoxSlot<T>> slots, IReadOnlyDictionary<T, int> missing)
+        where T : class
+    {
+        var picked = new HashSet<int>();
+        var byType = Enumerable.Range(0, slots.Count)
+            .Where(i => missing.ContainsKey(slots[i].Type))
+            .GroupBy(i => slots[i].Type);
+
+        foreach (var group in byType)
+        {
+            var need = missing[group.Key];
+            var candidates = group
+                .OrderBy(i => InstallPreference(slots[i].Condition))
+                .ThenByDescending(i => slots[i].SlotIndex);
+            foreach (var i in candidates)
+            {
+                if (need <= 0) break;
+                picked.Add(i);
+                need -= Math.Max(1, slots[i].Count);
+            }
+        }
+        return picked;
+    }
+
+    private static int InstallPreference(PartCondition condition) => condition switch
+    {
+        PartCondition.Perfect => 0,
+        PartCondition.Dirty => 1,
+        PartCondition.Damaged => 2,
+        _ => 3,
+    };
 
     /// <summary>Rank of each part type by its first socket in the "How to reassemble" list.</summary>
     public static Dictionary<T, int> RanksFromSocketOrder<T>(IEnumerable<T> socketTypesInListOrder)

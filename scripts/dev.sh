@@ -67,7 +67,15 @@ cmd_kill() {
 
   # Ask the game to close normally first (WM_CLOSE), so it can save.
   taskkill.exe /IM Restory.exe >/dev/null 2>&1 || true
-  for _ in $(seq 1 20); do game_running || return 0; sleep 0.5; done
+  for _ in $(seq 1 20); do
+    if ! game_running; then
+      # Steam keeps the app marked as running for a moment after the process exits, and drops a
+      # steam://rungameid request sent in that window.
+      sleep 3
+      return 0
+    fi
+    sleep 0.5
+  done
 
   if game_running; then
     # Force-closing loses unsaved progress, so confirm unless KILL_GAME=1.

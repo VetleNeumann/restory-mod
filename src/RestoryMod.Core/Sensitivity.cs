@@ -4,11 +4,11 @@ using System.Globalization;
 namespace RestoryMod.Core;
 
 /// <summary>
-/// Gamepad cursor speed multiplier. The game hardcodes Rewired's PlayerMouse.pointerSpeed to 1
-/// for gamepads; the mod replaces it with a value in [<see cref="Min"/>, <see cref="Max"/>],
-/// adjusted on the settings slider in steps of <see cref="Step"/>.
+/// Gamepad sensitivity multiplier shared by the settings sliders (cursor speed, rotation speed):
+/// a value in [<see cref="Min"/>, <see cref="Max"/>] where 1 is the game's own speed, adjusted on
+/// the slider in steps of <see cref="Step"/>.
 /// </summary>
-public static class CursorSpeed
+public static class Sensitivity
 {
     public const float Min = 0.2f;
     public const float Max = 4f;

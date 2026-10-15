@@ -9,6 +9,8 @@ using RestoryMod.Features.DropdownModes;
 using RestoryMod.Features.HoverGrace;
 using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;
+using RestoryMod.Features.RotationSpeed;
+using RestoryMod.Features.Settings;
 using RestoryMod.Features.ShoulderButtons;
 using RestoryMod.Features.StickScroll;
 
@@ -29,6 +31,7 @@ public class Plugin : BaseUnityPlugin
         Logger.LogInfo($"Plugin {MyPluginInfo.PLUGIN_GUID} {MyPluginInfo.PLUGIN_VERSION} is loaded!");
 
         CursorSpeedFeature.Bind(Config);
+        RotationSpeedFeature.Bind(Config);
         DropdownModesFeature.Bind(Config);
         SettingsMenuDumpPatch.Bind(Config);
         PartsBoxFeature.Bind(Config);
@@ -44,7 +47,8 @@ public class Plugin : BaseUnityPlugin
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         FeaturePatcher.Apply(harmony, Logger,
             typeof(CursorSpeedPatch),
-            typeof(CursorSpeedSliderPatch),
+            typeof(RotationSpeedPatch),
+            typeof(SensitivitySlidersPatch),
             typeof(DropdownOpenPatch),
             typeof(DropdownFramePatch),
             typeof(DropdownStickMovePatch),

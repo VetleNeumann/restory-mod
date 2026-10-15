@@ -1,23 +1,37 @@
 using System;
 using System.Reflection;
+using BepInEx.Configuration;
 using HarmonyLib;
 using RestoryMod.Core;
+using RestoryMod.Features.CursorSpeed;
+using RestoryMod.Features.RotationSpeed;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-namespace RestoryMod.Features.CursorSpeed;
+namespace RestoryMod.Features.Settings;
 
 /// <summary>
-/// Adds a "Controller sensitivity" row to the settings menu. The menu is prefab-wired, so the row
-/// is cloned from the dialogue volume row and inserted right after it on the first Show().
+/// Adds the "Controller sensitivity" and "Rotation sensitivity" rows to the settings menu. The menu is
+/// prefab-wired, so each row is cloned from the dialogue volume row and inserted below it (and below
+/// each other) on the first Show().
 /// </summary>
 [HarmonyPatch]
-internal static class CursorSpeedSliderPatch
+internal static class SensitivitySlidersPatch
 {
-    private const string RowName = "RestoryMod_ControllerSensitivity";
-    private const string Label = "Controller sensitivity";
+    private sealed class RowSpec(string name, string label, Func<ConfigEntry<float>> entry)
+    {
+        public string Name => name;
+        public string Label => label;
+        public ConfigEntry<float> Entry => entry();
+    }
+
+    private static readonly RowSpec[] Rows =
+    {
+        new("RestoryMod_ControllerSensitivity", "Controller sensitivity", () => CursorSpeedFeature.Speed),
+        new("RestoryMod_RotationSensitivity", "Rotation sensitivity", () => RotationSpeedFeature.Speed),
+    };
 
     private static bool Prepare() => GameTargets.AllPresent(
         PatchTargets.SettingsMenuShow,
@@ -33,27 +47,32 @@ internal static class CursorSpeedSliderPatch
             var soundView = GameTargets.Field(PatchTargets.SettingsMenuSoundSettingsView)!.GetValue(__instance);
             if (GameTargets.Field(PatchTargets.SoundViewDialogueVolumeSlider)!.GetValue(soundView) is not Slider template)
             {
-                Plugin.Logger.LogWarning("Controller sensitivity row: dialogue volume slider not found.");
+                Plugin.Logger.LogWarning("Sensitivity rows: dialogue volume slider not found.");
                 return;
             }
 
             var templateRow = template.transform.parent;
-            var existing = templateRow.parent.Find(RowName);
-            if (existing != null)
+            Selectable above = template;
+            var aboveRow = templateRow;
+            foreach (var spec in Rows)
             {
-                existing.GetComponent<ControllerSensitivityRow>()?.Refresh();
-                return;
-            }
+                var row = templateRow.parent.Find(spec.Name);
+                if (row != null)
+                    row.GetComponent<SensitivityRow>()?.Refresh();
+                else
+                    row = CreateRow(spec, template, templateRow, above, aboveRow);
 
-            CreateRow(template, templateRow);
+                above = row.GetComponentInChildren<Slider>(true);
+                aboveRow = row;
+            }
         }
         catch (Exception e)
         {
-            Plugin.Logger.LogError($"Controller sensitivity row failed: {e}");
+            Plugin.Logger.LogError($"Sensitivity rows failed: {e}");
         }
     }
 
-    private static void CreateRow(Slider template, Transform templateRow)
+    private static Transform CreateRow(RowSpec spec, Slider template, Transform templateRow, Selectable above, Transform aboveRow)
     {
         // Clone under an inactive holder so no Awake/OnEnable runs before we strip game components.
         // The holder is always destroyed; if anything throws before the row is moved out, the
@@ -63,7 +82,7 @@ internal static class CursorSpeedSliderPatch
         try
         {
             var row = Object.Instantiate(templateRow.gameObject, holder.transform);
-            row.name = RowName;
+            row.name = spec.Name;
 
             foreach (var component in row.GetComponentsInChildren<MonoBehaviour>(true))
             {
@@ -77,19 +96,20 @@ internal static class CursorSpeedSliderPatch
             slider.onValueChanged = new Slider.SliderEvent();
             slider.wholeNumbers = true;
             slider.minValue = 0;
-            slider.maxValue = Core.CursorSpeed.SliderSteps;
+            slider.maxValue = Sensitivity.SliderSteps;
 
             var label = row.transform.GetChild(0).GetComponent<TMP_Text>();
-            if (label != null) label.text = Label;
+            if (label != null) label.text = spec.Label;
             var valueText = slider.GetComponentInChildren<TMP_Text>(true);
 
-            SpliceNavigation(template, slider);
+            SpliceNavigation(above, slider);
 
-            row.AddComponent<ControllerSensitivityRow>().Init(slider, valueText);
+            row.AddComponent<SensitivityRow>().Init(slider, valueText, spec.Entry);
             row.transform.SetParent(templateRow.parent, false);
-            row.transform.SetSiblingIndex(templateRow.GetSiblingIndex() + 1);
+            row.transform.SetSiblingIndex(aboveRow.GetSiblingIndex() + 1);
 
-            Plugin.Logger.LogInfo($"Controller sensitivity row added (navigation: {template.navigation.mode}).");
+            Plugin.Logger.LogInfo($"{spec.Label} row added (navigation: {template.navigation.mode}).");
+            return row.transform;
         }
         finally
         {
@@ -128,16 +148,18 @@ internal static class CursorSpeedSliderPatch
     }
 }
 
-/// <summary>Binds the cloned slider to the CursorSpeed config entry.</summary>
-internal sealed class ControllerSensitivityRow : MonoBehaviour
+/// <summary>Binds a cloned slider to a sensitivity config entry.</summary>
+internal sealed class SensitivityRow : MonoBehaviour
 {
     private Slider slider = null!;
     private TMP_Text? valueText;
+    private ConfigEntry<float> entry = null!;
 
-    public void Init(Slider slider, TMP_Text? valueText)
+    public void Init(Slider slider, TMP_Text? valueText, ConfigEntry<float> entry)
     {
         this.slider = slider;
         this.valueText = valueText;
+        this.entry = entry;
         slider.onValueChanged.AddListener(OnSliderChanged);
     }
 
@@ -146,21 +168,23 @@ internal sealed class ControllerSensitivityRow : MonoBehaviour
         if (slider != null) Refresh();
     }
 
+    private float Current => Sensitivity.Normalize(entry.Value);
+
     /// <summary>Pulls the current config value into the slider (it may have been edited by hand).</summary>
     public void Refresh()
     {
-        slider.SetValueWithoutNotify(Core.CursorSpeed.ToStep(CursorSpeedFeature.Current));
+        slider.SetValueWithoutNotify(Sensitivity.ToStep(Current));
         UpdateText();
     }
 
     private void OnSliderChanged(float step)
     {
-        CursorSpeedFeature.Speed.Value = Core.CursorSpeed.FromStep((int)step);
+        entry.Value = Sensitivity.FromStep((int)step);
         UpdateText();
     }
 
     private void UpdateText()
     {
-        if (valueText != null) valueText.text = Core.CursorSpeed.Format(CursorSpeedFeature.Current);
+        if (valueText != null) valueText.text = Sensitivity.Format(Current);
     }
 }

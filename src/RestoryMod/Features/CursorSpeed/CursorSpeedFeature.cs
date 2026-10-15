@@ -22,15 +22,15 @@ internal static class CursorSpeedFeature
         Speed = config.Bind(
             "Controller",
             "CursorSpeed",
-            Core.CursorSpeed.Default,
+            Core.Sensitivity.Default,
             new ConfigDescription(
                 "Gamepad cursor speed multiplier. 1 = game default.",
-                new AcceptableValueRange<float>(Core.CursorSpeed.Min, Core.CursorSpeed.Max)));
+                new AcceptableValueRange<float>(Core.Sensitivity.Min, Core.Sensitivity.Max)));
 
         Speed.SettingChanged += (_, _) => ReapplyToActiveCursors();
     }
 
-    public static float Current => Core.CursorSpeed.Normalize(Speed.Value);
+    public static float Current => Core.Sensitivity.Normalize(Speed.Value);
 
     /// <summary>Re-runs the game's handler on every live cursor so our postfix sets the new speed.</summary>
     private static void ReapplyToActiveCursors()

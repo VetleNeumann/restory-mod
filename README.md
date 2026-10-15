@@ -6,6 +6,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 
 - **Controller cursor speed**: a "Controller sensitivity" slider in the sound settings, under "Dialogue
   volume" (0.2 to 4.0). The game otherwise fixes the gamepad cursor speed.
+- **Controller rotation speed**: a "Rotation sensitivity" slider right under it (0.2 to 4.0) sets how fast
+  the right stick spins the device on the workbench. 1.0 is the game's speed.
 - **Parts box sections**: while a device is on the workbench, the parts box sorts in "How to reassemble"
   order and splits into *Missing parts* and *Other parts*. Within a step, burnt parts come first, then
   damaged, dirty and perfect.
@@ -46,6 +48,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | Section | Key | Default | |
 |---|---|---|---|
 | Controller | CursorSpeed | 1.0 | Gamepad cursor speed |
+| Controller | RotationSpeed | 1.0 | Gamepad speed for spinning the device at the workbench |
 | Controller | DropdownModes | true | Gamepad dropdowns |
 | Controller | DpadSendParts | true | D-pad part sends |
 | Controller | HoverGraceMs | 150 | Hover grace window in ms (0 to 500, 0 = off) |

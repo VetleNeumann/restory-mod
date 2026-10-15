@@ -35,6 +35,13 @@ public static class PatchTargets
     public static readonly PatchTarget CursorPlayerMouse = new(VirtualCursorView, "playerMouse");
     public static readonly PatchTarget CursorControlsManager = new(VirtualCursorView, "controlsManager");
 
+    // Rotation speed: the device's per-frame spin is scaled after the game computes it from the stick.
+    private const string RotationController = "Restory.Gameplay.Disassemble.DisassembleRotationController";
+    public static readonly PatchTarget RotationCalculateAxis = new(RotationController, "CalculateAxis");
+    public static readonly PatchTarget RotationXAxis = new(RotationController, "xAxisRotation");
+    public static readonly PatchTarget RotationYAxis = new(RotationController, "yAxisRotation");
+    public static readonly PatchTarget RotationControlsManager = new(RotationController, "controlsManager");
+
     // Dropdown modes: the UI input module sends gamepad moves, submits and virtual-cursor clicks;
     // each step is gated while a dropdown is open. The cursor image is hidden in nav mode.
     public static readonly PatchTarget UiInputProcess = new(UiInputModule, "Process");
@@ -176,6 +183,10 @@ public static class PatchTargets
         CursorControlsTypeChanged,
         CursorPlayerMouse,
         CursorControlsManager,
+        RotationCalculateAxis,
+        RotationXAxis,
+        RotationYAxis,
+        RotationControlsManager,
         UiInputProcess,
         UiInputSendMove,
         UiInputSendSubmit,

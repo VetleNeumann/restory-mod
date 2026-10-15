@@ -14,6 +14,9 @@ namespace RestoryMod.Features.RotationSpeed;
 /// </summary>
 internal static class RotationSpeedFeature
 {
+    // The game's own speed (1.0) spins far too fast on a stick; 0.4 was picked in play.
+    private const float DefaultSpeed = 0.4f;
+
     public static ConfigEntry<float> Speed = null!;
 
     public static void Bind(ConfigFile config)
@@ -21,9 +24,9 @@ internal static class RotationSpeedFeature
         Speed = config.Bind(
             "Controller",
             "RotationSpeed",
-            Sensitivity.Default,
+            DefaultSpeed,
             new ConfigDescription(
-                "Gamepad speed for spinning the device at the workbench. 1 = game default.",
+                "Gamepad speed for spinning the device at the workbench. 1 = the game's own speed.",
                 new AcceptableValueRange<float>(Sensitivity.Min, Sensitivity.Max)));
     }
 

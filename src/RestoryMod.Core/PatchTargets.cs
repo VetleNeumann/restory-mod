@@ -28,6 +28,7 @@ public static class PatchTargets
     private const string NotepadActivator = "Restory.Gameplay.OverlayActivators.NotepadActivator";
     private const string NotepadWindow = "Restory.UI.Presenters.Notepad.GUI_NotepadWindow";
     private const string UiInputModule = "UnityEngine.EventSystems.CustomRewiredStandaloneInputModule";
+    private const string ScrollbarInput = "Restory.UserInterface.CommonElements.GUI_ScrollbarInput";
 
     // Cursor speed: the game resets PlayerMouse.pointerSpeed in this handler on every controls-type change.
     public static readonly PatchTarget CursorControlsTypeChanged = new(VirtualCursorView, "ResolveControlsManagerOnControlsTypeChanged");
@@ -85,6 +86,9 @@ public static class PatchTargets
     public static readonly PatchTarget NotepadWindowIsSlidingMode = new(NotepadWindow, "isSlidingMode");
     public static readonly PatchTarget NotepadWindowItem = new(NotepadWindow, "notepadInteractiveWorkplaceItem");
 
+    // Stick scroll: the game's step-and-repeat handler is silenced; the mod glides the view itself.
+    public static readonly PatchTarget ScrollbarInputResolveScroll = new(ScrollbarInput, "ResolveActionScrollInputEvent");
+
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
         CursorControlsTypeChanged,
@@ -123,6 +127,7 @@ public static class PatchTargets
         NotepadWindowHotkeyPressed,
         NotepadWindowIsSlidingMode,
         NotepadWindowItem,
+        ScrollbarInputResolveScroll,
 
         // Members the plugin reads directly (compiled against) rather than through the entries above;
         // listed so the TargetCheck tests catch a game update that moves them.
@@ -160,5 +165,8 @@ public static class PatchTargets
         new PatchTarget("Restory.UI.Presenters.PauseMenu.GUI_PauseMenu", "IsShown"),
         new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "AddInputEventDelegate"),
         new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "RemoveInputEventDelegate"),
+        new PatchTarget("Restory.UserInterface.VirtualCursorView"),
+        new PatchTarget("RewiredConsts.Action+UI", "UIGamepadWheelHorizontal"),
+        new PatchTarget("RewiredConsts.Action+UI", "UIGamepadWheelVertical"),
     };
 }

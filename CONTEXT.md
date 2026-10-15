@@ -30,6 +30,10 @@ _Avoid_: R1, journal button
 The span from moving to the workbench view to leaving it, covering both taking a device apart and putting it back together.
 _Avoid_: Reassembly mode, disassemble mode
 
+**Stick scroll**:
+Moving a scrollable menu's view with the right stick, gliding at a speed that follows how far the stick is tilted. It moves the view, not the selected item; the D-pad and left stick move the selection.
+_Avoid_: Wheel scroll, stick navigation
+
 ### Gamepad in dropdowns
 
 **Virtual cursor**:

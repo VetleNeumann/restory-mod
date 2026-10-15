@@ -7,6 +7,7 @@ using RestoryMod.Features.Diagnostics;
 using RestoryMod.Features.DropdownModes;
 using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;
+using RestoryMod.Features.StickScroll;
 
 namespace RestoryMod;
 
@@ -31,6 +32,7 @@ public class Plugin : BaseUnityPlugin
         PartsBoxDiagnostics.Bind(Config);
         NotepadKeyFeature.Bind(Config);
         GamepadBindingsDump.Bind(Config);
+        StickScrollFeature.Bind(Config);
         WatchConfigFile();
 
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -50,8 +52,10 @@ public class Plugin : BaseUnityPlugin
             typeof(NotepadKeyListenPatch),
             typeof(NotepadKeyUnlistenPatch),
             typeof(NotepadKeyHoldOpenPatch),
+            typeof(StickScrollGameHandlerPatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump));
+        if (StickScrollFeature.TargetsPresent()) gameObject.AddComponent<StickScrollDriver>();
     }
 
     /// <summary>

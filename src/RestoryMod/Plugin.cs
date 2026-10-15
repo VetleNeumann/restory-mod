@@ -7,6 +7,7 @@ using RestoryMod.Features.Diagnostics;
 using RestoryMod.Features.DropdownModes;
 using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;
+using RestoryMod.Features.ShoulderButtons;
 using RestoryMod.Features.StickScroll;
 
 namespace RestoryMod;
@@ -31,6 +32,7 @@ public class Plugin : BaseUnityPlugin
         PartsBoxFeature.Bind(Config);
         PartsBoxDiagnostics.Bind(Config);
         NotepadKeyFeature.Bind(Config);
+        ShoulderButtonsFeature.Bind(Config);
         GamepadBindingsDump.Bind(Config);
         StickScrollFeature.Bind(Config);
         WatchConfigFile();
@@ -53,9 +55,14 @@ public class Plugin : BaseUnityPlugin
             typeof(NotepadKeyUnlistenPatch),
             typeof(NotepadKeyHoldOpenPatch),
             typeof(StickScrollGameHandlerPatch),
+            typeof(LookDirectionPatch),
+            typeof(CleaningToolWindowCapturePatch),
+            typeof(InventoryCapturePatch),
+            typeof(BrowserCapturePatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump));
         if (StickScrollFeature.TargetsPresent()) gameObject.AddComponent<StickScrollDriver>();
+        gameObject.AddComponent<ShoulderButtonsPoller>();
     }
 
     /// <summary>

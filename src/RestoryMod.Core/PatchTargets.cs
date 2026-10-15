@@ -88,6 +88,26 @@ public static class PatchTargets
 
     // Stick scroll: the game's step-and-repeat handler is silenced; the mod glides the view itself.
     public static readonly PatchTarget ScrollbarInputResolveScroll = new(ScrollbarInput, "ResolveActionScrollInputEvent");
+    // Shoulder buttons: L2/R2 look from the game's away-from-workbench updates; L1/R1 and L2/R2 drive the
+    // Tool window, the inventory's and browser's category bars and the browser tabs, captured as shown.
+    private const string DetectionWorkState = "Restory.Gameplay.Work.StateMachine.DetectionWorkState";
+    private const string DraggingWorkState = "Restory.Gameplay.Work.StateMachine.DraggingWorkState";
+    private const string ToolWindow = "Restory.UI.Presenters.CleaningToolsSelectionWindow.GUI_CleaningToolsSelectionWindow";
+    public static readonly PatchTarget DetectionWorkStateOnUpdate = new(DetectionWorkState, "OnUpdate");
+    public static readonly PatchTarget DetectionWorkStatePlayerInput = new(DetectionWorkState, "playerInput");
+    public static readonly PatchTarget DetectionWorkStateCameraDirectionSwitcher = new(DetectionWorkState, "cameraDirectionSwitcher");
+    public static readonly PatchTarget DraggingWorkStateOnUpdate = new(DraggingWorkState, "OnUpdate");
+    public static readonly PatchTarget DraggingWorkStatePlayerInput = new(DraggingWorkState, "playerInput");
+    public static readonly PatchTarget DraggingWorkStateCameraDirectionSwitcher = new(DraggingWorkState, "cameraDirectionSwitcher");
+    public static readonly PatchTarget CameraDirectionSwitcherBlockers = new("Restory.Gameplay.GameView.CameraDirectionSwitcher", "mainActiveStateSwitcher");
+    public static readonly PatchTarget ToolWindowShow = new(ToolWindow, "Show");
+    public static readonly PatchTarget ToolWindowIsShown = new(ToolWindow, "isShown");
+    public static readonly PatchTarget ToolWindowSelectionService = new(ToolWindow, "cleaningToolSelectionService");
+    public static readonly PatchTarget InventoryFilterCategoryBar = new("Restory.UI.Views.Inventory.InventoryPanelFilterView", "deviceCategoriesToggleGroup");
+    public static readonly PatchTarget BrowserLaunchProcess = new("Restory.UI.Presenters.GUI_WebBrowser", "LaunchProcess");
+    public static readonly PatchTarget MarketplaceFilterCategoryBar = new("Restory.UI.Views.Shops.Devices.GUI_DeviceShopFilterView", "deviceCategoriesToggleGroup");
+    public static readonly PatchTarget HomeDepotFilterCategoryBar = new("Restory.UI.Views.Shops.HomeDepot.GUI_DecorShopProductsPanelFilterView", "categoriesToggleGroup");
+    public static readonly PatchTarget PartsFilterCategoryBar = new("Restory.UI.Views.Shops.Elements.GUI_ElementsShopProductsPanelFilterView", "deviceCategoriesToggleGroup");
 
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
@@ -128,6 +148,21 @@ public static class PatchTargets
         NotepadWindowIsSlidingMode,
         NotepadWindowItem,
         ScrollbarInputResolveScroll,
+        DetectionWorkStateOnUpdate,
+        DetectionWorkStatePlayerInput,
+        DetectionWorkStateCameraDirectionSwitcher,
+        DraggingWorkStateOnUpdate,
+        DraggingWorkStatePlayerInput,
+        DraggingWorkStateCameraDirectionSwitcher,
+        CameraDirectionSwitcherBlockers,
+        ToolWindowShow,
+        ToolWindowIsShown,
+        ToolWindowSelectionService,
+        InventoryFilterCategoryBar,
+        BrowserLaunchProcess,
+        MarketplaceFilterCategoryBar,
+        HomeDepotFilterCategoryBar,
+        PartsFilterCategoryBar,
 
         // Members the plugin reads directly (compiled against) rather than through the entries above;
         // listed so the TargetCheck tests catch a game update that moves them.
@@ -168,5 +203,24 @@ public static class PatchTargets
         new PatchTarget("Restory.UserInterface.VirtualCursorView"),
         new PatchTarget("RewiredConsts.Action+UI", "UIGamepadWheelHorizontal"),
         new PatchTarget("RewiredConsts.Action+UI", "UIGamepadWheelVertical"),
+        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "GetButtonDown"),
+        new PatchTarget("Restory.Gameplay.GameView.CameraDirectionSwitcher", "CurrentDirection"),
+        new PatchTarget("Restory.Gameplay.GameView.CameraDirectionSwitcher", "ApplyMainCameraDirection"),
+        new PatchTarget("Restory.Gameplay.GameView.CameraDirection", "Left"),
+        new PatchTarget("Restory.Gameplay.GameView.CameraDirection", "Main"),
+        new PatchTarget("Restory.Gameplay.GameView.CameraDirection", "Right"),
+        new PatchTarget("Restory.Gameplay.Common.ActiveStateSwitcher", "ShouldSystemBeActive"),
+        new PatchTarget(ToolWindow, "CleaningTools"),
+        new PatchTarget("Restory.UI.Presenters.CleaningToolsSelectionWindow.GUI_CleaningTool", "ToolInfo"),
+        new PatchTarget("Restory.Gameplay.Equipment.CleaningToolSelectionService", "CurrentlySelectedTool"),
+        new PatchTarget("Restory.Gameplay.Equipment.CleaningToolSelectionService", "TryToSelectTool"),
+        new PatchTarget("Restory.UI.Presenters.GUI_WebBrowser", "IsVisible"),
+        new PatchTarget("Restory.UI.Presenters.GUI_WebBrowser", "PageSwitcher"),
+        new PatchTarget("Restory.UI.Presenters.GUI_WebBrowserPageSwitcher", "Tabs"),
+        new PatchTarget("Restory.UI.Presenters.GUI_WebBrowserPageSwitcher", "CurrentTab"),
+        new PatchTarget("Restory.UI.Presenters.GUI_WebBrowserPageSwitcher", "ResolveTabClick"),
+        new PatchTarget("Restory.UI.Views.GUI_WebBrowserTabView", "BrowserPage"),
+        new PatchTarget("Restory.UI.Views.ToggleButtonGroup", "Buttons"),
+        new PatchTarget("Restory.UI.Views.ToggleButton", "IsSelected"),
     };
 }

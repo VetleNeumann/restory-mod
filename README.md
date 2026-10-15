@@ -22,6 +22,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 - **Smooth stick scrolling**: the right stick glides scrollable menus, faster the further you tilt it,
   instead of the game's step-pause-step scrolling. Holding it all the way speeds up for long lists. It
   scrolls the menu holding the selection, or the one under the cursor.
+- **Shoulder buttons**: away from the workbench, L2/R2 turn the view one step left or right, as moving the
+  cursor to the screen edge does (at the workbench they still zoom). In the PC's web browser, L2/R2 switch
+  between Marketplace, Home Depot and Parts, and L1/R1 step through the shown tab's categories. L1/R1 also
+  step through the inventory's categories, and through the tools in the Tool window while cleaning.
 
 ## Configuration
 
@@ -38,6 +42,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | Stick scroll | MaxSpeed / RampTime | 3 / 1 | Holding full tilt speeds up to MaxSpeed over RampTime seconds |
 | Stick scroll | CurveExponent | 2 | 1 = linear; higher is gentler near centre (1 to 3) |
 | Stick scroll | InnerDeadzone / OuterDeadzone | 0.2 / 0.925 | Tilt where scrolling starts / reaches full speed |
+| ShoulderButtons | TriggersLookLeftAndRight | true | L2/R2 turn the view away from the workbench |
+| ShoulderButtons | BrowserTabsAndCategories | true | L2/R2 tabs and L1/R1 categories in the web browser |
+| ShoulderButtons | InventoryCategories | true | L1/R1 categories in the inventory |
+| ShoulderButtons | CleaningTools | true | L1/R1 tools while cleaning |
 | Stick scroll | Smoothing | 0.07 | Seconds for speed to follow the stick; 0 = instant |
 | Stick scroll | Invert | false | Flip direction |
 

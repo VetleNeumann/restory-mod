@@ -64,4 +64,4 @@ target that moved; that feature's patch skips itself at runtime until fixed.
 patterns.
 
 Ideas not started: camera look speed (`CameraRotationController`, legacy `Input.GetAxis`, `rotationSpeed`
-100), bumper tab switching / tool shortcuts, a GitHub remote so `.github/workflows/ci.yml` runs.
+100), shoulder buttons in the PC apps other than the browser, a GitHub remote so `.github/workflows/ci.yml` runs.

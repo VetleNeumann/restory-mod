@@ -55,3 +55,28 @@ _Avoid_: D-pad mode, keyboard mode, navigation mode
 **Mode switch**:
 The change between pointer mode and nav mode, driven by the most recent deliberate input: a D-pad press enters nav mode, and the virtual cursor moving onto a row other than the one it was over when nav mode began enters pointer mode. Scrolling and cursor movement off the list switch nothing.
 _Avoid_: input device change (that is the game's own gamepad-versus-keyboard switch)
+
+### Shoulder buttons
+
+**Look direction**:
+Which way the player faces when not at the workbench: Main (straight ahead), Left or Right. The game turns to Left or Right when the mouse cursor touches that screen edge, and back to Main when it moves away; L2/R2 step one direction at a time, stopping at Left and Right. Some screens (the PC, the Notepad, the inventory, dialogue, payment) hold the look direction where it is.
+_Avoid_: rotate camera, camera angle, side view
+
+**Browser tab**:
+One of the sites in the PC's web browser: Marketplace, Home Depot, Parts. L2/R2 step between them, wrapping at the ends.
+_Avoid_: page, site, store, shop
+
+**Category bar**:
+The row of category toggles that filters a list: on each browser tab (Marketplace and Parts include "All"; Parts includes Licenses) and in the inventory (starting with "All"). L1/R1 step along it in on-screen order, wrapping at the ends.
+_Avoid_: filter, tabs, sub-tabs
+
+**Cleaning**:
+The workbench state where one part sits on the cleaner to be brushed, blown or soldered. Soldering is part of Cleaning, not a separate mode.
+_Avoid_: repair mode, repairing
+
+**Tool window**:
+The sliding panel of Cleaning tools shown during Cleaning. It lists only tools the player owns, and only the best brush owned.
+
+**Cleaning tool**:
+The tool picked in the Tool window, used when Cleaning. L1/R1 step through the Tool window's slots in on-screen order, wrapping at the ends, even mid-action.
+_Avoid_: equipment, selected item

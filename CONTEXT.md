@@ -34,6 +34,38 @@ _Avoid_: Reassembly mode, disassemble mode
 Moving a scrollable menu's view with the right stick, gliding at a speed that follows how far the stick is tilted. It moves the view, not the selected item; the D-pad and left stick move the selection.
 _Avoid_: Wheel scroll, stick navigation
 
+### Sending parts
+
+**Held part**:
+A part the player carries with the cursor at the workbench while holding the game's grab input (A on Xbox, Cross on PlayStation); letting go drops it where the cursor points.
+_Avoid_: dragged part, selected part
+
+**Destination**:
+A place at the workbench that takes a held part away from the bench in one move: the parts box, the washing bin, the tool cup, the trash can or the shredder. A device socket and the bench surface are not destinations; the player aims at those.
+_Avoid_: drop target, slot
+
+**Send**:
+Moving a held part straight to a destination with one D-pad press instead of carrying it there. A send the destination would refuse does nothing, and the part stays held.
+_Avoid_: quick drop, throw
+
+**Parts box**:
+The player's inventory of loose parts, shown at the workbench.
+_Avoid_: inventory (when the workbench box is meant), storage
+
+**Washing bin**:
+The unlockable ultrasonic bath that cleans parts. It refuses damaged parts and takes no more once full.
+_Avoid_: sonic bath, ultrasonic
+
+**Tool cup**:
+The spot right of the bench where a part is cleaned or soldered by hand. It takes only parts that are dirty or need soldering.
+_Avoid_: cleaner
+
+**Trash can**:
+Where damaged parts are thrown away. It takes nothing else.
+
+**Shredder**:
+Bought equipment that destroys damaged parts for coins. It takes nothing else, and once owned it stands in the trash can's place: the workbench has one or the other, never both.
+
 ### Gamepad in dropdowns
 
 **Virtual cursor**:

@@ -26,6 +26,11 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   cursor to the screen edge does (at the workbench they still zoom). In the PC's web browser, L2/R2 switch
   between Marketplace, Home Depot and Parts, and L1/R1 step through the shown tab's categories. L1/R1 also
   step through the inventory's categories, and through the tools in the Tool window while cleaning.
+- **D-pad part sends**: at the workbench, while holding a part with Cross / A, press the D-pad to send it
+  without carrying it there: up to the washing bin, right to the tool cup, left to the parts box, down to
+  the trash can (or the shredder once you own one). If that place wouldn't take the part (a damaged part
+  to the parts box, a clean part to the tool cup, a full or locked washing bin), nothing happens and you
+  keep holding it.
 
 ## Configuration
 
@@ -35,6 +40,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 |---|---|---|---|
 | Controller | CursorSpeed | 1.0 | Gamepad cursor speed |
 | Controller | DropdownModes | true | Gamepad dropdowns |
+| Controller | DpadSendParts | true | D-pad part sends |
 | PartsBox | Sections | true | Parts box sort and sections |
 | Notepad | KeyTogglesAtWorkbench | true | Notepad key at the workbench |
 | Stick scroll | Enabled | true | Smooth stick scrolling |

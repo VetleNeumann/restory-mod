@@ -109,6 +109,28 @@ public static class PatchTargets
     public static readonly PatchTarget HomeDepotFilterCategoryBar = new("Restory.UI.Views.Shops.HomeDepot.GUI_DecorShopProductsPanelFilterView", "categoriesToggleGroup");
     public static readonly PatchTarget PartsFilterCategoryBar = new("Restory.UI.Views.Shops.Elements.GUI_ElementsShopProductsPanelFilterView", "deviceCategoriesToggleGroup");
 
+    // D-pad part send: after the drag state's per-frame update, the chosen destination's hover state is
+    // set and the game's private release handler runs. Trash can and shredder hover via pointer events.
+    private const string DraggingState = "Restory.Gameplay.Disassemble.StateMachine.DraggingDisassembleState";
+    public static readonly PatchTarget DraggingOnUpdate = new(DraggingState, "OnUpdate");
+    public static readonly PatchTarget DraggingRelease = new(DraggingState, "ResolveButtonJustReleased");
+    public static readonly PatchTarget DraggingCompleteDrag = new(DraggingState, "CompleteDrag");
+    public static readonly PatchTarget DraggingPlayerInput = new(DraggingState, "playerInput");
+    public static readonly PatchTarget DraggingSelectedElement = new(DraggingState, "selectedElement");
+    public static readonly PatchTarget DraggingIsRecycling = new(DraggingState, "isRecycling");
+    public static readonly PatchTarget DraggingIsShredding = new(DraggingState, "isShredding");
+    public static readonly PatchTarget DraggingIsOverInventory = new(DraggingState, "isOverInventory");
+    public static readonly PatchTarget DraggingIsOverSonicBath = new(DraggingState, "isOverSonicBath");
+    public static readonly PatchTarget DraggingIsOverCleaner = new(DraggingState, "isOverCleaner");
+    public static readonly PatchTarget DraggingGameMode = new(DraggingState, "disassembleGameMode");
+    public static readonly PatchTarget DraggingElementCleaner = new(DraggingState, "elementCleaner");
+    public static readonly PatchTarget DraggingUltrasonicService = new(DraggingState, "ultrasonicService");
+    public static readonly PatchTarget DraggingRecycleService = new(DraggingState, "recycleService");
+    public static readonly PatchTarget DraggingShredderService = new(DraggingState, "shredderService");
+    public static readonly PatchTarget UltrasonicSonicBath = new("Restory.Gameplay.Equipment.Ultrasonic.UltrasonicService", "sonicBath");
+    public static readonly PatchTarget RecycleTrashCan = new("Restory.Gameplay.Recycle.RecycleService", "trashCan");
+    public static readonly PatchTarget ShredderServiceShredder = new("Restory.Gameplay.Shredders.ShredderService", "shredder");
+
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
         CursorControlsTypeChanged,
@@ -163,6 +185,24 @@ public static class PatchTargets
         MarketplaceFilterCategoryBar,
         HomeDepotFilterCategoryBar,
         PartsFilterCategoryBar,
+        DraggingOnUpdate,
+        DraggingRelease,
+        DraggingCompleteDrag,
+        DraggingPlayerInput,
+        DraggingSelectedElement,
+        DraggingIsRecycling,
+        DraggingIsShredding,
+        DraggingIsOverInventory,
+        DraggingIsOverSonicBath,
+        DraggingIsOverCleaner,
+        DraggingGameMode,
+        DraggingElementCleaner,
+        DraggingUltrasonicService,
+        DraggingRecycleService,
+        DraggingShredderService,
+        UltrasonicSonicBath,
+        RecycleTrashCan,
+        ShredderServiceShredder,
 
         // Members the plugin reads directly (compiled against) rather than through the entries above;
         // listed so the TargetCheck tests catch a game update that moves them.
@@ -222,5 +262,22 @@ public static class PatchTargets
         new PatchTarget("Restory.UI.Views.GUI_WebBrowserTabView", "BrowserPage"),
         new PatchTarget("Restory.UI.Views.ToggleButtonGroup", "Buttons"),
         new PatchTarget("Restory.UI.Views.ToggleButton", "IsSelected"),
+        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "Id"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "ConditionHandler"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsDragging"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementConditionHandler", "ElementData"),
+        new PatchTarget("Restory.Gameplay.Quests.QuestItem"),
+        new PatchTarget("Restory.Gameplay.Disassemble.DisassembleGameMode", "IsInCompetition"),
+        new PatchTarget("Restory.Gameplay.Equipment.ElementCleaner", "DraggingElementInitialCleaningData"),
+        new PatchTarget("Restory.Gameplay.Equipment.Ultrasonic.UltrasonicService", "TryFitElementToSonicBath"),
+        new PatchTarget("Restory.Gameplay.Equipment.Ultrasonic.SonicBath", "ElementFitter"),
+        new PatchTarget("Restory.Gameplay.Equipment.TrashCan", "IsActive"),
+        new PatchTarget("Restory.Gameplay.Equipment.TrashCan", "IsDetected"),
+        new PatchTarget("Restory.Gameplay.Equipment.TrashCan", "OnPointerEnter"),
+        new PatchTarget("Restory.Gameplay.Equipment.TrashCan", "OnPointerExit"),
+        new PatchTarget("Restory.Gameplay.Equipment.Shredder", "IsActive"),
+        new PatchTarget("Restory.Gameplay.Equipment.Shredder", "IsDetected"),
+        new PatchTarget("Restory.Gameplay.Equipment.Shredder", "OnPointerEnter"),
+        new PatchTarget("Restory.Gameplay.Equipment.Shredder", "OnPointerExit"),
     };
 }

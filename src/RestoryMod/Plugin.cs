@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
+using RestoryMod.Features.DpadSend;
 using RestoryMod.Features.DropdownModes;
 using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;
@@ -33,6 +34,7 @@ public class Plugin : BaseUnityPlugin
         PartsBoxDiagnostics.Bind(Config);
         NotepadKeyFeature.Bind(Config);
         ShoulderButtonsFeature.Bind(Config);
+        DpadSendFeature.Bind(Config);
         GamepadBindingsDump.Bind(Config);
         StickScrollFeature.Bind(Config);
         WatchConfigFile();
@@ -59,6 +61,8 @@ public class Plugin : BaseUnityPlugin
             typeof(CleaningToolWindowCapturePatch),
             typeof(InventoryCapturePatch),
             typeof(BrowserCapturePatch),
+            typeof(DpadSendPatch),
+            typeof(DpadSendFallbackGuardPatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump));
         if (StickScrollFeature.TargetsPresent()) gameObject.AddComponent<StickScrollDriver>();

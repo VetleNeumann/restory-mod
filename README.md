@@ -19,8 +19,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   cursor hides until you move the stick. The cursor takes over again once it reaches another row. The list scrolls to keep the highlighted row
   in view. A closed dropdown no longer reopens when you press Cross / A with the cursor elsewhere.
 - **Smooth stick scrolling**: the right stick glides scrollable menus, faster the further you tilt it,
-  instead of the game's step-pause-step scrolling. It scrolls the menu holding the selection, or the one
-  under the cursor.
+  instead of the game's step-pause-step scrolling. Holding it all the way speeds up for long lists. It
+  scrolls the menu holding the selection, or the one under the cursor.
 
 ## Configuration
 
@@ -34,6 +34,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | Notepad | KeyTogglesAtWorkbench | true | Notepad key at the workbench |
 | Stick scroll | Enabled | true | Smooth stick scrolling |
 | Stick scroll | Speed | 1.5 | View heights per second at full tilt (0.75 to 3) |
+| Stick scroll | MaxSpeed / RampTime | 3 / 1 | Holding full tilt speeds up to MaxSpeed over RampTime seconds |
 | Stick scroll | CurveExponent | 2 | 1 = linear; higher is gentler near centre (1 to 3) |
 | Stick scroll | InnerDeadzone / OuterDeadzone | 0.2 / 0.925 | Tilt where scrolling starts / reaches full speed |
 | Stick scroll | Smoothing | 0.07 | Seconds for speed to follow the stick; 0 = instant |

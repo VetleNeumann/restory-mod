@@ -24,6 +24,8 @@ internal static class StickScrollFeature
     private static ConfigEntry<float> speed = null!;
     private static ConfigEntry<float> smoothing = null!;
     private static ConfigEntry<bool> invert = null!;
+    private static ConfigEntry<float> maxSpeed = null!;
+    private static ConfigEntry<float> rampTime = null!;
 
     public static void Bind(ConfigFile config)
     {
@@ -39,7 +41,12 @@ internal static class StickScrollFeature
         exponent = config.Bind(section, "CurveExponent", defaults.Exponent, new ConfigDescription(
             "Response curve: 1 = linear, 2 = gentle near centre, 3 = very gentle.", new AcceptableValueRange<float>(1f, 3f)));
         speed = config.Bind(section, "Speed", defaults.Speed, new ConfigDescription(
-            "Top speed at full tilt, in view heights per second.", new AcceptableValueRange<float>(0.75f, 3f)));
+            "Speed at full tilt, in view heights per second.", new AcceptableValueRange<float>(0.75f, 3f)));
+        maxSpeed = config.Bind(section, "MaxSpeed", defaults.MaxSpeed, new ConfigDescription(
+            "Speed reached by holding full tilt, in view heights per second. Set equal to Speed for no ramp.",
+            new AcceptableValueRange<float>(0.75f, 6f)));
+        rampTime = config.Bind(section, "RampTime", defaults.RampTime, new ConfigDescription(
+            "Seconds of holding full tilt to go from Speed to MaxSpeed.", new AcceptableValueRange<float>(0f, 3f)));
         smoothing = config.Bind(section, "Smoothing", defaults.Smoothing, new ConfigDescription(
             "Seconds the speed takes to follow the stick (time constant). 0 = instant.", new AcceptableValueRange<float>(0f, 0.3f)));
         invert = config.Bind(section, "Invert", defaults.Invert, "Flip the scroll direction.");
@@ -52,7 +59,8 @@ internal static class StickScrollFeature
     public static StickScrollSettings Settings { get; private set; } = StickScrollSettings.Default;
 
     private static StickScrollSettings Read() => new(
-        innerDeadzone.Value, outerDeadzone.Value, exponent.Value, speed.Value, smoothing.Value, invert.Value);
+        innerDeadzone.Value, outerDeadzone.Value, exponent.Value, speed.Value, smoothing.Value, invert.Value,
+        maxSpeed.Value, rampTime.Value);
 
     /// <summary>Feature is usable only while the game handler it replaces can be silenced.</summary>
     public static bool TargetsPresent() => GameTargets.AllPresent(
@@ -62,8 +70,8 @@ internal static class StickScrollFeature
 
 /// <summary>
 /// Reads the right stick every frame and scrolls one menu: the one holding the selection, else the
-/// one under the cursor, else the only scrollable one on screen. The target is re-picked each time
-/// the stick is pushed from rest.
+/// one under the cursor. Nothing else: the right stick also turns the camera, so a list the player
+/// is not pointing at must not scroll. The target is re-picked each time the stick is pushed from rest.
 /// </summary>
 internal sealed class StickScrollDriver : MonoBehaviour
 {
@@ -119,7 +127,7 @@ internal sealed class StickScrollDriver : MonoBehaviour
     private ScrollRect? FindTarget()
     {
         var eventSystem = EventSystem.current;
-        if (!eventSystem) return OnlyScrollable();
+        if (!eventSystem) return null;
 
         var selected = eventSystem.currentSelectedGameObject;
         if (selected && ScrollableAncestor(selected.transform) is { } underSelection) return underSelection;
@@ -133,7 +141,7 @@ internal sealed class StickScrollDriver : MonoBehaviour
             }
         }
 
-        return OnlyScrollable();
+        return null;
     }
 
     private Vector2? CursorScreenPosition()
@@ -151,18 +159,6 @@ internal sealed class StickScrollDriver : MonoBehaviour
             if (IsScrollable(scrollRect)) return scrollRect;
         }
         return null;
-    }
-
-    private static ScrollRect? OnlyScrollable()
-    {
-        ScrollRect? only = null;
-        foreach (var scrollRect in FindObjectsByType<ScrollRect>(FindObjectsSortMode.None))
-        {
-            if (!IsScrollable(scrollRect)) continue;
-            if (only) return null;
-            only = scrollRect;
-        }
-        return only;
     }
 
     private static bool IsScrollable(ScrollRect? scrollRect) =>

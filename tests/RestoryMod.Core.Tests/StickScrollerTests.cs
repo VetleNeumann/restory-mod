@@ -127,6 +127,47 @@ public class StickScrollerTests
         Assert.False(scroller.IsMoving);
     }
 
+    [Fact]
+    public void Holding_full_tilt_ramps_up_to_max_speed()
+    {
+        var scroller = new StickScroller();
+        var position = 0.9f;
+        for (var frame = 0; frame < 10; frame++)
+            position = scroller.Advance(position, 0f, -1f, 0.1f, Viewport, Content, Instant);
+
+        // Past the one-second ramp: 3 view heights/s = 300 px/s, so 30 px in 0.1 s.
+        var next = scroller.Advance(position, 0f, -1f, 0.1f, Viewport, Content, Instant);
+
+        Assert.Equal(-0.03f, next - position, 4);
+    }
+
+    [Fact]
+    public void Partial_tilt_never_ramps()
+    {
+        var scroller = new StickScroller();
+        var position = 0.9f;
+        for (var frame = 0; frame < 20; frame++)
+            position = scroller.Advance(position, 0f, -0.78f, 0.1f, Viewport, Content, Instant);
+
+        // 0.78 rescales to 0.8 of the way to full; squared 0.64 * 1.5 = 0.96 view heights/s.
+        var next = scroller.Advance(position, 0f, -0.78f, 0.1f, Viewport, Content, Instant);
+
+        Assert.Equal(-0.0096f, next - position, 4);
+    }
+
+    [Fact]
+    public void Flicking_to_the_other_direction_starts_the_ramp_over()
+    {
+        var scroller = new StickScroller();
+        var position = 0.1f;
+        for (var frame = 0; frame < 10; frame++)
+            position = scroller.Advance(position, 0f, 1f, 0.1f, Viewport, Content, Instant);
+
+        var next = scroller.Advance(position, 0f, -1f, 0.1f, Viewport, Content, Instant);
+
+        Assert.Equal(-0.015f, next - position, 4);
+    }
+
     [Theory]
     [InlineData(0f, 0.19f, false)] // inside the deadzone
     [InlineData(0.9f, 0.4f, false)] // mostly sideways

@@ -45,6 +45,10 @@ public static class PatchTargets
     public static readonly PatchTarget InventoryPanelFilter = new(InventoryPanel, "filter");
     public static readonly PatchTarget InventoryPanelDeviceService = new(InventoryPanel, "deviceService");
     public static readonly PatchTarget InventoryPanelView = new(InventoryPanel, "view");
+    public static readonly PatchTarget InventoryPanelDragService = new(InventoryPanel, "dragService");
+    public static readonly PatchTarget InventoryPanelDropService = new(InventoryPanel, "dropService");
+    public static readonly PatchTarget DragServiceState = new("Restory.Gameplay.Inventory.StorageElasticElementsDragService", "dragState");
+    public static readonly PatchTarget DropServiceIsProcess = new("Restory.Gameplay.Inventory.StorageElasticElementsDropService", "IsProcess");
     public static readonly PatchTarget InventoryPanelViewItems = new(InventoryPanelViewType, "Items");
     public static readonly PatchTarget InventoryItemsViewContainer = new(InventoryItemsView, "container");
 
@@ -64,6 +68,10 @@ public static class PatchTargets
         InventoryPanelFilter,
         InventoryPanelDeviceService,
         InventoryPanelView,
+        InventoryPanelDragService,
+        InventoryPanelDropService,
+        DragServiceState,
+        DropServiceIsProcess,
         InventoryPanelViewItems,
         InventoryItemsViewContainer,
 

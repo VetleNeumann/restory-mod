@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using HarmonyLib;
 using Restory.Gameplay.Devices;
 using Restory.UI.Presenters.Inventory;
 using Restory.UI.Views.Inventory;
@@ -25,6 +26,11 @@ internal sealed class PartsBoxSections : MonoBehaviour
     private static readonly MethodInfo? UpdateItemsView = GameTargets.Method(PatchTargets.InventoryPanelUpdateItemsView);
     private static readonly FieldInfo? DeviceServiceField = GameTargets.Field(PatchTargets.InventoryPanelDeviceService);
     private static readonly FieldInfo? ContainerField = GameTargets.Field(PatchTargets.InventoryItemsViewContainer);
+    private static readonly FieldInfo? DragServiceField = GameTargets.Field(PatchTargets.InventoryPanelDragService);
+    private static readonly FieldInfo? DropServiceField = GameTargets.Field(PatchTargets.InventoryPanelDropService);
+    private static readonly FieldInfo? DragStateField = GameTargets.Field(PatchTargets.DragServiceState);
+    private static readonly PropertyInfo? DropIsProcess =
+        AccessTools.TypeByName(PatchTargets.DropServiceIsProcess.TypeName)?.GetProperty(PatchTargets.DropServiceIsProcess.MemberName!);
 
     private InventoryPanel panel = null!;
     private string? sortedSignature;
@@ -58,6 +64,9 @@ internal sealed class PartsBoxSections : MonoBehaviour
     {
         if (PartsBoxDiagnostics.Enabled) PartsBoxPerf.Frame();
         if (Time.unscaledTime < nextPoll || !panel || !panel.IsVisible) return;
+
+        // Re-check every frame until the transfer ends; the game's own refresh follows it anyway.
+        if (TransferInProgress()) return;
         nextPoll = Time.unscaledTime + PollInterval;
 
         try
@@ -73,6 +82,24 @@ internal sealed class PartsBoxSections : MonoBehaviour
         {
             PartsBoxFeature.LogOnce(e);
         }
+    }
+
+    /// <summary>
+    /// True while a part is being dragged out of / into the box or a drop is animating. Rebuilding
+    /// the list then would hand the pooled slot presenter the game's drag holds (draggedSlot) to a
+    /// different part, which the game then hides or removes. If the state can't be read (e.g. after a
+    /// game update renamed it), report "in progress" so the poll never rebuilds blind.
+    /// </summary>
+    private bool TransferInProgress()
+    {
+        if (DragServiceField is null || DragStateField is null || DropServiceField is null || DropIsProcess is null)
+            return true;
+
+        var drag = DragServiceField.GetValue(panel);
+        if (drag != null && DragStateField.GetValue(drag)?.ToString() != "Disabled") return true;
+
+        var drop = DropServiceField.GetValue(panel);
+        return drop != null && DropIsProcess.GetValue(drop) is true;
     }
 
     /// <summary>

@@ -41,6 +41,9 @@ target that moved; that feature's patch skips itself at runtime until fixed.
   implement `ILayoutGroup`/`ILayoutElement` directly (see `SectionedGridLayout`).
 - The parts box rebuilds by `DetachChildren()`, which keeps world scale: reset local scale/rotation when
   re-parenting our objects, or they shrink every refresh.
+- Never rebuild the parts box list while a drag/drop is in flight: the game holds a pooled slot
+  presenter (`draggedSlot`) across the drag, and a rebuild re-binds it to another part, which the
+  game then hides or removes. `PartsBoxSections.TransferInProgress` guards the re-sort poll.
 - Settings rows use **explicit** navigation; splice new selectables in. A `Slider` changes value on
   left/right only while its left/right links are empty.
 - First-open hitches: do one-time work (object creation, `FindAnyObjectByType`, JIT) at scene load in the

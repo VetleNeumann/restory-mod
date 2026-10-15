@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
+using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;
 
 namespace RestoryMod;
@@ -26,6 +27,7 @@ public class Plugin : BaseUnityPlugin
         SettingsMenuDumpPatch.Bind(Config);
         PartsBoxFeature.Bind(Config);
         PartsBoxDiagnostics.Bind(Config);
+        NotepadKeyFeature.Bind(Config);
         WatchConfigFile();
 
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -36,6 +38,9 @@ public class Plugin : BaseUnityPlugin
             typeof(PartsBoxHeadersPatch),
             typeof(PartsBoxShowTimingPatch),
             typeof(PartsBoxPrewarmPatch),
+            typeof(NotepadKeyListenPatch),
+            typeof(NotepadKeyUnlistenPatch),
+            typeof(NotepadKeyResetPatch),
             typeof(SettingsMenuDumpPatch));
     }
 

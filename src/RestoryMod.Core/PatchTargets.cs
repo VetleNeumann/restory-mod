@@ -25,6 +25,8 @@ public static class PatchTargets
     private const string InventoryPanel = "Restory.UI.Presenters.Inventory.InventoryPanel";
     private const string InventoryItemsView = "Restory.UI.Views.Inventory.InventoryItemsView";
     private const string InventoryPanelViewType = "Restory.UI.Views.Inventory.InventoryPanelView";
+    private const string NotepadActivator = "Restory.Gameplay.OverlayActivators.NotepadActivator";
+    private const string NotepadWindow = "Restory.UI.Presenters.Notepad.GUI_NotepadWindow";
 
     // Cursor speed: the game resets PlayerMouse.pointerSpeed in this handler on every controls-type change.
     public static readonly PatchTarget CursorControlsTypeChanged = new(VirtualCursorView, "ResolveControlsManagerOnControlsTypeChanged");
@@ -52,6 +54,18 @@ public static class PatchTargets
     public static readonly PatchTarget InventoryPanelViewItems = new(InventoryPanelViewType, "Items");
     public static readonly PatchTarget InventoryItemsViewContainer = new(InventoryItemsView, "container");
 
+    // Notepad key: listened for beside the game's own listener; the game's hotkeyPressed flag holds Open.
+    public static readonly PatchTarget NotepadActivatorInitialize = new(NotepadActivator, "Initialize");
+    public static readonly PatchTarget NotepadActivatorDispose = new(NotepadActivator, "Dispose");
+    public static readonly PatchTarget NotepadActivatorPlayerInput = new(NotepadActivator, "playerInput");
+    public static readonly PatchTarget NotepadActivatorWindow = new(NotepadActivator, "notepadWindow");
+    public static readonly PatchTarget NotepadActivatorItem = new(NotepadActivator, "notepadInteractiveWorkplaceItem");
+    public static readonly PatchTarget NotepadActivatorPauseMenu = new(NotepadActivator, "pauseMenu");
+    public static readonly PatchTarget NotepadWindowUpdateViewState = new(NotepadWindow, "UpdateViewState");
+    public static readonly PatchTarget NotepadWindowHotkeyPressed = new(NotepadWindow, "hotkeyPressed");
+    public static readonly PatchTarget NotepadWindowIsSlidingMode = new(NotepadWindow, "isSlidingMode");
+    public static readonly PatchTarget NotepadWindowItem = new(NotepadWindow, "notepadInteractiveWorkplaceItem");
+
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
         CursorControlsTypeChanged,
@@ -74,6 +88,16 @@ public static class PatchTargets
         DropServiceIsProcess,
         InventoryPanelViewItems,
         InventoryItemsViewContainer,
+        NotepadActivatorInitialize,
+        NotepadActivatorDispose,
+        NotepadActivatorPlayerInput,
+        NotepadActivatorWindow,
+        NotepadActivatorItem,
+        NotepadActivatorPauseMenu,
+        NotepadWindowUpdateViewState,
+        NotepadWindowHotkeyPressed,
+        NotepadWindowIsSlidingMode,
+        NotepadWindowItem,
 
         // Members the plugin reads directly (compiled against) rather than through the entries above;
         // listed so the TargetCheck tests catch a game update that moves them.
@@ -101,5 +125,11 @@ public static class PatchTargets
         new PatchTarget("Restory.StorageSystem.IReadOnlyStorageSlot", "Item"),
         new PatchTarget("Restory.StorageSystem.IReadOnlyStorageSlot", "Index"),
         new PatchTarget("Restory.StorageSystem.IReadOnlyStorageSlot", "Count"),
+        new PatchTarget("Restory.UI.Presenters.Notepad.GUI_NotepadWindow", "IsVisible"),
+        new PatchTarget("Restory.UI.Presenters.Notepad.GUI_NotepadWindow", "IsSlidingMode"),
+        new PatchTarget("Restory.Gameplay.Equipment.NotepadInteractiveWorkplaceItem", "WindowIsPinned"),
+        new PatchTarget("Restory.UI.Presenters.PauseMenu.GUI_PauseMenu", "IsShown"),
+        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "AddInputEventDelegate"),
+        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "RemoveInputEventDelegate"),
     };
 }

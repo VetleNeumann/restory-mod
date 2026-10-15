@@ -34,6 +34,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   away, without moving the stick first (a tap still selects the part). Left on a part still showing as
   its parts box icon puts it back. Away from the workbench, while carrying something, D-pad left
   stores bought parts in the parts box and D-pad down throws rubbish (empty boxes and the like) away.
+- **Hover grace at the workbench**: with a gamepad, a part, screw, screw slot or bench object stays
+  hovered for a moment after the cursor flies past it, so pressing Cross / A just after overshooting
+  still grabs or unscrews it ("coyote time"). Anything else the cursor reaches first, a panel, or
+  holding rotate cancels it.
 
 ## Configuration
 
@@ -44,6 +48,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | Controller | CursorSpeed | 1.0 | Gamepad cursor speed |
 | Controller | DropdownModes | true | Gamepad dropdowns |
 | Controller | DpadSendParts | true | D-pad part sends |
+| Controller | HoverGraceMs | 150 | Hover grace window in ms (0 to 500, 0 = off) |
 | PartsBox | Sections | true | Parts box sort and sections |
 | Notepad | KeyTogglesAtWorkbench | true | Notepad key at the workbench |
 | Stick scroll | Enabled | true | Smooth stick scrolling |

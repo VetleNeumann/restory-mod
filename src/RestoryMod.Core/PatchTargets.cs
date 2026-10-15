@@ -153,6 +153,24 @@ public static class PatchTargets
     public static readonly PatchTarget RecycleTrashCan = new("Restory.Gameplay.Recycle.RecycleService", "trashCan");
     public static readonly PatchTarget ShredderServiceShredder = new("Restory.Gameplay.Shredders.ShredderService", "shredder");
 
+    // Hover grace: after each hover state's per-frame detection, the lingering thing is put back in its
+    // stored selection, which the Activate press acts on.
+    private const string DisassembleDetection = "Restory.Gameplay.Disassemble.StateMachine.DetectionDisassembleState";
+    public static readonly PatchTarget DisassembleDetectionOnUpdate = new(DisassembleDetection, "OnUpdate");
+    public static readonly PatchTarget DisassembleDetectionPlayerInput = new(DisassembleDetection, "playerInput");
+    public static readonly PatchTarget DisassembleDetectionSelection = new(DisassembleDetection, "cursorSelectionService");
+    public static readonly PatchTarget DisassembleDetectionRotation = new(DisassembleDetection, "rotationController");
+    public static readonly PatchTarget DisassembleDetectionWaiting = new(DisassembleDetection, "isWaitingForConfirmation");
+    public static readonly PatchTarget DisassembleDetectionElement = new(DisassembleDetection, "selectedElement");
+    public static readonly PatchTarget DisassembleDetectionProjection = new(DisassembleDetection, "selectedProjection");
+    public static readonly PatchTarget DisassembleDetectionButton = new(DisassembleDetection, "selectedButton");
+    public static readonly PatchTarget DisassembleDetectionResetElement = new(DisassembleDetection, "ResetSelectedElement");
+    public static readonly PatchTarget DisassembleDetectionSetElement = new(DisassembleDetection, "SetSelectedElement");
+    public static readonly PatchTarget WorkDetectionSelection = new(DetectionWorkState, "cursorSelectionService");
+    public static readonly PatchTarget WorkDetectionObject = new(DetectionWorkState, "selectedObject");
+    public static readonly PatchTarget WorkDetectionSelectObject = new(DetectionWorkState, "SelectDetectedObject");
+    public static readonly PatchTarget WorkDetectionVisitsBlock = new(DetectionWorkState, "DoesVisitsStateBlockDetection");
+
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
         CursorControlsTypeChanged,
@@ -241,6 +259,20 @@ public static class PatchTargets
         UltrasonicSonicBath,
         RecycleTrashCan,
         ShredderServiceShredder,
+        DisassembleDetectionOnUpdate,
+        DisassembleDetectionPlayerInput,
+        DisassembleDetectionSelection,
+        DisassembleDetectionRotation,
+        DisassembleDetectionWaiting,
+        DisassembleDetectionElement,
+        DisassembleDetectionProjection,
+        DisassembleDetectionButton,
+        DisassembleDetectionResetElement,
+        DisassembleDetectionSetElement,
+        WorkDetectionSelection,
+        WorkDetectionObject,
+        WorkDetectionSelectObject,
+        WorkDetectionVisitsBlock,
 
         // Members the plugin reads directly (compiled against) rather than through the entries above;
         // listed so the TargetCheck tests catch a game update that moves them.
@@ -329,5 +361,19 @@ public static class PatchTargets
         new PatchTarget("Restory.Gameplay.Equipment.Shredder", "IsDetected"),
         new PatchTarget("Restory.Gameplay.Equipment.Shredder", "OnPointerEnter"),
         new PatchTarget("Restory.Gameplay.Equipment.Shredder", "OnPointerExit"),
+        new PatchTarget("RewiredConsts.Action+MiniGame", "Activate"),
+        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "GetButton"),
+        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "GetButtonUp"),
+        new PatchTarget("Restory.Gameplay.GameCursor.CursorSelectionService", "SetDetection"),
+        new PatchTarget("Restory.Gameplay.GameCursor.CursorSelectionService", "DetectedGameObject"),
+        new PatchTarget("Restory.Gameplay.Disassemble.DisassembleRotationController", "IsRotationButtonPressed"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "InSocket"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsBlocked"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsActivated"),
+        new PatchTarget("Restory.Gameplay.Elements.ISwitchableElement"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementButton"),
+        new PatchTarget("Restory.Data.Elements.ElementCategory", "Small"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementProjection", "MakeBright"),
+        new PatchTarget("Restory.Gameplay.InteractiveObjects.InteractiveObject", "IsInteractable"),
     };
 }

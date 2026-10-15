@@ -1,0 +1,63 @@
+# ReStory mod
+
+BepInEx 5 + HarmonyX mod for *ReStory: Chill Electronics Repairs* (Steam app 3812600, Unity 6000.3 Mono,
+Rewired input, Zenject DI). Personal repo. Game installed on this box; `GamePaths.props` (gitignored) points at it.
+
+## Dev loop
+
+- `scripts/dev.sh run`: closes the game gracefully, builds, deploys to `BepInEx/plugins/RestoryMod/`,
+  relaunches via Steam, prints the mod's startup lines. Force-close asks first (`KILL_GAME=1` to skip).
+- `scripts/screenshot.sh`: DPI-aware capture of the Windows screen; read the PNG to see the game.
+- Log: `$GameDir/BepInEx/LogOutput.log`. Config: `$GameDir/BepInEx/config/com.zantox.restorymod.cfg`;
+  the plugin watches it, so hand edits apply live.
+- Vetle often tests with a **gamepad only**, no keyboard: every feature must work by D-pad/stick.
+  UnityExplorer (F7) is installed with `Hide On Startup = true` and the EventSystem override off.
+
+## Game source
+
+Decompiled `Restory.Assembly.dll` lives in `~/restory-decompiled/<buildid>/` (outside the repo; never commit
+decompiled code). Regenerate after an update:
+`dotnet ilspycmd -p -o ~/restory-decompiled/<buildid> -r "$GameDir/Restory_Data/Managed" "$GameDir/Restory_Data/Managed/Restory.Assembly.dll"`.
+Delegate exploration of it to investigator subagents; it is ~2,700 files.
+
+## After a game update
+
+`dev.sh` warns when the Steam buildid changes. Run `dotnet test`: a red TargetCheck case names the patch
+target that moved; that feature's patch skips itself at runtime until fixed.
+
+## Adding a patch
+
+1. One patch class per feature; `Prepare()` returns `GameTargets.AllPresent(...)` so a moved target skips
+   only that feature. Register it in `Plugin.cs`.
+2. List every game member the code touches in `PatchTargets` (Core), including ones compiled against
+   directly, so TargetCheck covers them.
+3. Pure logic (orderings, ranges, rules) goes in `RestoryMod.Core` with unit tests; CI runs only Core.
+4. Prefix/postfix only. HarmonyX here is 2.9.0: `[HarmonyOptional]` does not exist.
+
+## Unity gotchas learned the hard way
+
+- `UnityEngine.Object` has a fake null: compare with `!obj` / `if (obj)`, never `??`, `??=`, `?.`.
+- `LayoutGroup` is `[DisallowMultipleComponent]` (subclasses too): a second layout on a GameObject must
+  implement `ILayoutGroup`/`ILayoutElement` directly (see `SectionedGridLayout`).
+- The parts box rebuilds by `DetachChildren()`, which keeps world scale: reset local scale/rotation when
+  re-parenting our objects, or they shrink every refresh.
+- Settings rows use **explicit** navigation; splice new selectables in. A `Slider` changes value on
+  left/right only while its left/right links are empty.
+- First-open hitches: do one-time work (object creation, `FindAnyObjectByType`, JIT) at scene load in the
+  presenter's Zenject `Construct`. `[Debug] PartsBoxDiagnostics` logs timing.
+- Non-interactive WSL shells lack the Windows PATH; `dev.sh` adds System32 itself.
+
+## Vetle's settled preferences
+
+- Controller sensitivity: row directly under "Dialogue volume"; 0.2–4.0 in 0.1 steps, one decimal, no "x".
+- Parts box: "Missing parts" / "Other parts" headers as they are now (label + thin rule). Missing is per
+  socket, matching the game's notepad. Sort: section, then "How to reassemble" order (only this flips with
+  the sort button), then damaged → dirty → perfect.
+
+## Background
+
+`docs/research/mod-repo-structure.md`: read when changing tooling, CI, loader version or update-resilience
+patterns.
+
+Ideas not started: camera look speed (`CameraRotationController`, legacy `Input.GetAxis`, `rotationSpeed`
+100), bumper tab switching / tool shortcuts, a GitHub remote so `.github/workflows/ci.yml` runs.

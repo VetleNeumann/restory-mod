@@ -20,17 +20,22 @@ namespace RestoryMod.Features.Settings;
 [HarmonyPatch]
 internal static class SensitivitySlidersPatch
 {
-    private sealed class RowSpec(string name, string label, Func<ConfigEntry<float>> entry)
+    // A class, not a positional record: the plugin targets netstandard2.1, which lacks IsExternalInit.
+    private sealed class RowSpec(string name, string label, Func<ConfigEntry<float>> entry, Func<bool> available)
     {
         public string Name => name;
         public string Label => label;
         public ConfigEntry<float> Entry => entry();
+        public bool Available => available();
     }
 
     private static readonly RowSpec[] Rows =
     {
-        new("RestoryMod_ControllerSensitivity", "Controller sensitivity", () => CursorSpeedFeature.Speed),
-        new("RestoryMod_RotationSensitivity", "Rotation sensitivity", () => RotationSpeedFeature.Speed),
+        new("RestoryMod_ControllerSensitivity", "Controller sensitivity", () => CursorSpeedFeature.Speed,
+            () => GameTargets.AllPresent(PatchTargets.CursorControlsTypeChanged, PatchTargets.CursorPlayerMouse)),
+        // No row when the rotation patch skipped itself after a game update: the slider would do nothing.
+        new("RestoryMod_RotationSensitivity", "Rotation sensitivity", () => RotationSpeedFeature.Speed,
+            RotationSpeedFeature.TargetsPresent),
     };
 
     private static bool Prepare() => GameTargets.AllPresent(
@@ -56,11 +61,16 @@ internal static class SensitivitySlidersPatch
             var aboveRow = templateRow;
             foreach (var spec in Rows)
             {
+                if (!spec.Available) continue;
+
                 var row = templateRow.parent.Find(spec.Name);
-                if (row != null)
-                    row.GetComponent<SensitivityRow>()?.Refresh();
+                if (row)
+                {
+                    var existing = row.GetComponent<SensitivityRow>();
+                    if (existing) existing.Refresh();
+                }
                 else
-                    row = CreateRow(spec, template, templateRow, above, aboveRow);
+                    row = CreateRow(spec, templateRow, above, aboveRow);
 
                 above = row.GetComponentInChildren<Slider>(true);
                 aboveRow = row;
@@ -72,7 +82,7 @@ internal static class SensitivitySlidersPatch
         }
     }
 
-    private static Transform CreateRow(RowSpec spec, Slider template, Transform templateRow, Selectable above, Transform aboveRow)
+    private static Transform CreateRow(RowSpec spec, Transform templateRow, Selectable above, Transform aboveRow)
     {
         // Clone under an inactive holder so no Awake/OnEnable runs before we strip game components.
         // The holder is always destroyed; if anything throws before the row is moved out, the
@@ -102,13 +112,14 @@ internal static class SensitivitySlidersPatch
             if (label != null) label.text = spec.Label;
             var valueText = slider.GetComponentInChildren<TMP_Text>(true);
 
+            var navigationMode = above.navigation.mode;
             SpliceNavigation(above, slider);
 
             row.AddComponent<SensitivityRow>().Init(slider, valueText, spec.Entry);
             row.transform.SetParent(templateRow.parent, false);
             row.transform.SetSiblingIndex(aboveRow.GetSiblingIndex() + 1);
 
-            Plugin.Logger.LogInfo($"{spec.Label} row added (navigation: {template.navigation.mode}).");
+            Plugin.Logger.LogInfo($"{spec.Label} row added (navigation: {navigationMode}).");
             return row.transform;
         }
         finally

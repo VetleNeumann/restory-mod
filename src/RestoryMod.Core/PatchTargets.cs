@@ -35,9 +35,9 @@ public static class PatchTargets
     public static readonly PatchTarget CursorPlayerMouse = new(VirtualCursorView, "playerMouse");
     public static readonly PatchTarget CursorControlsManager = new(VirtualCursorView, "controlsManager");
 
-    // Rotation speed: the device's per-frame spin is scaled after the game computes it from the stick.
+    // Rotation speed: the device's per-frame spin is scaled just before the game applies it.
     private const string RotationController = "Restory.Gameplay.Disassemble.DisassembleRotationController";
-    public static readonly PatchTarget RotationCalculateAxis = new(RotationController, "CalculateAxis");
+    public static readonly PatchTarget RotationApply = new(RotationController, "ApplyRotation");
     public static readonly PatchTarget RotationXAxis = new(RotationController, "xAxisRotation");
     public static readonly PatchTarget RotationYAxis = new(RotationController, "yAxisRotation");
     public static readonly PatchTarget RotationControlsManager = new(RotationController, "controlsManager");
@@ -183,7 +183,7 @@ public static class PatchTargets
         CursorControlsTypeChanged,
         CursorPlayerMouse,
         CursorControlsManager,
-        RotationCalculateAxis,
+        RotationApply,
         RotationXAxis,
         RotationYAxis,
         RotationControlsManager,

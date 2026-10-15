@@ -8,8 +8,9 @@ namespace RestoryMod.Features.RotationSpeed;
 
 /// <summary>
 /// Gamepad rotation speed at the workbench. The game spins the device by stick tilt times a fixed
-/// joystickDragRotationSpeed each frame; we scale the result after it is computed. The value is read
-/// every frame, so config changes apply live.
+/// joystickDragRotationSpeed each frame; we scale the axes just before they are applied, after the
+/// game's optional Round() snapping, so the setting changes speed only. The value is read every
+/// frame, so config changes apply live.
 /// </summary>
 internal static class RotationSpeedFeature
 {
@@ -27,20 +28,22 @@ internal static class RotationSpeedFeature
     }
 
     public static float Current => Sensitivity.Normalize(Speed.Value);
+
+    public static bool TargetsPresent() => GameTargets.AllPresent(
+        PatchTargets.RotationApply,
+        PatchTargets.RotationXAxis,
+        PatchTargets.RotationYAxis,
+        PatchTargets.RotationControlsManager);
 }
 
 [HarmonyPatch]
 internal static class RotationSpeedPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
-        PatchTargets.RotationCalculateAxis,
-        PatchTargets.RotationXAxis,
-        PatchTargets.RotationYAxis,
-        PatchTargets.RotationControlsManager);
+    private static bool Prepare() => RotationSpeedFeature.TargetsPresent();
 
-    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.RotationCalculateAxis)!;
+    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.RotationApply)!;
 
-    private static void Postfix(ref float ___xAxisRotation, ref float ___yAxisRotation, ControlsManager ___controlsManager)
+    private static void Prefix(ref float ___xAxisRotation, ref float ___yAxisRotation, ControlsManager ___controlsManager)
     {
         if (!___controlsManager || ___controlsManager.ControlType != InputControlsType.Joystick) return;
 

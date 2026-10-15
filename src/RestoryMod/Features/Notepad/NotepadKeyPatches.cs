@@ -39,27 +39,28 @@ internal static class NotepadKeyFeature
 /// Listens for the Notepad key next to the game's own listener. The game's handler toggles the
 /// Notepad window on release but is blocked at the workbench; ours acts on press, and only while the
 /// Notepad is the sliding workbench panel, so the two never both act on one press.
-/// The sticky Open reuses the game's own hotkeyPressed flag, which UpdateViewState already treats as
-/// "hold Open" and which pointer enter/exit leaves alone.
 /// </summary>
 [HarmonyPatch]
 internal static class NotepadKeyListenPatch
 {
+    /// <summary>The game's OpenCopybook action; the game hardcodes the same id.</summary>
+    private const int NotepadKeyActionId = 90;
+
+    /// <summary>The mod's sticky Open, see <see cref="NotepadToggle"/>. One Notepad per scene.</summary>
+    internal static bool KeyOpen;
+
     private static IPlayerInput? playerInput;
     private static GUI_NotepadWindow? window;
     private static NotepadInteractiveWorkplaceItem? item;
     private static GUI_PauseMenu? pauseMenu;
-    private static AccessTools.FieldRef<GUI_NotepadWindow, bool>? hotkeyPressed;
     private static Action<GUI_NotepadWindow>? updateViewState;
 
     private static bool Prepare() => GameTargets.AllPresent(
         PatchTargets.NotepadActivatorInitialize,
-        PatchTargets.NotepadActivatorDispose,
         PatchTargets.NotepadActivatorPlayerInput,
         PatchTargets.NotepadActivatorWindow,
         PatchTargets.NotepadActivatorItem,
         PatchTargets.NotepadActivatorPauseMenu,
-        PatchTargets.NotepadWindowHotkeyPressed,
         PatchTargets.NotepadWindowUpdateViewState);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.NotepadActivatorInitialize)!;
@@ -72,8 +73,6 @@ internal static class NotepadKeyListenPatch
     {
         try
         {
-            hotkeyPressed ??= AccessTools.FieldRefAccess<GUI_NotepadWindow, bool>(
-                PatchTargets.NotepadWindowHotkeyPressed.MemberName!);
             updateViewState ??= AccessTools.MethodDelegate<Action<GUI_NotepadWindow>>(
                 GameTargets.Method(PatchTargets.NotepadWindowUpdateViewState)!);
 
@@ -91,17 +90,22 @@ internal static class NotepadKeyListenPatch
         }
     }
 
-    /// <summary>The game's OpenCopybook action; it hardcodes the same id.</summary>
-    private const int NotepadKeyActionId = 90;
-
-    public static void Unsubscribe()
+    internal static void Unsubscribe()
     {
-        playerInput?.RemoveInputEventDelegate(OnNotepadKeyPressed, InputActionEventType.ButtonJustPressed,
-            NotepadKeyActionId);
+        try
+        {
+            playerInput?.RemoveInputEventDelegate(OnNotepadKeyPressed, InputActionEventType.ButtonJustPressed,
+                NotepadKeyActionId);
+        }
+        catch (Exception e)
+        {
+            NotepadKeyFeature.LogOnce(e);
+        }
         playerInput = null;
         window = null;
         item = null;
         pauseMenu = null;
+        KeyOpen = false;
     }
 
     private static void OnNotepadKeyPressed(InputActionEventData _)
@@ -109,14 +113,13 @@ internal static class NotepadKeyListenPatch
         try
         {
             if (!NotepadKeyFeature.Enabled.Value) return;
-            if (!window || !item || hotkeyPressed is null || updateViewState is null) return;
+            if (!window || !item || updateViewState is null) return;
             if (pauseMenu && pauseMenu!.IsShown) return;
 
-            ref var keyOpen = ref hotkeyPressed(window!);
-            var next = NotepadToggle.AfterKeyPress(window!.IsVisible, window.IsSlidingMode, item!.WindowIsPinned, keyOpen);
-            if (next == keyOpen) return;
+            var next = NotepadToggle.AfterKeyPress(window!.IsVisible, window.IsSlidingMode, item!.WindowIsPinned, KeyOpen);
+            if (next == KeyOpen) return;
 
-            keyOpen = next;
+            KeyOpen = next;
             updateViewState(window);
         }
         catch (Exception e)
@@ -138,11 +141,14 @@ internal static class NotepadKeyUnlistenPatch
 }
 
 /// <summary>
-/// Ends key open when the Notepad is pinned (so unpinning returns to Peeking) or the workbench
-/// session ends. Every such change passes through UpdateViewState.
+/// Applies key open inside the game's own Open/Peeking decision. The game opens the sliding Notepad
+/// while its hotkeyPressed flag is set (its hold-to-peek), so key open is lent to that flag for the
+/// call only; the game's own value is restored after, since its key-up handler clears the flag on
+/// release. Also ends key open when the Notepad is pinned (so unpinning returns to Peeking) or the
+/// workbench session ends: every such change passes through UpdateViewState.
 /// </summary>
 [HarmonyPatch]
-internal static class NotepadKeyResetPatch
+internal static class NotepadKeyHoldOpenPatch
 {
     private static bool Prepare() => GameTargets.AllPresent(
         PatchTargets.NotepadWindowUpdateViewState,
@@ -155,10 +161,17 @@ internal static class NotepadKeyResetPatch
     private static void Prefix(
         ref bool ___hotkeyPressed,
         bool ___isSlidingMode,
-        NotepadInteractiveWorkplaceItem ___notepadInteractiveWorkplaceItem)
+        NotepadInteractiveWorkplaceItem ___notepadInteractiveWorkplaceItem,
+        out bool __state)
     {
-        if (!___hotkeyPressed || !___notepadInteractiveWorkplaceItem) return;
-        ___hotkeyPressed = NotepadToggle.KeepKeyOpen(___isSlidingMode,
-            ___notepadInteractiveWorkplaceItem.WindowIsPinned, ___hotkeyPressed);
+        __state = ___hotkeyPressed;
+        if (!NotepadKeyListenPatch.KeyOpen) return;
+
+        var pinned = ___notepadInteractiveWorkplaceItem && ___notepadInteractiveWorkplaceItem.WindowIsPinned;
+        NotepadKeyListenPatch.KeyOpen = NotepadKeyFeature.Enabled.Value &&
+            NotepadToggle.KeepKeyOpen(___isSlidingMode, pinned, keyOpen: true);
+        ___hotkeyPressed |= NotepadKeyListenPatch.KeyOpen;
     }
+
+    private static void Postfix(ref bool ___hotkeyPressed, bool __state) => ___hotkeyPressed = __state;
 }

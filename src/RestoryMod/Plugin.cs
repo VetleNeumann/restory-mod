@@ -40,7 +40,7 @@ public class Plugin : BaseUnityPlugin
             typeof(PartsBoxPrewarmPatch),
             typeof(NotepadKeyListenPatch),
             typeof(NotepadKeyUnlistenPatch),
-            typeof(NotepadKeyResetPatch),
+            typeof(NotepadKeyHoldOpenPatch),
             typeof(SettingsMenuDumpPatch));
     }
 

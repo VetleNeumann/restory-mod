@@ -66,6 +66,13 @@ public static class PartSend
         shownAsIcon && direction == DpadDirection.Left;
 
     /// <summary>
+    /// The one refusal that speaks: the game tells the player there is no point keeping a broken part
+    /// when one is dropped on the parts box, and the send says the same. Other refusals stay silent.
+    /// </summary>
+    public static bool WarnsBrokenPart(Destination destination, HeldPart part) =>
+        destination == Destination.PartsBox && part.Damaged;
+
+    /// <summary>
     /// The part-based half of the game's rules. The washing bin's own state (unlocked, full, running)
     /// is left to the game, which checks it when the part is fitted in.
     /// </summary>

@@ -3,10 +3,12 @@ using System.Reflection;
 using BepInEx.Configuration;
 using HarmonyLib;
 using Restory.Data.Elements.Condition;
+using Restory.Data.GameWarnings;
 using Restory.Gameplay.Disassemble;
 using Restory.Gameplay.Disassemble.StateMachine;
 using Restory.Gameplay.Elements;
 using Restory.Gameplay.Equipment;
+using Restory.Gameplay.GameDialogues;
 using Restory.Gameplay.Equipment.Ultrasonic;
 using Restory.Gameplay.Inventory;
 using Restory.Gameplay.PlayerInput;
@@ -90,6 +92,8 @@ internal static class DpadSendPatch
         PatchTargets.RecycleTrashCan,
         PatchTargets.ShredderServiceShredder,
         PatchTargets.DraggingStorageDragService,
+        PatchTargets.DraggingWarningService,
+        PatchTargets.DraggingWarningDatabase,
         PatchTargets.DragServiceState);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.DraggingOnUpdate)!;
@@ -108,6 +112,8 @@ internal static class DpadSendPatch
         UltrasonicService ___ultrasonicService,
         RecycleService ___recycleService,
         ShredderService ___shredderService,
+        GameWarningService ___gameWarningService,
+        GameWarningDatabase ___gameWarningDatabase,
         StorageElasticElementsDragService ___storageElasticElementsDragService)
     {
         try
@@ -141,6 +147,8 @@ internal static class DpadSendPatch
                 Damaged: element.ConditionHandler.ElementData.Condition is DamagedElementCondition,
                 QuestItem: element is QuestItem,
                 NeedsCleaning: ___elementCleaner.DraggingElementInitialCleaningData != null);
+            if (PartSend.WarnsBrokenPart(destination, part))
+                ___gameWarningService.ShowWarning(___gameWarningDatabase.BrokenElementWarning);
             if (!PartSend.Accepts(destination, part)) return;
 
             // Telling the drag service the cursor left the box swaps the icon for the part itself,

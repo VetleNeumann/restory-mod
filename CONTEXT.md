@@ -57,7 +57,7 @@ A place that takes a held part or carried object away in one move. At the workbe
 _Avoid_: drop target, slot
 
 **Send**:
-Moving a held part or carried object straight to a destination with one D-pad press instead of carrying it there. A send the destination would refuse does nothing, and the thing stays held.
+Moving a held part or carried object straight to a destination with one D-pad press instead of carrying it there. A send the destination would refuse leaves the thing held; only a damaged part sent to the parts box says why, with the game's own message.
 _Avoid_: quick drop, throw
 
 **Parts box**:

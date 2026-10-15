@@ -128,6 +128,8 @@ public static class PatchTargets
     public static readonly PatchTarget DraggingRecycleService = new(DraggingState, "recycleService");
     public static readonly PatchTarget DraggingShredderService = new(DraggingState, "shredderService");
     public static readonly PatchTarget DraggingStorageDragService = new(DraggingState, "storageElasticElementsDragService");
+    public static readonly PatchTarget DraggingWarningService = new(DraggingState, "gameWarningService");
+    public static readonly PatchTarget DraggingWarningDatabase = new(DraggingState, "gameWarningDatabase");
     // A held parts box slot: the game starts the drag on the first cursor move while it is held.
     private const string StorageSlot = "Restory.UI.Presenters.Inventory.StorageSlotElements.StorageSlotElement";
     public static readonly PatchTarget SlotOnPointerDown = new(StorageSlot, "OnPointerDown");
@@ -221,6 +223,8 @@ public static class PatchTargets
         DraggingRecycleService,
         DraggingShredderService,
         DraggingStorageDragService,
+        DraggingWarningService,
+        DraggingWarningDatabase,
         SlotOnPointerDown,
         SlotOnPointerMove,
         SlotIsHolding,
@@ -299,6 +303,8 @@ public static class PatchTargets
         new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "Id"),
         new PatchTarget("Restory.Gameplay.Inventory.StorageElasticElementsDragService", "IsPointerOverInventory"),
         new PatchTarget("Restory.Gameplay.InteractiveObjects.InteractiveObject", "CompleteDrag"),
+        new PatchTarget("Restory.Gameplay.GameDialogues.GameWarningService", "ShowWarning"),
+        new PatchTarget("Restory.Data.GameWarnings.GameWarningDatabase", "BrokenElementWarning"),
         new PatchTarget("Restory.Gameplay.InteractiveObjects.TrashObject"),
         new PatchTarget("Restory.Gameplay.Elements.ElementsContainer"),
         new PatchTarget("Restory.Gameplay.Elements.ElementsBox"),

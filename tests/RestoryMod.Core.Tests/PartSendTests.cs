@@ -34,6 +34,14 @@ public class PartSendTests
         Assert.Equal(accepted, PartSend.Accepts(destination, Damaged));
     }
 
+    [Fact]
+    public void Refusing_a_damaged_part_for_the_parts_box_shows_the_games_broken_part_warning()
+    {
+        Assert.True(PartSend.WarnsBrokenPart(Destination.PartsBox, Damaged));
+        Assert.False(PartSend.WarnsBrokenPart(Destination.WashingBin, Damaged));
+        Assert.False(PartSend.WarnsBrokenPart(Destination.PartsBox, Clean));
+    }
+
     private static readonly HeldPart Clean = new(Damaged: false, QuestItem: false, NeedsCleaning: false);
     private static readonly HeldPart Dirty = new(Damaged: false, QuestItem: false, NeedsCleaning: true);
 

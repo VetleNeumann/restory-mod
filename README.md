@@ -29,8 +29,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 - **D-pad part sends**: at the workbench, while holding a part with Cross / A, press the D-pad to send it
   without carrying it there: up to the washing bin, right to the tool cup, left to the parts box, down to
   the trash can (or the shredder once you own one). If that place wouldn't take the part (a damaged part
-  to the parts box, a clean part to the tool cup, a full or locked washing bin), nothing happens and you
-  keep holding it. In the parts box, hold Cross / A on a part and press the D-pad to send it straight
+  to the parts box, a clean part to the tool cup, a full or locked washing bin), you keep holding it; a
+  damaged part sent left gets the game's own "no point keeping broken parts" message. In the parts box, hold Cross / A on a part and press the D-pad to send it straight
   away, without moving the stick first (a tap still selects the part). Left on a part still showing as
   its parts box icon puts it back. Away from the workbench, while carrying something, D-pad left
   stores bought parts in the parts box and D-pad down throws rubbish (empty boxes and the like) away.

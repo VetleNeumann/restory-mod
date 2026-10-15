@@ -50,7 +50,8 @@ public class Plugin : BaseUnityPlugin
             typeof(NotepadKeyListenPatch),
             typeof(NotepadKeyUnlistenPatch),
             typeof(NotepadKeyHoldOpenPatch),
-            typeof(SettingsMenuDumpPatch));
+            typeof(SettingsMenuDumpPatch),
+            typeof(GamepadBindingsDump));
     }
 
     /// <summary>
@@ -71,8 +72,6 @@ public class Plugin : BaseUnityPlugin
 
     private void Update()
     {
-        GamepadBindingsDump.Tick();
-
         if (!configFileChanged) return;
         configFileChanged = false;
 

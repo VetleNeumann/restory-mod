@@ -1,6 +1,9 @@
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using BepInEx.Configuration;
+using HarmonyLib;
+using RestoryMod.Core;
 using Rewired;
 using PlayerMouse = Rewired.Components.PlayerMouse;
 using UnityEngine;
@@ -9,9 +12,11 @@ namespace RestoryMod.Features.Diagnostics;
 
 /// <summary>
 /// Logs the gamepad's UI bindings (Rewired joystick maps) and the virtual cursor's button
-/// bindings once Rewired is ready. Rewired's maps live in serialized data, not code, so this is
-/// the way to see which physical button drives submit, click and navigation.
+/// bindings when the virtual cursor first resolves its controls type. Rewired's maps live in
+/// serialized data, not code, so this is the way to see which physical button drives submit,
+/// click and navigation.
 /// </summary>
+[HarmonyPatch]
 internal static class GamepadBindingsDump
 {
     public static ConfigEntry<bool> Enabled = null!;
@@ -20,17 +25,19 @@ internal static class GamepadBindingsDump
     public static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("Debug", "DumpGamepadBindings", false,
-            "Log the gamepad's UI bindings and the virtual cursor's button bindings once at startup.");
-        Enabled.SettingChanged += (_, _) => dumped = false;
+            "Log the gamepad's UI bindings and the virtual cursor's button bindings once per session.");
     }
 
-    /// <summary>Called every frame from the plugin; cheap until Rewired and a cursor exist.</summary>
-    public static void Tick()
+    // Dev aid only: not patched at all unless switched on at startup.
+    private static bool Prepare() => Enabled.Value && GameTargets.AllPresent(PatchTargets.CursorControlsTypeChanged);
+
+    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.CursorControlsTypeChanged)!;
+
+    private static void Postfix()
     {
-        if (dumped || !Enabled.Value || !ReInput.isReady) return;
-        var mice = Object.FindObjectsByType<PlayerMouse>(FindObjectsSortMode.None);
-        if (mice.Length == 0) return;
+        if (dumped || !ReInput.isReady) return;
         dumped = true;
+        var mice = Object.FindObjectsByType<PlayerMouse>(FindObjectsSortMode.None);
 
         var log = new StringBuilder("Gamepad bindings:");
         foreach (var player in ReInput.players.GetPlayers())

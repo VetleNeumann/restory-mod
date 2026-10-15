@@ -43,6 +43,15 @@ public static class PatchTargets
     public static readonly PatchTarget CursorUpdateImageSetActive = new(VirtualCursorView, "UpdateImageSetActive");
     public static readonly PatchTarget CursorImage = new(VirtualCursorView, "image");
 
+    // TextMeshPro ships with the engine, not the game assembly, so these stay out of All (TargetCheck
+    // loads only the game assembly); the patches still check them in Prepare().
+    private const string TmpDropdown = "TMPro.TMP_Dropdown";
+    public static readonly PatchTarget DropdownShow = new(TmpDropdown, "Show");
+    public static readonly PatchTarget DropdownHide = new(TmpDropdown, "Hide");
+    public static readonly PatchTarget DropdownOnSubmit = new(TmpDropdown, "OnSubmit");
+    public static readonly PatchTarget DropdownOnPointerClick = new(TmpDropdown, "OnPointerClick");
+    public static readonly PatchTarget DropdownList = new(TmpDropdown, "m_Dropdown");
+
     // Settings menu: rows are prefab-wired, so new rows are cloned from an existing slider on Show().
     public static readonly PatchTarget SettingsMenuShow = new(SettingsMenu, "Show");
     public static readonly PatchTarget SettingsMenuSoundSettingsView = new(SettingsMenu, "soundSettingsView");

@@ -110,6 +110,86 @@ public class DropdownModesTests
     }
 
     [Fact]
+    public void A_pressed_in_nav_mode_never_clicks_even_after_its_pick_closes_the_list()
+    {
+        var modes = new DropdownModes();
+        modes.Open(DropdownMode.Nav, rowUnderCursor: RowA);
+
+        modes.SubmitPressed();
+        modes.Close();
+        Assert.True(modes.SuppressClick);
+
+        modes.SubmitReleased();
+        Assert.False(modes.SuppressClick);
+    }
+
+    [Fact]
+    public void A_pressed_in_pointer_mode_clicks_normally()
+    {
+        var modes = new DropdownModes();
+        modes.Open(DropdownMode.Pointer, rowUnderCursor: RowA);
+
+        modes.SubmitPressed();
+        modes.Close();
+
+        Assert.False(modes.SuppressClick);
+    }
+
+    [Fact]
+    public void Closed_header_takes_A_as_submit_until_the_cursor_moves()
+    {
+        var modes = new DropdownModes();
+        Assert.False(modes.SuppressHeaderSubmit);
+
+        modes.CursorMoved(rowUnderCursor: null);
+        Assert.True(modes.SuppressHeaderSubmit);
+
+        modes.DpadPressed(rowUnderCursor: null);
+        Assert.False(modes.SuppressHeaderSubmit);
+    }
+
+    [Fact]
+    public void Header_submit_rule_carries_over_from_inside_the_list()
+    {
+        var modes = new DropdownModes();
+        modes.Open(DropdownMode.Nav, rowUnderCursor: RowA);
+        modes.CursorMoved(rowUnderCursor: RowB);
+        modes.Close();
+
+        Assert.True(modes.SuppressHeaderSubmit);
+    }
+
+    [Fact]
+    public void Only_a_held_dpad_moves_the_highlight_in_an_open_list()
+    {
+        var modes = new DropdownModes();
+        Assert.False(modes.SuppressStickMove);
+
+        modes.Open(DropdownMode.Pointer, rowUnderCursor: RowA);
+        Assert.True(modes.SuppressStickMove);
+
+        modes.DpadHeld(true, rowUnderCursor: RowA);
+        Assert.False(modes.SuppressStickMove);
+        Assert.Equal(DropdownMode.Nav, modes.Mode);
+
+        modes.DpadHeld(false, rowUnderCursor: RowA);
+        Assert.True(modes.SuppressStickMove);
+    }
+
+    [Fact]
+    public void Holding_the_dpad_is_one_press_not_one_per_frame()
+    {
+        var modes = new DropdownModes();
+        modes.Open(DropdownMode.Pointer, rowUnderCursor: RowA);
+        modes.DpadHeld(true, rowUnderCursor: RowA);
+        modes.CursorMoved(rowUnderCursor: RowB);
+
+        modes.DpadHeld(true, rowUnderCursor: RowB);
+
+        Assert.Equal(DropdownMode.Pointer, modes.Mode);
+    }
+
+    [Fact]
     public void Closing_suppresses_nothing_and_shows_the_cursor()
     {
         var modes = new DropdownModes();

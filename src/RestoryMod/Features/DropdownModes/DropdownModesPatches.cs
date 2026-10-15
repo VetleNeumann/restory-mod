@@ -1,8 +1,10 @@
 using System.Reflection;
 using HarmonyLib;
+using Restory.UserInterface;
 using RestoryMod.Core;
 using TMPro;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace RestoryMod.Features.DropdownModes;
 
@@ -10,6 +12,8 @@ namespace RestoryMod.Features.DropdownModes;
 [HarmonyPatch]
 internal static class DropdownOpenPatch
 {
+    private static bool Prepare() => DropdownModesFeature.TargetsPresent();
+
     [HarmonyPrefix]
     [HarmonyPatch(typeof(TMP_Dropdown), nameof(TMP_Dropdown.OnSubmit))]
     private static void BeforeSubmit() => DropdownModesFeature.NoteOpener(DropdownMode.Nav);
@@ -36,19 +40,22 @@ internal static class DropdownOpenPatch
 [HarmonyPatch]
 internal static class DropdownFramePatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(PatchTargets.UiInputProcess);
+    private static bool Prepare() => DropdownModesFeature.TargetsPresent();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.UiInputProcess)!;
 
     private static void Prefix(CustomRewiredStandaloneInputModule __instance) =>
-        DropdownModesFeature.BeginFrame(new CustomRewiredStandaloneInputModuleIds(__instance));
+        DropdownModesFeature.BeginFrame(__instance);
 }
 
-/// <summary>While a dropdown is open, only the D-pad moves the highlighted row; the stick is the cursor's.</summary>
+/// <summary>
+/// While a dropdown is open, only the D-pad moves the highlighted row, and the list scrolls to keep
+/// it in view; the stick belongs to the cursor.
+/// </summary>
 [HarmonyPatch]
 internal static class DropdownStickMovePatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(PatchTargets.UiInputSendMove);
+    private static bool Prepare() => DropdownModesFeature.TargetsPresent();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.UiInputSendMove)!;
 
@@ -58,49 +65,61 @@ internal static class DropdownStickMovePatch
         __result = false;
         return false;
     }
+
+    private static void Postfix()
+    {
+        if (DropdownModesFeature.InNavMode) DropdownModesFeature.ScrollHighlightIntoView();
+    }
 }
 
-/// <summary>In pointer mode, A clicks at the cursor only; its submit to the highlighted row is dropped.</summary>
+/// <summary>
+/// In pointer mode, A clicks at the cursor only: its submit to the highlighted row is dropped, as is
+/// its submit to a closed dropdown that still holds the selection.
+/// </summary>
 [HarmonyPatch]
 internal static class DropdownSubmitPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(PatchTargets.UiInputSendSubmit);
+    private static bool Prepare() => DropdownModesFeature.TargetsPresent();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.UiInputSendSubmit)!;
 
-    private static bool Prefix(CustomRewiredStandaloneInputModule __instance, ref bool __result)
+    private static bool Prefix(ref bool __result)
     {
-        if (!DropdownModesFeature.SuppressSubmit ||
-            !DropdownModesFeature.SubmitThisFrame(new CustomRewiredStandaloneInputModuleIds(__instance)))
+        var selected = EventSystem.current ? EventSystem.current.currentSelectedGameObject : null;
+        if (!DropdownModesFeature.SuppressSubmit && !DropdownModesFeature.SuppressSubmitToHeader(selected))
             return true;
         __result = false;
         return false;
     }
 }
 
-/// <summary>In nav mode, the virtual cursor neither hovers nor clicks.</summary>
+/// <summary>In nav mode the virtual cursor neither hovers nor clicks; the right stick still scrolls.</summary>
 [HarmonyPatch]
 internal static class DropdownCursorClickPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(PatchTargets.UiInputProcessMouseEvent);
+    private static bool Prepare() => DropdownModesFeature.TargetsPresent();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.UiInputProcessMouseEvent)!;
 
-    private static bool Prefix() => !DropdownModesFeature.SuppressClick;
+    private static bool Prefix()
+    {
+        if (!DropdownModesFeature.SuppressClick) return true;
+        DropdownModesFeature.ForwardScroll();
+        return false;
+    }
 }
 
-/// <summary>In nav mode the cursor image stays hidden until the stick moves.</summary>
+/// <summary>Registers cursor views as they draw, and keeps the image hidden in nav mode until the stick moves.</summary>
 [HarmonyPatch]
 internal static class DropdownCursorImagePatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
-        PatchTargets.CursorUpdateImageSetActive,
-        PatchTargets.CursorImage);
+    private static bool Prepare() => DropdownModesFeature.TargetsPresent();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.CursorUpdateImageSetActive)!;
 
-    private static void Postfix(UnityEngine.UI.RawImage ___image)
+    private static void Postfix(VirtualCursorView __instance, RawImage ___image)
     {
+        DropdownModesFeature.RegisterCursor(__instance);
         if (DropdownModesFeature.CursorHidden && ___image)
             ___image.gameObject.SetActive(false);
     }

@@ -4,7 +4,7 @@ namespace RestoryMod.Core.Tests;
 
 public class GamePickTests
 {
-    private static RayHit<string> Slot(string name, float distance) => new(RayHitLayer.Projection, distance, name);
+    private static RayHit<string> Slot(string name, float distance) => new(RayHitLayer.SlotOrGhost, distance, name);
     private static RayHit<string> Part(string? name, float distance) => new(RayHitLayer.PartOrDevice, distance, name);
     private static RayHit<string> Other(string? name, float distance) => new(RayHitLayer.Other, distance, name);
 

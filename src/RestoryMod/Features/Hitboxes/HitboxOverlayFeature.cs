@@ -80,7 +80,7 @@ internal static class HoverCapture
     public static bool Prepare()
     {
         if (!GameTargets.AllPresent(PatchTargets.CursorDetectorCamera)) return false;
-        gameCamera ??= AccessTools.FieldRefAccess<GameCursorDetector, Camera>(PatchTargets.CursorDetectorCamera.MemberName);
+        gameCamera ??= AccessTools.FieldRefAccess<GameCursorDetector, Camera>(PatchTargets.CursorDetectorCamera.MemberName!);
         return true;
     }
 
@@ -124,7 +124,8 @@ internal static class HitboxOverlayDetectionPatch
             PatchTargets.DisassembleDetectionElement,
             PatchTargets.DisassembleDetectionProjection,
             PatchTargets.DisassembleDetectionButton)
-        && HoverCapture.Prepare();
+        && HoverCapture.Prepare()
+        && WorkbenchHitboxes.Prepare();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.DisassembleDetectionOnUpdate)!;
 
@@ -172,7 +173,8 @@ internal static class HitboxOverlayEmptyBenchPatch
             PatchTargets.EmptyDetectionHits,
             PatchTargets.EmptyDetectionSelection,
             PatchTargets.EmptyDetectionElement)
-        && HoverCapture.Prepare();
+        && HoverCapture.Prepare()
+        && WorkbenchHitboxes.Prepare();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.EmptyDetectionOnUpdate)!;
 

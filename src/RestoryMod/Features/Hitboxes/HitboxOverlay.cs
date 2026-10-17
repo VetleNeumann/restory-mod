@@ -16,6 +16,9 @@ internal sealed class HitboxOverlay : MonoBehaviour
     private const int CursorHitLimit = 32;
 
     private static readonly Color Enlarged = new(1f, 0.7f, 0.1f);
+
+    /// <summary>Dark amber, so where enlarged hitboxes overlap the fills stack darker.</summary>
+    private static readonly Color EnlargedFill = new(0.4f, 0.22f, 0f, 0.22f);
     private static readonly Color GamePickColour = Color.white;
 
     private readonly WorkbenchHitboxes scene = new();
@@ -26,7 +29,7 @@ internal sealed class HitboxOverlay : MonoBehaviour
     private int computedFrame = -1;
     private float minimumSize;
     private WorkbenchThing? gamePick;
-    private HitboxPick<WorkbenchThing> assistPick;
+    private HitboxPick<WorkbenchThing> enlargingPick;
     private GUIStyle? textStyle;
 
     private void Awake() => useGUILayout = false;
@@ -54,12 +57,13 @@ internal sealed class HitboxOverlay : MonoBehaviour
         minimumSize = HitboxOverlayFeature.MinimumSizePixels;
         scene.Update(camera, snapshot.LayerMask);
         gamePick = scene.Find(snapshot.GamePick);
-        assistPick = snapshot.NotPicking is null
-            ? HitboxPicker.Pick(ToCore(snapshot.Cursor), minimumSize, scene.Hitboxes, gamePick, snapshot.PanelUnderCursor)
+        enlargingPick = snapshot.NotPicking is null
+            ? HitboxPicker.Pick(ToCore(snapshot.Cursor), minimumSize, scene.Sizings, gamePick, snapshot.PanelUnderCursor)
             : new HitboxPick<WorkbenchThing>(gamePick, PickReason.Native);
 
-        if (HitboxOverlayFeature.PickMap.Value) pickMap.Step(scene, camera, snapshot, minimumSize);
-        else pickMap.Clear();
+        // The pick map holds still while the game is not picking (rotating, a press held).
+        if (!HitboxOverlayFeature.PickMap.Value) pickMap.Clear();
+        else if (snapshot.NotPicking is null) pickMap.Step(scene, camera, snapshot, minimumSize);
 
         WriteReadout(snapshot, camera);
     }
@@ -74,34 +78,34 @@ internal sealed class HitboxOverlay : MonoBehaviour
             for (var i = scene.Things.Count - 1; i >= 0; i--)
             {
                 var thing = scene.Things[i];
-                var growth = thing.Hitbox.Growth(minimumSize);
+                var growth = thing.Sizing.Growth(minimumSize);
                 if (growth > 0)
                 {
-                    foreach (var outline in thing.Hitbox.Hitbox.Outlines(growth))
+                    foreach (var outline in thing.Native.Outlines(growth))
                     {
-                        OverlayGl.FillConvex(outline, Enlarged.WithAlpha(0.1f));
-                        OverlayGl.Outline(outline, 1.5f, Enlarged.WithAlpha(0.8f));
+                        OverlayGl.FillConvex(outline, EnlargedFill);
+                        OverlayGl.Outline(outline, 2f, Enlarged.WithAlpha(0.8f));
                     }
                 }
-                var colour = KindColour(thing.Kind).WithAlpha(thing.Hitbox.Seen ? 0.95f : 0.35f);
-                foreach (var outline in thing.Hitbox.Hitbox.Outlines(0))
-                    OverlayGl.Outline(outline, thing.Kind.Enlargeable() ? 2f : 1f, colour);
+                var colour = KindColour(thing.Kind).WithAlpha(thing.Sizing.Seen ? 0.95f : 0.35f);
+                foreach (var outline in thing.Native.Outlines(0))
+                    OverlayGl.Outline(outline, 2f, colour);
             }
 
-            if (assistPick.Thing is { } winner)
+            if (enlargingPick.Thing is { } winner)
             {
-                foreach (var outline in winner.Hitbox.Hitbox.Outlines(0))
+                foreach (var outline in winner.Native.Outlines(0))
                     OverlayGl.FillConvex(outline, KindColour(winner.Kind).WithAlpha(0.4f));
-                var growth = winner.Hitbox.Growth(minimumSize);
+                var growth = winner.Sizing.Growth(minimumSize);
                 if (growth > 0)
                 {
-                    foreach (var outline in winner.Hitbox.Hitbox.Outlines(growth))
-                        OverlayGl.Outline(outline, 2.5f, Enlarged);
+                    foreach (var outline in winner.Native.Outlines(growth))
+                        OverlayGl.Outline(outline, 3f, Enlarged);
                 }
             }
-            if (gamePick is not null && gamePick != assistPick.Thing)
+            if (gamePick is not null && gamePick != enlargingPick.Thing)
             {
-                foreach (var outline in gamePick.Hitbox.Hitbox.Outlines(0))
+                foreach (var outline in gamePick.Native.Outlines(0))
                     OverlayGl.Outline(outline, 3f, GamePickColour);
             }
 
@@ -131,7 +135,7 @@ internal sealed class HitboxOverlay : MonoBehaviour
         if (HitboxOverlayFeature.PickMap.Value) text.Append("  · pick map");
         text.AppendLine();
 
-        text.Append($"game: {Describe(gamePick)}   assist: {Describe(assistPick.Thing)} ({Reason(assistPick.Reason)})");
+        text.Append($"game: {Describe(gamePick)}   with enlarging (gamepad): {Describe(enlargingPick.Thing)} ({Reason(enlargingPick.Reason)})");
         if (snapshot.NotPicking is { } why) text.Append($"   [{why}]");
         text.AppendLine();
 
@@ -141,7 +145,7 @@ internal sealed class HitboxOverlay : MonoBehaviour
         text.Append($"under the cursor, front to back: {count} hit{(count == 1 ? "" : "s")}");
         if (count > snapshot.GameHitLimit) text.Append($" <color=#ff8080>(the game keeps only {snapshot.GameHitLimit}, unsorted)</color>");
         text.AppendLine();
-        for (var i = 0; i < Mathf.Min(count, 10); i++)
+        for (var i = 0; i < count; i++)
         {
             var hit = cursorHits[i];
             var thing = scene.Find(hit.collider);
@@ -150,11 +154,11 @@ internal sealed class HitboxOverlay : MonoBehaviour
         }
 
         var reaching = new List<(WorkbenchThing Thing, float Distance, float Growth)>();
-        foreach (var hitbox in scene.Hitboxes)
+        foreach (var sizing in scene.Sizings)
         {
-            var growth = hitbox.Growth(minimumSize);
-            var distance = hitbox.Hitbox.DistanceTo(ToCore(snapshot.Cursor));
-            if (growth > 0 && distance <= growth) reaching.Add((hitbox.Thing, distance, growth));
+            var growth = sizing.Growth(minimumSize);
+            var distance = sizing.Hitbox.DistanceTo(ToCore(snapshot.Cursor));
+            if (growth > 0 && distance <= growth) reaching.Add((sizing.Thing, distance, growth));
         }
         if (reaching.Count > 0)
         {
@@ -166,15 +170,15 @@ internal sealed class HitboxOverlay : MonoBehaviour
 
         text.Append("<color=#33e6ff>screw</color> · <color=#d9d9ff>screw slot</color> · <color=#4dff4d>loose</color> · ")
             .Append("<color=#fff24d>attached</color> · <color=#ff66ff>switch</color> · <color=#999999>does nothing</color> · ")
-            .Append("<color=#ffb31a>enlarged</color> · filled = assist pick · white = game pick when it differs · dim = hidden");
+            .Append("<color=#ffb31a>enlarged</color> · filled = hovered with enlarging · white = game's pick when it differs · dim = unseen");
     }
 
     private string Details(WorkbenchThing thing)
     {
-        var line = $"{Describe(thing)}  {thing.Hitbox.Hitbox.NarrowestWidth:0} px wide";
-        var growth = thing.Hitbox.Growth(minimumSize);
-        if (growth > 0) line += $", enlarged +{growth:0}";
-        if (thing.Kind.Enlargeable() && !thing.Hitbox.Seen) line += ", hidden";
+        var line = $"{Describe(thing)}  {thing.Native.NarrowestWidth:0} px wide";
+        var growth = thing.Sizing.Growth(minimumSize);
+        if (growth > 0) line += $", enlarged +{growth:0} to {minimumSize:0} px";
+        if (!thing.Sizing.Seen) line += ", unseen";
         if (thing.Approximate) line += ", outline approximate";
         return line;
     }
@@ -233,6 +237,7 @@ internal sealed class HitboxOverlay : MonoBehaviour
 /// <summary>
 /// Pick map: tints each spot on screen by the thing the cursor would hover there. Works through a
 /// few rows of cells per frame, so the whole screen refreshes several times a second without a hitch.
+/// Panels are not tested spot by spot, so the tint runs under them too.
 /// </summary>
 internal sealed class PickMap
 {
@@ -277,13 +282,13 @@ internal sealed class PickMap
                 var native = scene.GamePickAt(camera, point, snapshot.LayerMask, gameHits, scratch);
 
                 near.Clear();
-                foreach (var hitbox in scene.Hitboxes)
+                foreach (var sizing in scene.Sizings)
                 {
-                    var growth = hitbox.Growth(minimumSize);
-                    var reach = hitbox.Thing.ScreenBounds;
+                    var growth = sizing.Growth(minimumSize);
+                    var reach = sizing.Thing.ScreenBounds;
                     if (growth > 0 && point.x >= reach.xMin - growth && point.x <= reach.xMax + growth &&
                         point.y >= reach.yMin - growth && point.y <= reach.yMax + growth)
-                        near.Add(hitbox);
+                        near.Add(sizing);
                 }
                 var pick = HitboxPicker.Pick(HitboxOverlay.ToCore(point), minimumSize, near, native, panelUnderCursor: false);
                 cells[row * columns + column] = pick.Thing is { } winner

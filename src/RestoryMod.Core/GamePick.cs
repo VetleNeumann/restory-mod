@@ -6,7 +6,7 @@ namespace RestoryMod.Core;
 public enum RayHitLayer
 {
     /// <summary>A screw slot or part ghost.</summary>
-    Projection,
+    SlotOrGhost,
 
     /// <summary>A part, or the device body.</summary>
     PartOrDevice,
@@ -27,8 +27,9 @@ public static class GamePick
     /// <summary>
     /// What the game hovers at the workbench for one ray's hits, given in the order the physics query
     /// returned them (which is not sorted by distance). Mirrors the detection in the game's workbench
-    /// hover states: the first projection wins outright; otherwise the nearest part or device body,
-    /// and only without one of those, the nearest other hit.
+    /// hover states: the first screw slot or part ghost wins outright; otherwise the nearest part or
+    /// device body, and only without one of those, the nearest other hit. (When that last hit is the
+    /// washing bin, the game also looks for a part in it near the hit point; that is not mirrored.)
     /// </summary>
     public static T? AtWorkbench<T>(IReadOnlyList<RayHit<T>> hits) where T : class
     {
@@ -38,7 +39,7 @@ public static class GamePick
         var onPartOrDevice = false;
         foreach (var hit in hits)
         {
-            if (hit.Layer == RayHitLayer.Projection) return hit.Thing;
+            if (hit.Layer == RayHitLayer.SlotOrGhost) return hit.Thing;
             if (hit.Layer == RayHitLayer.PartOrDevice)
             {
                 if (!onPartOrDevice || hit.Distance < chosen.Distance) chosen = hit;

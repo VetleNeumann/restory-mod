@@ -28,6 +28,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   cursor to the screen edge does (at the workbench they still zoom). In the PC's web browser, L2/R2 switch
   between Marketplace, Home Depot and Parts, and L1/R1 step through the shown tab's categories. L1/R1 also
   step through the inventory's categories, and through the tools in the Tool window while cleaning.
+- **Gamepad mail**: in the PC's mail app, L1/R1 step through the mail folders and D-pad up/down through
+  the mail in the open folder (hold to repeat). Once you have selected a mail, one stays selected:
+  switching folders selects the top mail, taking an order selects the next one, and new mail in an empty
+  folder is selected. The list scrolls to keep the selected mail in view.
 - **D-pad part sends**: at the workbench, while holding a part with Cross / A, press the D-pad to send it
   without carrying it there: up to the washing bin, right to the tool cup, left to the parts box, down to
   the trash can (or the shredder once you own one). If that place wouldn't take the part (a damaged part
@@ -63,6 +67,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | ShoulderButtons | BrowserTabsAndCategories | true | L2/R2 tabs and L1/R1 categories in the web browser |
 | ShoulderButtons | InventoryCategories | true | L1/R1 categories in the inventory |
 | ShoulderButtons | CleaningTools | true | L1/R1 tools while cleaning |
+| ShoulderButtons | MailFolders | true | L1/R1 mail folders in the mail app |
+| Mail | DpadSelectsMail | true | D-pad mail selection in the mail app |
 | Stick scroll | Smoothing | 0.07 | Seconds for speed to follow the stick; 0 = instant |
 | Stick scroll | Invert | false | Flip direction |
 

@@ -10,6 +10,7 @@ using Restory.UI.Views.Shops.Devices;
 using Restory.UI.Views.Shops.Elements;
 using Restory.UI.Views.Shops.HomeDepot;
 using RestoryMod.Core;
+using RestoryMod.Features.MailList;
 using Rewired;
 using UnityEngine;
 
@@ -17,7 +18,8 @@ namespace RestoryMod.Features.ShoulderButtons;
 
 /// <summary>
 /// Reads L1/R1 and L2/R2 each frame and hands the press to whatever is on screen: the Tool window
-/// while Cleaning, else the inventory (the parts box at the workbench), else the PC's web browser.
+/// while Cleaning, else the inventory (the parts box at the workbench), else the PC's mail app, else
+/// its web browser.
 /// None of these screens has a per-frame update of its own to hook. The Look direction is handled
 /// in <see cref="LookDirectionPatch"/> instead, inside the game's own update for it.
 /// </summary>
@@ -39,7 +41,8 @@ internal sealed class ShoulderButtonsPoller : MonoBehaviour
             if (bumperStep == 0 && triggerStep == 0) return;
             if (ShoulderButtonsFeature.IsPaused()) return;
 
-            if (bumperStep != 0 && (TryStepCleaningTool(bumperStep) || TryStepInventory(bumperStep))) return;
+            if (bumperStep != 0 && (TryStepCleaningTool(bumperStep) || TryStepInventory(bumperStep) ||
+                                    TryStepMailFolder(bumperStep))) return;
             TryStepBrowser(bumperStep, triggerStep);
         }
         catch (Exception e)
@@ -78,6 +81,22 @@ internal sealed class ShoulderButtonsPoller : MonoBehaviour
 
         var view = panel.GetComponentInChildren<InventoryPanelFilterView>();
         if (view) StepCategoryBar(ShoulderButtonsCapture.InventoryCategoryBar(view), step);
+        return true;
+    }
+
+    /// <summary>True when the Mail app runs, so L1/R1 belong to its mail folders.</summary>
+    private static bool TryStepMailFolder(int step)
+    {
+        if (!ShoulderButtonsFeature.MailFolders.Value || !ShoulderButtonsCapture.MailFoldersPresent()) return false;
+        if (MailApp.Running() is not { } client) return false;
+        var folders = ShoulderButtonsCapture.MailFolders(client);
+        if (!folders) return true;
+
+        StepOnScreen(ShoulderButtonsCapture.MailFolderButtons(folders!),
+            button => button.EmailFolder == folders!.CurrentlySelectedFolder,
+            button => button.gameObject.activeInHierarchy,
+            step,
+            button => ShoulderButtonsCapture.MailFolderButton(button).onClick.Invoke());
         return true;
     }
 

@@ -7,6 +7,7 @@ using RestoryMod.Features.Diagnostics;
 using RestoryMod.Features.DpadSend;
 using RestoryMod.Features.DropdownModes;
 using RestoryMod.Features.HoverGrace;
+using RestoryMod.Features.MailList;
 using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;
 using RestoryMod.Features.RotationSpeed;
@@ -42,6 +43,7 @@ public class Plugin : BaseUnityPlugin
         GamepadBindingsDump.Bind(Config);
         StickScrollFeature.Bind(Config);
         HoverGraceFeature.Bind(Config);
+        MailListFeature.Bind(Config);
         WatchConfigFile();
 
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -75,12 +77,19 @@ public class Plugin : BaseUnityPlugin
             typeof(DpadSendCarryPatch),
             typeof(HoverGraceDisassemblePatch),
             typeof(HoverGraceWorkPatch),
+            typeof(MailLaunchPatch),
+            typeof(MailStopPatch),
+            typeof(MailSelectedPatch),
+            typeof(MailFolderChangedPatch),
+            typeof(MailContentsChangedPatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump));
         if (StickScrollFeature.TargetsPresent()) gameObject.AddComponent<StickScrollDriver>();
         gameObject.AddComponent<ShoulderButtonsPoller>();
         // Idle unless DpadSendSlotPressPatch applied: it is what records a pressed slot.
         gameObject.AddComponent<DpadSendPoller>();
+        // Idle unless the mail list targets resolve and MailLaunchPatch has captured the Mail app.
+        gameObject.AddComponent<MailListPoller>();
     }
 
     /// <summary>

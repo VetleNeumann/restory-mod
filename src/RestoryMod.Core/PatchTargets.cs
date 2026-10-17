@@ -119,6 +119,25 @@ public static class PatchTargets
     public static readonly PatchTarget HomeDepotFilterCategoryBar = new("Restory.UI.Views.Shops.HomeDepot.GUI_DecorShopProductsPanelFilterView", "categoriesToggleGroup");
     public static readonly PatchTarget PartsFilterCategoryBar = new("Restory.UI.Views.Shops.Elements.GUI_ElementsShopProductsPanelFilterView", "deviceCategoriesToggleGroup");
 
+    // Mail list: the D-pad steps the Selected mail by running the list's own click handler; the folder
+    // switch and mail-service change handlers are followed to keep a mail selected. L1/R1 click the
+    // mail folder buttons.
+    private const string MailClient = "Restory.UI.Presenters.GUI_MailClient";
+    private const string MailList = "Restory.UI.Presenters.GUI_MailClientEmailButtonsInFolderPanel";
+    private const string MailListPair = MailList + "+LetterAndButtonPair";
+    public static readonly PatchTarget MailLaunchProcess = new(MailClient, "LaunchProcess");
+    public static readonly PatchTarget MailStopProcess = new(MailClient, "StopProcess");
+    public static readonly PatchTarget MailFolderChanged = new(MailClient, "ResolveFolderSelectionChanged");
+    public static readonly PatchTarget MailContentsChanged = new(MailClient, "ResolveChangesInEmailServiceDetected");
+    public static readonly PatchTarget MailClientList = new(MailClient, "messages");
+    public static readonly PatchTarget MailClientFolders = new(MailClient, "folders");
+    public static readonly PatchTarget MailListEntries = new(MailList, "emailLettersAndTheirButtons");
+    public static readonly PatchTarget MailListClick = new(MailList, "ResolveEmailButtonClicked");
+    public static readonly PatchTarget MailListPairButton = new(MailListPair, "Button");
+    public static readonly PatchTarget MailListPairLetter = new(MailListPair, "Letter");
+    public static readonly PatchTarget MailFolderButtons = new("Restory.UI.Presenters.GUI_MailClientFoldersPanel", "folderButtons");
+    public static readonly PatchTarget MailFolderButtonButton = new("Restory.UI.Presenters.GUI_MailClientFolderButton", "button");
+
     // D-pad part send: after the drag state's per-frame update, the chosen destination's hover state is
     // set and the game's private release handler runs. Trash can and shredder hover via pointer events.
     private const string DraggingState = "Restory.Gameplay.Disassemble.StateMachine.DraggingDisassembleState";
@@ -241,6 +260,18 @@ public static class PatchTargets
         MarketplaceFilterCategoryBar,
         HomeDepotFilterCategoryBar,
         PartsFilterCategoryBar,
+        MailLaunchProcess,
+        MailStopProcess,
+        MailFolderChanged,
+        MailContentsChanged,
+        MailClientList,
+        MailClientFolders,
+        MailListEntries,
+        MailListClick,
+        MailListPairButton,
+        MailListPairLetter,
+        MailFolderButtons,
+        MailFolderButtonButton,
         DraggingOnUpdate,
         DraggingRelease,
         DraggingCompleteDrag,
@@ -346,6 +377,10 @@ public static class PatchTargets
         new PatchTarget("Restory.UI.Presenters.GUI_WebBrowserPageSwitcher", "CurrentTab"),
         new PatchTarget("Restory.UI.Presenters.GUI_WebBrowserPageSwitcher", "ResolveTabClick"),
         new PatchTarget("Restory.UI.Views.GUI_WebBrowserTabView", "BrowserPage"),
+        new PatchTarget(MailList, "CurrentlySelectedLetter"),
+        new PatchTarget("Restory.UI.Presenters.GUI_MailClientFoldersPanel", "CurrentlySelectedFolder"),
+        new PatchTarget("Restory.UI.Presenters.GUI_MailClientFolderButton", "EmailFolder"),
+        new PatchTarget("Restory.UI.Presenters.GUI_EmailMessageButton"),
         new PatchTarget("Restory.UI.Views.ToggleButtonGroup", "Buttons"),
         new PatchTarget("Restory.UI.Views.ToggleButton", "IsSelected"),
         new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "Id"),

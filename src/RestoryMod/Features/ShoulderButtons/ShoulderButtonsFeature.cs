@@ -19,6 +19,7 @@ internal static class ShoulderButtonsFeature
     public static ConfigEntry<bool> Browser = null!;
     public static ConfigEntry<bool> Inventory = null!;
     public static ConfigEntry<bool> CleaningTools = null!;
+    public static ConfigEntry<bool> MailFolders = null!;
 
     public static void Bind(ConfigFile config)
     {
@@ -32,6 +33,8 @@ internal static class ShoulderButtonsFeature
             "In the inventory, L1/R1 step through the device categories.");
         CleaningTools = config.Bind("ShoulderButtons", "CleaningTools", true,
             "While cleaning a part, L1/R1 step through the tools in the Tool window.");
+        MailFolders = config.Bind("ShoulderButtons", "MailFolders", true,
+            "In the PC's mail app, L1/R1 step through the mail folders.");
     }
 
     private static GUI_PauseMenu? pauseMenu;

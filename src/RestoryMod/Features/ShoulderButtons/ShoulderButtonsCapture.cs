@@ -10,6 +10,8 @@ using Restory.UI.Views.Shops.Devices;
 using Restory.UI.Views.Shops.Elements;
 using Restory.UI.Views.Shops.HomeDepot;
 using RestoryMod.Core;
+using RestoryMod.Features.MailList;
+using UnityEngine.UI;
 
 namespace RestoryMod.Features.ShoulderButtons;
 
@@ -30,6 +32,25 @@ internal static class ShoulderButtonsCapture
     private static AccessTools.FieldRef<GUI_DeviceShopFilterView, ToggleButtonGroup>? marketplaceBar;
     private static AccessTools.FieldRef<GUI_DecorShopProductsPanelFilterView, ToggleButtonGroup>? homeDepotBar;
     private static AccessTools.FieldRef<GUI_ElementsShopProductsPanelFilterView, ToggleButtonGroup>? partsBar;
+    private static AccessTools.FieldRef<GUI_MailClient, GUI_MailClientFoldersPanel>? mailFolders;
+    private static AccessTools.FieldRef<GUI_MailClientFoldersPanel, GUI_MailClientFolderButton[]>? mailFolderButtons;
+    private static AccessTools.FieldRef<GUI_MailClientFolderButton, Button>? mailFolderButton;
+    private static bool? mailFoldersPresent;
+
+    /// <summary>The Mail app is captured by <see cref="MailApp"/>; these are the fields L1/R1 read on it.</summary>
+    public static bool MailFoldersPresent() => mailFoldersPresent ??= MailApp.TargetsPresent() && GameTargets.AllPresent(
+        PatchTargets.MailClientFolders,
+        PatchTargets.MailFolderButtons,
+        PatchTargets.MailFolderButtonButton);
+
+    public static GUI_MailClientFoldersPanel MailFolders(GUI_MailClient client) =>
+        Field(ref mailFolders, PatchTargets.MailClientFolders)(client);
+
+    public static GUI_MailClientFolderButton[] MailFolderButtons(GUI_MailClientFoldersPanel panel) =>
+        Field(ref mailFolderButtons, PatchTargets.MailFolderButtons)(panel);
+
+    public static Button MailFolderButton(GUI_MailClientFolderButton button) =>
+        Field(ref mailFolderButton, PatchTargets.MailFolderButtonButton)(button);
 
     public static bool ToolWindowShown(GUI_CleaningToolsSelectionWindow window) =>
         Field(ref toolWindowShown, PatchTargets.ToolWindowIsShown)(window);

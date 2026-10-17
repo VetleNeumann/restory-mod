@@ -245,6 +245,15 @@ internal static class DpadSendPatch
         return null;
     }
 
+    /// <summary>D-pad up (-1) or down (+1) held down this frame, else 0; the stick does not count.</summary>
+    internal static int HeldVertical(Player? player)
+    {
+        if (player is null || !IsDpad(player, UiVerticalActionId)) return 0;
+        if (player.GetButton(UiVerticalActionId)) return -1;
+        if (player.GetNegativeButton(UiVerticalActionId)) return 1;
+        return 0;
+    }
+
     /// <summary>The action is held by a gamepad button (the D-pad) rather than an axis (the stick).</summary>
     private static bool IsDpad(Player player, int actionId)
     {

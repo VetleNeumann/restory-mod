@@ -128,3 +128,29 @@ The sliding panel of Cleaning tools shown during Cleaning. It lists only tools t
 **Cleaning tool**:
 The tool picked in the Tool window, used when Cleaning. L1/R1 step through the Tool window's slots in on-screen order, wrapping at the ends, even mid-action.
 _Avoid_: equipment, selected item
+
+### Mail
+
+**Mail app**:
+The PC app where mail arrives and orders are taken.
+_Avoid_: email client, inbox (that is one folder)
+
+**Mail**:
+Any message in the Mail app. Every mail is either an order or a letter.
+_Avoid_: email, message, letter (when any mail is meant)
+
+**Order**:
+A mail offering a repair job. Taking it sends the device for delivery and moves the mail to Orders in progress. It cannot be declined.
+_Avoid_: job, request
+
+**Letter**:
+A mail that is not an order: story mail, answered with the game's Ok, Yes or No buttons.
+_Avoid_: narrative email
+
+**Mail folder**:
+One of the lists along the top of the Mail app: Orders, Orders in progress, General, Spam, Recycle bin. Opening a mail folder shows its mail. L1/R1 step between them in on-screen order, wrapping at the ends; the D-pad steps through the mail in the open folder, stopping at the ends.
+_Avoid_: tab, inbox, category
+
+**Selected mail**:
+The mail shown in the Mail app's reading pane; at most one. Once the player selects any mail, the Mail app keeps one selected until it closes: opening another mail folder selects its top mail, and when the selected mail leaves its folder (an order taken) the mail that takes its place is selected, or the one above it if it was last. A mail folder with no mail has none selected, until mail arrives in it. Selecting by D-pad or by a click starts this alike. The view always scrolls to keep the selected mail in sight.
+_Avoid_: open mail (Open is a Notepad state), current mail, highlighted mail

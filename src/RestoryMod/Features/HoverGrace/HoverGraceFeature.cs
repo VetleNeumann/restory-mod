@@ -148,12 +148,28 @@ internal static class HoverGraceDisassemblePatch
 /// On the bench: every object the game selects there (device boxes, packs, cash, decor) is covered.
 /// Anything else the game detects (UI, levers, the cash register) counts as something else.
 /// </summary>
+/// <remarks>
+/// The game plays a sound on every select and deselect of an object, so the lingering object must
+/// not be deselected and selected again each frame. While a gamepad drives the cursor, the game's
+/// deselect of the selected object is held back during its detection (<see cref="HoverGraceWorkResetPatch"/>);
+/// afterwards the object either stays selected or, once the grace is over, is deselected for real.
+/// </remarks>
 [HarmonyPatch]
 internal static class HoverGraceWorkPatch
 {
     private static readonly HoverGrace<InteractiveObject> Grace = new();
     private static Action<DetectionWorkState, InteractiveObject>? selectObject;
+    private static Action<DetectionWorkState>? resetObject;
     private static Func<DetectionWorkState, bool>? visitsBlockDetection;
+
+    /// <summary>The selected object whose deselect is held back during this frame's detection.</summary>
+    internal static InteractiveObject? Deferred;
+
+    /// <summary>The game deselected <see cref="Deferred"/> this frame, but it is still selected.</summary>
+    internal static bool ResetHeldBack;
+
+    /// <summary>Set while the patch itself deselects, so the reset goes through.</summary>
+    internal static bool Resetting;
 
     private static bool Prepare()
     {
@@ -163,11 +179,14 @@ internal static class HoverGraceWorkPatch
                 PatchTargets.WorkDetectionSelection,
                 PatchTargets.WorkDetectionObject,
                 PatchTargets.WorkDetectionSelectObject,
+                PatchTargets.WorkDetectionResetObject,
                 PatchTargets.WorkDetectionVisitsBlock))
             return false;
 
         selectObject = AccessTools.MethodDelegate<Action<DetectionWorkState, InteractiveObject>>(
             GameTargets.Method(PatchTargets.WorkDetectionSelectObject));
+        resetObject = AccessTools.MethodDelegate<Action<DetectionWorkState>>(
+            GameTargets.Method(PatchTargets.WorkDetectionResetObject));
         visitsBlockDetection = AccessTools.MethodDelegate<Func<DetectionWorkState, bool>>(
             GameTargets.Method(PatchTargets.WorkDetectionVisitsBlock));
         return true;
@@ -175,12 +194,38 @@ internal static class HoverGraceWorkPatch
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.DetectionWorkStateOnUpdate)!;
 
+    /// <summary>The game's own deselect, run past <see cref="HoverGraceWorkResetPatch"/>.</summary>
+    internal static void Reset(DetectionWorkState state)
+    {
+        Resetting = true;
+        try
+        {
+            resetObject!(state);
+        }
+        finally
+        {
+            Resetting = false;
+            ResetHeldBack = false;
+        }
+    }
+
+    private static void Prefix(InteractiveObject? ___selectedObject)
+    {
+        Deferred = HoverGraceFeature.Window > 0f && ___selectedObject ? ___selectedObject : null;
+        ResetHeldBack = false;
+    }
+
     private static void Postfix(
         DetectionWorkState __instance,
         IPlayerInput ___playerInput,
         CursorSelectionService ___cursorSelectionService,
         InteractiveObject? ___selectedObject)
     {
+        var deferred = Deferred;
+        var heldBack = ResetHeldBack;
+        Deferred = null;
+        ResetHeldBack = false;
+
         // The game skips detection while Activate is held or released, so a drag or an
         // activation resolves on what was hovered at the press. A press uses up the grace.
         if (___playerInput.GetButton(MiniGameAction.Activate) || ___playerInput.GetButtonUp(MiniGameAction.Activate))
@@ -189,12 +234,67 @@ internal static class HoverGraceWorkPatch
             return;
         }
 
-        var kind = ___selectedObject ? HoverKind.Eligible
+        // A held-back deselect means the game found nothing to keep selected.
+        var found = heldBack && ___selectedObject == deferred ? null : ___selectedObject;
+        var kind = found ? HoverKind.Eligible
             : visitsBlockDetection!(__instance) || ___cursorSelectionService.DetectedGameObject ? HoverKind.Other
             : HoverKind.Nothing;
-        var keep = HoverGraceFeature.Next(Grace, kind, kind == HoverKind.Eligible ? ___selectedObject : null);
-        if (!keep || !keep!.IsInteractable || !keep.gameObject.activeInHierarchy) return;
+        var keep = HoverGraceFeature.Next(Grace, kind, kind == HoverKind.Eligible ? found : null);
+        var keepable = keep && keep!.IsInteractable && keep.gameObject.activeInHierarchy;
 
-        selectObject!(__instance, keep);
+        if (heldBack)
+        {
+            // Still selected from before: keep it without a fresh select, or deselect it for real.
+            if (keepable && keep == ___selectedObject) ___cursorSelectionService.SetDetection(keep!.gameObject);
+            else Reset(__instance);
+            return;
+        }
+        if (keepable && keep != ___selectedObject) selectObject!(__instance, keep!);
+    }
+}
+
+/// <summary>
+/// Holds back the game's deselect of <see cref="HoverGraceWorkPatch.Deferred"/> during the frame's
+/// detection; <see cref="HoverGraceWorkPatch"/> settles it afterwards.
+/// </summary>
+[HarmonyPatch]
+internal static class HoverGraceWorkResetPatch
+{
+    private static bool Prepare() => GameTargets.AllPresent(
+        PatchTargets.DetectionWorkStateOnUpdate,
+        PatchTargets.WorkDetectionObject,
+        PatchTargets.WorkDetectionResetObject);
+
+    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.WorkDetectionResetObject)!;
+
+    private static bool Prefix(InteractiveObject? ___selectedObject)
+    {
+        if (HoverGraceWorkPatch.Resetting || !HoverGraceWorkPatch.Deferred ||
+            ___selectedObject != HoverGraceWorkPatch.Deferred)
+            return true;
+        HoverGraceWorkPatch.ResetHeldBack = true;
+        return false;
+    }
+}
+
+/// <summary>
+/// The game selects a new object right after deselecting the old one; with that deselect held
+/// back, the old object is deselected for real first, as the game would have.
+/// </summary>
+[HarmonyPatch]
+internal static class HoverGraceWorkSelectPatch
+{
+    private static bool Prepare() => GameTargets.AllPresent(
+        PatchTargets.DetectionWorkStateOnUpdate,
+        PatchTargets.WorkDetectionObject,
+        PatchTargets.WorkDetectionSelectObject,
+        PatchTargets.WorkDetectionResetObject);
+
+    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.WorkDetectionSelectObject)!;
+
+    private static void Prefix(DetectionWorkState __instance, InteractiveObject? ___selectedObject)
+    {
+        if (HoverGraceWorkPatch.ResetHeldBack && ___selectedObject == HoverGraceWorkPatch.Deferred)
+            HoverGraceWorkPatch.Reset(__instance);
     }
 }

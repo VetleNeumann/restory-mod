@@ -198,6 +198,7 @@ public static class PatchTargets
     public static readonly PatchTarget WorkDetectionSelection = new(DetectionWorkState, "cursorSelectionService");
     public static readonly PatchTarget WorkDetectionObject = new(DetectionWorkState, "selectedObject");
     public static readonly PatchTarget WorkDetectionSelectObject = new(DetectionWorkState, "SelectDetectedObject");
+    public static readonly PatchTarget WorkDetectionResetObject = new(DetectionWorkState, "ResetSelectedObject");
     public static readonly PatchTarget WorkDetectionVisitsBlock = new(DetectionWorkState, "DoesVisitsStateBlockDetection");
 
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
@@ -319,6 +320,7 @@ public static class PatchTargets
         WorkDetectionSelection,
         WorkDetectionObject,
         WorkDetectionSelectObject,
+        WorkDetectionResetObject,
         WorkDetectionVisitsBlock,
 
         // Members the plugin reads directly (compiled against) rather than through the entries above;

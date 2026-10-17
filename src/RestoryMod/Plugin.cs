@@ -77,6 +77,8 @@ public class Plugin : BaseUnityPlugin
             typeof(DpadSendCarryPatch),
             typeof(HoverGraceDisassemblePatch),
             typeof(HoverGraceWorkPatch),
+            typeof(HoverGraceWorkResetPatch),
+            typeof(HoverGraceWorkSelectPatch),
             typeof(MailLaunchPatch),
             typeof(MailStopPatch),
             typeof(MailSelectedPatch),

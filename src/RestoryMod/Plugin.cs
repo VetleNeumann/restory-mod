@@ -62,6 +62,8 @@ public class Plugin : BaseUnityPlugin
             typeof(NotepadKeyListenPatch),
             typeof(NotepadKeyUnlistenPatch),
             typeof(NotepadKeyHoldOpenPatch),
+            typeof(NotepadKeyIgnoreHoverPatch),
+            typeof(NotepadKeyIgnoreHoverGetterPatch),
             typeof(StickScrollGameHandlerPatch),
             typeof(LookDirectionPatch),
             typeof(CleaningToolWindowCapturePatch),

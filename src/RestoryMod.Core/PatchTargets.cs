@@ -81,7 +81,8 @@ public static class PatchTargets
     public static readonly PatchTarget InventoryPanelViewItems = new(InventoryPanelViewType, "Items");
     public static readonly PatchTarget InventoryItemsViewContainer = new(InventoryItemsView, "container");
 
-    // Notepad key: listened for beside the game's own listener; the game's hotkeyPressed flag holds Open.
+    // Notepad key: listened for beside the game's own listener; the game's hotkeyPressed flag holds Open,
+    // and pointerInside is masked after the key closes a hovered Notepad.
     public static readonly PatchTarget NotepadActivatorInitialize = new(NotepadActivator, "Initialize");
     public static readonly PatchTarget NotepadActivatorDispose = new(NotepadActivator, "Dispose");
     public static readonly PatchTarget NotepadActivatorPlayerInput = new(NotepadActivator, "playerInput");
@@ -90,6 +91,8 @@ public static class PatchTargets
     public static readonly PatchTarget NotepadActivatorPauseMenu = new(NotepadActivator, "pauseMenu");
     public static readonly PatchTarget NotepadWindowUpdateViewState = new(NotepadWindow, "UpdateViewState");
     public static readonly PatchTarget NotepadWindowHotkeyPressed = new(NotepadWindow, "hotkeyPressed");
+    public static readonly PatchTarget NotepadWindowPointerInside = new(NotepadWindow, "pointerInside");
+    public static readonly PatchTarget NotepadWindowIsPointerInside = new(NotepadWindow, "IsPointerInside");
     public static readonly PatchTarget NotepadWindowIsSlidingMode = new(NotepadWindow, "isSlidingMode");
     public static readonly PatchTarget NotepadWindowItem = new(NotepadWindow, "notepadInteractiveWorkplaceItem");
 
@@ -218,6 +221,8 @@ public static class PatchTargets
         NotepadActivatorPauseMenu,
         NotepadWindowUpdateViewState,
         NotepadWindowHotkeyPressed,
+        NotepadWindowPointerInside,
+        NotepadWindowIsPointerInside,
         NotepadWindowIsSlidingMode,
         NotepadWindowItem,
         ScrollbarInputResolveScroll,

@@ -46,8 +46,8 @@ internal static class NotepadKeyListenPatch
     /// <summary>The game's OpenCopybook action; the game hardcodes the same id.</summary>
     private const int NotepadKeyActionId = 90;
 
-    /// <summary>The mod's sticky Open, see <see cref="NotepadToggle"/>. One Notepad per scene.</summary>
-    internal static bool KeyOpen;
+    /// <summary>The mod's hold on the Notepad, see <see cref="NotepadToggle"/>. One Notepad per scene.</summary>
+    internal static NotepadKeyState State;
 
     private static IPlayerInput? playerInput;
     private static GUI_NotepadWindow? window;
@@ -105,7 +105,7 @@ internal static class NotepadKeyListenPatch
         window = null;
         item = null;
         pauseMenu = null;
-        KeyOpen = false;
+        State = default;
     }
 
     private static void OnNotepadKeyPressed(InputActionEventData _)
@@ -116,10 +116,13 @@ internal static class NotepadKeyListenPatch
             if (!window || !item || updateViewState is null) return;
             if (pauseMenu && pauseMenu!.IsShown) return;
 
-            var next = NotepadToggle.AfterKeyPress(window!.IsVisible, window.IsSlidingMode, item!.WindowIsPinned, KeyOpen);
-            if (next == KeyOpen) return;
+            // Without the hover patch the key can't override hover, so it acts as if the pointer were away.
+            var pointerInside = NotepadKeyIgnoreHoverPatch.Active && PointerInside(window!);
+            var next = NotepadToggle.AfterKeyPress(window!.IsVisible, window.IsSlidingMode, item!.WindowIsPinned,
+                pointerInside, State);
+            if (next == State) return;
 
-            KeyOpen = next;
+            State = next;
             updateViewState(window);
         }
         catch (Exception e)
@@ -127,6 +130,12 @@ internal static class NotepadKeyListenPatch
             NotepadKeyFeature.LogOnce(e);
         }
     }
+
+    /// <summary>
+    /// Pointer state as the key sees it: false while hover is ignored (the getter postfix), so a press
+    /// then reopens. Kept apart so a moved getter fails inside the caller's try, not at its JIT.
+    /// </summary>
+    private static bool PointerInside(GUI_NotepadWindow notepadWindow) => notepadWindow.IsPointerInside;
 }
 
 /// <summary>Drops the listener with the scene, as the game does with its own.</summary>
@@ -165,13 +174,70 @@ internal static class NotepadKeyHoldOpenPatch
         out bool __state)
     {
         __state = ___hotkeyPressed;
-        if (!NotepadKeyListenPatch.KeyOpen) return;
+        if (!NotepadKeyListenPatch.State.KeyOpen) return;
 
         var pinned = ___notepadInteractiveWorkplaceItem && ___notepadInteractiveWorkplaceItem.WindowIsPinned;
-        NotepadKeyListenPatch.KeyOpen = NotepadKeyFeature.Enabled.Value &&
+        var keyOpen = NotepadKeyFeature.Enabled.Value &&
             NotepadToggle.KeepKeyOpen(___isSlidingMode, pinned, keyOpen: true);
-        ___hotkeyPressed |= NotepadKeyListenPatch.KeyOpen;
+        NotepadKeyListenPatch.State = NotepadKeyListenPatch.State with { KeyOpen = keyOpen };
+        ___hotkeyPressed |= keyOpen;
     }
 
     private static void Postfix(ref bool ___hotkeyPressed, bool __state) => ___hotkeyPressed = __state;
+}
+
+/// <summary>
+/// Lets the key close a Notepad the pointer holds open. The game opens the sliding Notepad while
+/// pointerInside is set, so while hover is ignored that flag is lent false for the call only. Ends
+/// when the pointer leaves, the Notepad is pinned, or the workbench session ends.
+/// </summary>
+[HarmonyPatch]
+internal static class NotepadKeyIgnoreHoverPatch
+{
+    /// <summary>True once patched; the key only ignores hover when this patch can apply it.</summary>
+    internal static bool Active;
+
+    private static bool Prepare() => Active = GameTargets.AllPresent(
+        PatchTargets.NotepadWindowUpdateViewState,
+        PatchTargets.NotepadWindowPointerInside,
+        PatchTargets.NotepadWindowIsPointerInside,
+        PatchTargets.NotepadWindowIsSlidingMode,
+        PatchTargets.NotepadWindowItem);
+
+    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.NotepadWindowUpdateViewState)!;
+
+    private static void Prefix(
+        ref bool ___pointerInside,
+        bool ___isSlidingMode,
+        NotepadInteractiveWorkplaceItem ___notepadInteractiveWorkplaceItem,
+        out bool __state)
+    {
+        __state = ___pointerInside;
+        if (!NotepadKeyListenPatch.State.HoverIgnored) return;
+
+        var pinned = ___notepadInteractiveWorkplaceItem && ___notepadInteractiveWorkplaceItem.WindowIsPinned;
+        var ignored = NotepadKeyFeature.Enabled.Value &&
+            NotepadToggle.KeepHoverIgnored(___isSlidingMode, pinned, ___pointerInside, hoverIgnored: true);
+        NotepadKeyListenPatch.State = NotepadKeyListenPatch.State with { HoverIgnored = ignored };
+        ___pointerInside &= !ignored;
+    }
+
+    private static void Postfix(ref bool ___pointerInside, bool __state) => ___pointerInside = __state;
+}
+
+/// <summary>
+/// Reports the pointer as outside while hover is ignored. The game also reads IsPointerInside to
+/// block right-stick spin and zoom over the Notepad; without this, a Notepad the key sent to Peeking
+/// would still block them.
+/// </summary>
+[HarmonyPatch]
+internal static class NotepadKeyIgnoreHoverGetterPatch
+{
+    private static bool Prepare() => NotepadKeyIgnoreHoverPatch.Active;
+
+    private static MethodBase TargetMethod() => AccessTools.PropertyGetter(
+        AccessTools.TypeByName(PatchTargets.NotepadWindowIsPointerInside.TypeName),
+        PatchTargets.NotepadWindowIsPointerInside.MemberName!);
+
+    private static void Postfix(ref bool __result) => __result &= !NotepadKeyListenPatch.State.HoverIgnored;
 }

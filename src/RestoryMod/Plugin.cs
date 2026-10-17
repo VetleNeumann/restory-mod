@@ -7,6 +7,7 @@ using RestoryMod.Features.Diagnostics;
 using RestoryMod.Features.DpadSend;
 using RestoryMod.Features.DropHint;
 using RestoryMod.Features.DropdownModes;
+using RestoryMod.Features.Hitboxes;
 using RestoryMod.Features.HoverGrace;
 using RestoryMod.Features.MailList;
 using RestoryMod.Features.Notepad;
@@ -45,6 +46,7 @@ public class Plugin : BaseUnityPlugin
         OutlineDiagnostics.Bind(Config);
         StickScrollFeature.Bind(Config);
         HoverGraceFeature.Bind(Config);
+        HitboxOverlayFeature.Bind(Config);
         MailListFeature.Bind(Config);
         DropHintFeature.Bind(Config);
         WatchConfigFile();
@@ -82,6 +84,8 @@ public class Plugin : BaseUnityPlugin
             typeof(HoverGraceWorkPatch),
             typeof(HoverGraceWorkResetPatch),
             typeof(HoverGraceWorkSelectPatch),
+            typeof(HitboxOverlayDetectionPatch),
+            typeof(HitboxOverlayEmptyBenchPatch),
             typeof(MailLaunchPatch),
             typeof(MailStopPatch),
             typeof(MailSelectedPatch),
@@ -102,6 +106,8 @@ public class Plugin : BaseUnityPlugin
         // Idle unless the mail list targets resolve and MailLaunchPatch has captured the Mail app.
         gameObject.AddComponent<MailListPoller>();
         if (OutlineDiagnostics.Enabled) gameObject.AddComponent<OutlineWatcher>();
+        // Idle unless ShowHitboxes is on and a workbench hover state recorded this frame.
+        gameObject.AddComponent<HitboxOverlay>();
     }
 
     /// <summary>

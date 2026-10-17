@@ -224,6 +224,22 @@ public static class PatchTargets
     public static readonly PatchTarget OutlineAdapterSetPreset = new(OutlinableAdapter, "set_OverridePreset");
     public static readonly PatchTarget ProjectionHighlighterPlay = new("Restory.Gameplay.Elements.ProjectionHighlighterBase", "PlaySequence");
     public static readonly PatchTarget SocketAdditionalBlockers = new("Restory.Gameplay.Elements.ElementSocket", "additionalBlockers");
+    // Hitbox overlay: both workbench hover states are read after their per-frame detection (what the
+    // game hovers, its layer mask and cursor); the game camera comes from the cursor detector, and a
+    // socket's own screw slot tells it apart from a part ghost.
+    private const string EmptyDetection = "Restory.Gameplay.Disassemble.StateMachine.EmptyDisassembleState";
+    public static readonly PatchTarget DisassembleDetectionDetector = new(DisassembleDetection, "cursorDetectorService");
+    public static readonly PatchTarget DisassembleDetectionMask = new(DisassembleDetection, "detectionLayerMask");
+    public static readonly PatchTarget DisassembleDetectionHits = new(DisassembleDetection, "raycastHits");
+    public static readonly PatchTarget EmptyDetectionOnUpdate = new(EmptyDetection, "OnUpdate");
+    public static readonly PatchTarget EmptyDetectionPlayerInput = new(EmptyDetection, "playerInput");
+    public static readonly PatchTarget EmptyDetectionDetector = new(EmptyDetection, "cursorDetectorService");
+    public static readonly PatchTarget EmptyDetectionSelection = new(EmptyDetection, "cursorSelectionService");
+    public static readonly PatchTarget EmptyDetectionMask = new(EmptyDetection, "detectionLayerMask");
+    public static readonly PatchTarget EmptyDetectionHits = new(EmptyDetection, "raycastHits");
+    public static readonly PatchTarget EmptyDetectionElement = new(EmptyDetection, "selectedElement");
+    public static readonly PatchTarget CursorDetectorCamera = new("Restory.Gameplay.GameCursor.GameCursorDetector", "gameCamera");
+    public static readonly PatchTarget SocketScrewSlot = new(Socket, "smallElementProjection");
 
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
@@ -359,6 +375,18 @@ public static class PatchTargets
         ProjectionHighlighterPlay,
         SocketAdditionalBlockers,
         new PatchTarget("Restory.Gameplay.Elements.ElementSocket", "Blockers"),
+        DisassembleDetectionDetector,
+        DisassembleDetectionMask,
+        DisassembleDetectionHits,
+        EmptyDetectionOnUpdate,
+        EmptyDetectionPlayerInput,
+        EmptyDetectionDetector,
+        EmptyDetectionSelection,
+        EmptyDetectionMask,
+        EmptyDetectionHits,
+        EmptyDetectionElement,
+        CursorDetectorCamera,
+        SocketScrewSlot,
 
         // Members the plugin reads directly (compiled against) rather than through the entries above;
         // listed so the TargetCheck tests catch a game update that moves them.
@@ -469,6 +497,13 @@ public static class PatchTargets
         new PatchTarget("Restory.Gameplay.Elements.ElementButton"),
         new PatchTarget("Restory.Data.Elements.ElementCategory", "Small"),
         new PatchTarget("Restory.Gameplay.Elements.ElementProjection", "MakeBright"),
+        new PatchTarget("Restory.Gameplay.GameCursor.CursorDetectorService", "GameDetector"),
+        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "GetMousePosition"),
+        new PatchTarget("Restory.Constants.ProjectConstants+Layers", "Projections"),
+        new PatchTarget("Restory.Constants.ProjectConstants+Layers", "Elements"),
+        new PatchTarget("Restory.Constants.ProjectConstants+Layers", "Device"),
+        new PatchTarget("Restory.Data.Base.RestoryEntityInfoBase", "ID"),
+        new PatchTarget("Restory.Gameplay.Equipment.Ultrasonic.SonicBath"),
         new PatchTarget("Restory.Gameplay.InteractiveObjects.InteractiveObject", "IsInteractable"),
     };
 }

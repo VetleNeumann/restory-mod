@@ -48,6 +48,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   over the screws that are now the last thing holding another part. The pulse now also covers every
   screw that part freed, so none are left out, and each screw gets one pulse instead of several
   stacked.
+- **Hitbox overlay** (debug, off by default): at the workbench, draws each thing's hitbox over the game,
+  the enlarged hitbox a minimum hitbox size would give it, what the cursor hovers, and a readout of
+  everything under the cursor. A pick map mode tints each spot by the thing the cursor would hover there.
+  The minimum hitbox size is only previewed for now; the game's hitboxes are not enlarged yet.
 
 ## Configuration
 
@@ -60,6 +64,9 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | Controller | DropdownModes | true | Gamepad dropdowns |
 | Controller | DpadSendParts | true | D-pad part sends |
 | Controller | HoverGraceMs | 150 | Hover grace window in ms (0 to 500, 0 = off) |
+| Controller | MinimumHitboxSize | 4 | Minimum hitbox size in % of screen height (0 to 15); only the hitbox overlay uses it so far |
+| Debug | ShowHitboxes | false | Hitbox overlay at the workbench |
+| Debug | HitboxPickMap | false | Pick map mode of the hitbox overlay |
 | PartsBox | Sections | true | Parts box sort and sections |
 | Notepad | KeyTogglesAtWorkbench | true | Notepad key at the workbench |
 | Stick scroll | Enabled | true | Smooth stick scrolling |

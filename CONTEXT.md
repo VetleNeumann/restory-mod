@@ -35,8 +35,50 @@ Moving a scrollable menu's view with the right stick, gliding at a speed that fo
 _Avoid_: Wheel scroll, stick navigation
 
 **Hover grace**:
-At the workbench with a gamepad, a thing the virtual cursor can act on stays hovered for a short moment after the cursor leaves it, so pressing the button just after overshooting still acts on it. It covers objects on the bench (device boxes, packs, cash, decor), loose parts, screws, and the empty slots screws go back into; not attached parts or other slots. It applies only while the cursor is over nothing else it could act on: anything it could act on now wins, including the on-screen panels, and holding the rotate button ends it. It keeps the hover highlight on for the same moment. Platformers call the same forgiveness "coyote time".
+With a gamepad, a thing the virtual cursor can act on stays hovered for a short moment after the cursor leaves its hitbox, so pressing the button just after overshooting still acts on it. At the workbench it covers loose parts, screws and screw slots (not attached parts or part ghosts); away from it, objects on the bench (device boxes, packs, cash, decor). It applies only while the cursor is over nothing else it could act on (a blocked part counts as nothing): anything it could act on now wins, including the on-screen panels, and holding the rotate button ends it. It keeps the hover highlight on for the same moment. Platformers call the same forgiveness "coyote time".
 _Avoid_: Grab grace, coyote grab, sticky cursor (that slows the cursor instead)
+
+**Blocked part**:
+An attached part the game won't let the player take off yet and that a press does nothing to, such as a casing still screwed down. A switch is never a blocked part.
+_Avoid_: Locked part, stuck part
+
+**Switch**:
+A part on a device that a press flips, toggles or pushes, such as a power button; a press works on it even while it can't come off.
+_Avoid_: Button (that is a gamepad button), control
+
+**Screw slot**:
+The marked spot on a device where a removed screw goes back; pressing it puts the screw back.
+_Avoid_: Screw hole, projection, empty slot
+
+**Part ghost**:
+The see-through copy of a removed part shown in its empty socket; a press on it does nothing.
+_Avoid_: Projection, empty slot
+
+### Hitboxes
+
+**Hitbox**:
+The on-screen area within which the cursor hovers a thing; its size follows how big the thing looks.
+_Avoid_: Collider, hit area, click area
+
+**Native hitbox**:
+A hitbox as the game itself makes it, before any change by the mod.
+_Avoid_: Original hitbox, real hitbox
+
+**Minimum hitbox size**:
+The smallest a hitbox may be on screen at the workbench while a gamepad is in use and nothing is held, as a share of screen height. A smaller thing that a press acts on, and whose centre the camera can see, gets an enlarged hitbox.
+_Avoid_: Hitbox scale, pick radius (that grows every hitbox, large ones too)
+
+**Enlarged hitbox**:
+A native hitbox grown evenly until its narrowest width reaches the minimum hitbox size. It beats the native hitbox of any larger thing under the cursor, and of anything a press does nothing to, but never an on-screen panel; where enlarged hitboxes overlap, the thing whose native hitbox lies nearest the cursor wins.
+_Avoid_: Grown hitbox, padded hitbox, assisted hitbox
+
+**Hitbox overlay**:
+A debug view at the workbench, off unless switched on in the mod's config, that draws native and enlarged hitboxes over the game (enlarged ones even while enlarging is switched off) and lists what lies under the cursor.
+_Avoid_: Debug view, gizmos, wireframe
+
+**Pick map**:
+A mode of the hitbox overlay that tints each spot on screen by the thing the cursor would hover there.
+_Avoid_: Heatmap, ownership map
 
 ### Sending parts
 

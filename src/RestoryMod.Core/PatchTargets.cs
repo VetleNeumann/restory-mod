@@ -201,8 +201,8 @@ public static class PatchTargets
     public static readonly PatchTarget WorkDetectionResetObject = new(DetectionWorkState, "ResetSelectedObject");
     public static readonly PatchTarget WorkDetectionVisitsBlock = new(DetectionWorkState, "DoesVisitsStateBlockDetection");
 
-    // Drop hint: a screw already ghosted in the pulse gets no second ghost, and after the game's pick
-    // every screw the dropped part freed gets one.
+    // Drop hint: a screw already ghosted in the pulse gets no second ghost, a fading pulse rises again
+    // when screws join it, and after the game's pick every screw the dropped part freed gets one.
     private const string DropHint = "Restory.Gameplay.Disassemble.Tooltips.SmallElementTooltipHandler";
     private const string TooltipHighlighter = "Restory.Gameplay.Elements.TooltipProjectionHighlighter";
     public static readonly PatchTarget DropHintHandleBlocked = new(DropHint, "HandleBlockedSockets");
@@ -210,6 +210,10 @@ public static class PatchTargets
     public static readonly PatchTarget DropHintHighlighter = new(DropHint, "tooltipProjectionHighlighter");
     public static readonly PatchTarget HighlighterProjections = new("Restory.Gameplay.Elements.ProjectionHighlighterBase", "highlightedProjections");
     public static readonly PatchTarget TooltipHighlighterCreate = new(TooltipHighlighter, "CreateAndHighlightProjection");
+    private const string Highlighter = "Restory.Gameplay.Elements.ProjectionHighlighterBase";
+    public static readonly PatchTarget HighlighterSequence = new(Highlighter, "transitionSequence");
+    public static readonly PatchTarget HighlighterToPeak = new(Highlighter, "toPeakDuration");
+    public static readonly PatchTarget HighlighterToBase = new(Highlighter, "toBaseDuration");
     private const string Socket = "Restory.Gameplay.Elements.ElementSocket";
     public static readonly PatchTarget SocketBlockedSockets = new(Socket, "BlockedSockets");
     public static readonly PatchTarget SocketIsBlocked = new(Socket, "IsBlocked");
@@ -375,6 +379,9 @@ public static class PatchTargets
         DropHintHighlighter,
         HighlighterProjections,
         TooltipHighlighterCreate,
+        HighlighterSequence,
+        HighlighterToPeak,
+        HighlighterToBase,
         SocketBlockedSockets,
         SocketIsBlocked,
         ElementProjectionData,

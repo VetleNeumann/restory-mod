@@ -47,7 +47,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 - **Screw hints on drop**: when you drop a part you took off a device, the game briefly pulses yellow
   over the screws that are now the last thing holding another part. The pulse now also covers every
   screw that part freed, so none are left out, and each screw gets one pulse instead of several
-  stacked.
+  stacked. Dropping another part while a pulse is fading makes it brighten again, so every screw
+  hinted by that drop gets a full pulse.
 - **Minimum hitbox size** (trial, off by default): at the workbench with a gamepad, small things (screws,
   screw slots, loose parts, attached parts, switches) get hitboxes at least a set share of the screen
   across, so they are easier to hover. Where enlarged hitboxes overlap, the thing nearest the cursor wins;

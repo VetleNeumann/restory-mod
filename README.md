@@ -44,6 +44,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   hovered for a moment after the cursor flies past it, so pressing Cross / A just after overshooting
   still grabs or unscrews it ("coyote time"). Anything else the cursor reaches first, a panel, or
   holding rotate cancels it.
+- **Screw hints on drop**: when you drop a part you took off a device, the game briefly pulses yellow
+  over the screws that are now the last thing holding another part. The pulse now also covers every
+  screw that part freed, so none are left out, and each screw gets one pulse instead of several
+  stacked.
 
 ## Configuration
 
@@ -69,6 +73,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | ShoulderButtons | CleaningTools | true | L1/R1 tools while cleaning |
 | ShoulderButtons | MailFolders | true | L1/R1 mail folders in the mail app |
 | Mail | DpadSelectsMail | true | D-pad mail selection in the mail app |
+| Workbench | DropHintEveryFreedScrew | true | Screw hints on drop |
 | Stick scroll | Smoothing | 0.07 | Seconds for speed to follow the stick; 0 = instant |
 | Stick scroll | Invert | false | Flip direction |
 

@@ -29,6 +29,7 @@
     <Reference Include="Zenject-usage" HintPath="$(GameManaged)/Zenject-usage.dll" Private="false" />
     <Reference Include="UnityEngine.UI" HintPath="$(GameManaged)/UnityEngine.UI.dll" Private="false" />
     <Reference Include="Unity.TextMeshPro" HintPath="$(GameManaged)/Unity.TextMeshPro.dll" Private="false" />
+    <Reference Include="EPO" HintPath="$(GameManaged)/EPO.dll" Private="false" />
     <Reference Include="Sirenix.Serialization" HintPath="$(GameManaged)/Sirenix.Serialization.dll" Private="false" />
   </ItemGroup>
 

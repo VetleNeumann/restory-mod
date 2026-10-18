@@ -201,6 +201,30 @@ public static class PatchTargets
     public static readonly PatchTarget WorkDetectionResetObject = new(DetectionWorkState, "ResetSelectedObject");
     public static readonly PatchTarget WorkDetectionVisitsBlock = new(DetectionWorkState, "DoesVisitsStateBlockDetection");
 
+    // Drop hint: a screw already ghosted in the pulse gets no second ghost, and after the game's pick
+    // every screw the dropped part freed gets one.
+    private const string DropHint = "Restory.Gameplay.Disassemble.Tooltips.SmallElementTooltipHandler";
+    private const string TooltipHighlighter = "Restory.Gameplay.Elements.TooltipProjectionHighlighter";
+    public static readonly PatchTarget DropHintHandleBlocked = new(DropHint, "HandleBlockedSockets");
+    public static readonly PatchTarget DropHintDetachedSocket = new(DropHint, "detachedSocket");
+    public static readonly PatchTarget DropHintHighlighter = new(DropHint, "tooltipProjectionHighlighter");
+    public static readonly PatchTarget HighlighterProjections = new("Restory.Gameplay.Elements.ProjectionHighlighterBase", "highlightedProjections");
+    public static readonly PatchTarget TooltipHighlighterCreate = new(TooltipHighlighter, "CreateAndHighlightProjection");
+    private const string Socket = "Restory.Gameplay.Elements.ElementSocket";
+    public static readonly PatchTarget SocketBlockedSockets = new(Socket, "BlockedSockets");
+    public static readonly PatchTarget SocketIsBlocked = new(Socket, "IsBlocked");
+    public static readonly PatchTarget SocketNestedElement = new(Socket, "NestedElement");
+    public static readonly PatchTarget SocketCompatibleElementInfo = new(Socket, "CompatibleElementInfo");
+    public static readonly PatchTarget ElementProjectionData = new("Restory.Gameplay.Elements.ElementBase", "ProjectionData");
+
+    // Outline diagnostics ([Debug] OutlineDiagnostics): every outline switch and preset change on
+    // parts, screws and slots, the slot pulse, and the socket graph the drop hint reads.
+    private const string OutlinableAdapter = "Restory.Gameplay.Common.OutlinableAdapter";
+    public static readonly PatchTarget OutlineAdapterSetActive = new(OutlinableAdapter, "set_IsActive");
+    public static readonly PatchTarget OutlineAdapterSetPreset = new(OutlinableAdapter, "set_OverridePreset");
+    public static readonly PatchTarget ProjectionHighlighterPlay = new("Restory.Gameplay.Elements.ProjectionHighlighterBase", "PlaySequence");
+    public static readonly PatchTarget SocketAdditionalBlockers = new("Restory.Gameplay.Elements.ElementSocket", "additionalBlockers");
+
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
         CursorControlsTypeChanged,
@@ -322,6 +346,19 @@ public static class PatchTargets
         WorkDetectionSelectObject,
         WorkDetectionResetObject,
         WorkDetectionVisitsBlock,
+        DropHintHandleBlocked,
+        DropHintDetachedSocket,
+        DropHintHighlighter,
+        HighlighterProjections,
+        TooltipHighlighterCreate,
+        SocketBlockedSockets,
+        SocketIsBlocked,
+        ElementProjectionData,
+        OutlineAdapterSetActive,
+        OutlineAdapterSetPreset,
+        ProjectionHighlighterPlay,
+        SocketAdditionalBlockers,
+        new PatchTarget("Restory.Gameplay.Elements.ElementSocket", "Blockers"),
 
         // Members the plugin reads directly (compiled against) rather than through the entries above;
         // listed so the TargetCheck tests catch a game update that moves them.
@@ -340,6 +377,11 @@ public static class PatchTargets
         new PatchTarget("Restory.Gameplay.Devices.DismantledDevicePack", "PlacedElements"),
         new PatchTarget("Restory.Gameplay.Devices.DeviceContainer", "Device"),
         new PatchTarget("Restory.Gameplay.Elements.ElementBase", "Info"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsSelected"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsHighlighted"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementProjection"),
+        new PatchTarget(OutlinableAdapter, "OverridePreset"),
+        new PatchTarget(OutlinableAdapter, "IsActive"),
         new PatchTarget("Restory.Gameplay.Elements.PlacedElements", "ElementsOnSurface"),
         new PatchTarget("Restory.Gameplay.Elements.ElementTransformRecord", "Element"),
         new PatchTarget("Restory.Gameplay.Elements.ElementData", "Info"),

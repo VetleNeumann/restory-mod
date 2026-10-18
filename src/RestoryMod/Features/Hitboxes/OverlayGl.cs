@@ -38,7 +38,9 @@ internal static class OverlayGl
 
         material!.SetPass(0);
         GL.PushMatrix();
-        GL.LoadPixelMatrix();
+        // Inside OnGUI the parameterless pixel matrix runs from the top left like GUI space (seen in
+        // game), so spell out bottom 0, top height: points here are measured from the bottom left.
+        GL.LoadPixelMatrix(0, Screen.width, 0, Screen.height);
         GL.Begin(GL.TRIANGLES);
         return true;
     }

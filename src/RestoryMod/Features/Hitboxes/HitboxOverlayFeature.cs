@@ -20,7 +20,6 @@ namespace RestoryMod.Features.Hitboxes;
 internal static class HitboxOverlayFeature
 {
     public static ConfigEntry<bool> Show = null!;
-    public static ConfigEntry<bool> PickMap = null!;
 
     public static void Bind(ConfigFile config)
     {
@@ -29,11 +28,6 @@ internal static class HitboxOverlayFeature
             "ShowHitboxes",
             false,
             "Hitbox overlay: draw hitboxes at the workbench over the game, with a readout of what lies under the cursor.");
-        PickMap = config.Bind(
-            "Debug",
-            "HitboxPickMap",
-            false,
-            "Hitbox overlay: also tint each spot on screen by the thing the cursor would hover there.");
     }
 }
 

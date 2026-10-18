@@ -22,7 +22,6 @@ internal sealed class HitboxOverlay : MonoBehaviour
     private static readonly Color GamePickColour = Color.white;
 
     private readonly WorkbenchHitboxes scene = new();
-    private readonly PickMap pickMap = new();
     private readonly RaycastHit[] cursorHits = new RaycastHit[CursorHitLimit];
     private readonly StringBuilder text = new();
 
@@ -61,10 +60,6 @@ internal sealed class HitboxOverlay : MonoBehaviour
             ? HitboxPicker.Pick(ToCore(snapshot.Cursor), minimumSize, scene.Sizings, gamePick, snapshot.PanelUnderCursor)
             : new HitboxPick<WorkbenchThing>(gamePick, PickReason.Native);
 
-        // The pick map holds still while the game is not picking (rotating, a press held).
-        if (!HitboxOverlayFeature.PickMap.Value) pickMap.Clear();
-        else if (snapshot.NotPicking is null) pickMap.Step(scene, camera, snapshot, minimumSize);
-
         WriteReadout(snapshot, camera);
     }
 
@@ -72,8 +67,6 @@ internal sealed class HitboxOverlay : MonoBehaviour
     {
         if (OverlayGl.Begin())
         {
-            pickMap.Draw();
-
             // Back to front, so nearer outlines draw over farther ones.
             for (var i = scene.Things.Count - 1; i >= 0; i--)
             {
@@ -132,9 +125,7 @@ internal sealed class HitboxOverlay : MonoBehaviour
         text.Clear();
         var percent = HitboxEnlargingFeature.MinimumSizePercent.Value;
         text.Append($"<b>HITBOX OVERLAY</b>  minimum {minimumSize:0} px ({percent:0.#}% of {Screen.height}), enlarging ")
-            .Append(HitboxEnlargingFeature.Enabled.Value ? "on" : "off");
-        if (HitboxOverlayFeature.PickMap.Value) text.Append("  · pick map");
-        text.AppendLine();
+            .AppendLine(HitboxEnlargingFeature.Enabled.Value ? "on" : "off");
 
         text.Append($"game: {Describe(gamePick)}   with enlarging (gamepad): {Describe(enlargingPick.Thing)} ({Reason(enlargingPick.Reason)})");
         if (snapshot.NotPicking is { } why) text.Append($"   [{why}]");
@@ -232,80 +223,6 @@ internal sealed class HitboxOverlay : MonoBehaviour
     {
         public static readonly HitDistance Instance = new();
         public int Compare(RaycastHit a, RaycastHit b) => a.distance.CompareTo(b.distance);
-    }
-}
-
-/// <summary>
-/// Pick map: tints each spot on screen by the thing the cursor would hover there. Works through a
-/// few rows of cells per frame, so the whole screen refreshes several times a second without a hitch.
-/// Panels are not tested spot by spot, so the tint runs under them too.
-/// </summary>
-internal sealed class PickMap
-{
-    private const int Cell = 16;
-    private const int RowsPerFrame = 6;
-
-    private Color[] cells = [];
-    private int columns;
-    private int rows;
-    private int nextRow;
-    private RaycastHit[] gameHits = [];
-    private readonly List<HitboxThing<WorkbenchThing>> near = new();
-
-    public void Clear()
-    {
-        if (cells.Length == 0) return;
-        cells = [];
-        columns = rows = nextRow = 0;
-    }
-
-    public void Step(WorkbenchHitboxes scene, Camera camera, HoverSnapshot snapshot, float minimumSize)
-    {
-        var wantColumns = Mathf.CeilToInt(Screen.width / (float)Cell);
-        var wantRows = Mathf.CeilToInt(Screen.height / (float)Cell);
-        if (wantColumns != columns || wantRows != rows)
-        {
-            columns = wantColumns;
-            rows = wantRows;
-            cells = new Color[columns * rows];
-            nextRow = 0;
-        }
-        if (gameHits.Length != snapshot.GameHitLimit) gameHits = new RaycastHit[snapshot.GameHitLimit];
-
-        for (var step = 0; step < RowsPerFrame; step++)
-        {
-            var row = nextRow;
-            nextRow = (nextRow + 1) % rows;
-            for (var column = 0; column < columns; column++)
-            {
-                var point = new Vector2((column + 0.5f) * Cell, (row + 0.5f) * Cell);
-                var native = scene.GamePickAt(camera, point, snapshot.LayerMask, gameHits);
-
-                near.Clear();
-                foreach (var sizing in scene.Sizings)
-                {
-                    var growth = sizing.Growth(minimumSize);
-                    var reach = sizing.Thing.ScreenBounds;
-                    if (growth > 0 && point.x >= reach.xMin - growth && point.x <= reach.xMax + growth &&
-                        point.y >= reach.yMin - growth && point.y <= reach.yMax + growth)
-                        near.Add(sizing);
-                }
-                var pick = HitboxPicker.Pick(HitboxOverlay.ToCore(point), minimumSize, near, native, panelUnderCursor: false);
-                cells[row * columns + column] = pick.Thing is { } winner
-                    ? winner.Colour.WithAlpha(pick.Reason == PickReason.Enlarged ? 0.45f : 0.25f)
-                    : Color.clear;
-            }
-        }
-    }
-
-    public void Draw()
-    {
-        for (var row = 0; row < rows; row++)
-        for (var column = 0; column < columns; column++)
-        {
-            var colour = cells[row * columns + column];
-            if (colour.a > 0) OverlayGl.Rect(column * Cell, row * Cell, Cell, Cell, colour);
-        }
     }
 }
 

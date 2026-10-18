@@ -53,8 +53,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   across, so they are easier to hover. Where enlarged hitboxes overlap, the thing nearest the cursor wins;
   a thing the camera can't see, a blocked part or a part ghost never grows.
 - **Hitbox overlay** (debug, off by default): at the workbench, draws each thing's hitbox over the game,
-  its enlarged hitbox, what the cursor hovers, and a readout of everything under the cursor. A pick map
-  mode tints each spot by the thing the cursor would hover there.
+  its enlarged hitbox, what the cursor hovers, and a readout of everything under the cursor.
 
 ## Configuration
 
@@ -70,7 +69,6 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | Controller | EnlargeSmallHitboxes | false | Minimum hitbox size at the workbench, with a gamepad |
 | Controller | MinimumHitboxSize | 4 | Minimum hitbox size in % of screen height (0 to 15) |
 | Debug | ShowHitboxes | false | Hitbox overlay at the workbench |
-| Debug | HitboxPickMap | false | Pick map mode of the hitbox overlay |
 | PartsBox | Sections | true | Parts box sort and sections |
 | Notepad | KeyTogglesAtWorkbench | true | Notepad key at the workbench |
 | Stick scroll | Enabled | true | Smooth stick scrolling |

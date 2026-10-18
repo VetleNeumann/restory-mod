@@ -76,10 +76,6 @@ _Avoid_: Grown hitbox, padded hitbox, assisted hitbox
 A debug view at the workbench, off unless switched on in the mod's config, that draws native and enlarged hitboxes over the game (enlarged ones even while enlarging is switched off) and lists what lies under the cursor.
 _Avoid_: Debug view, gizmos, wireframe
 
-**Pick map**:
-A mode of the hitbox overlay that tints each spot on screen by the thing the cursor would hover there.
-_Avoid_: Heatmap, ownership map
-
 ### Sending parts
 
 **Held part**:

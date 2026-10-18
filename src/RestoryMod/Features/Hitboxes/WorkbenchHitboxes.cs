@@ -30,14 +30,8 @@ internal sealed class WorkbenchThing(Object identity, ThingKind kind, string nam
     /// <summary>Distance from the camera, to list things front to back.</summary>
     public float Depth { get; set; }
 
-    /// <summary>Screen rectangle around the native hitbox, in pixels from the bottom left.</summary>
-    public Rect ScreenBounds { get; set; }
-
     /// <summary>Some shape is drawn from its bounding box rather than its true outline (a mesh).</summary>
     public bool Approximate { get; set; }
-
-    /// <summary>A colour that stays the same for the same thing from frame to frame.</summary>
-    public Color Colour => Color.HSVToRGB(Mathf.Repeat(Identity.GetInstanceID() * 0.618034f, 1f), 0.8f, 1f);
 }
 
 /// <summary>
@@ -163,16 +157,6 @@ internal sealed class WorkbenchHitboxes
         rayHits.Clear();
         for (var i = 0; i < count; i++) rayHits.Add(ToRayHit(hits[i]));
         return GamePick.AtWorkbench(rayHits);
-    }
-
-    /// <summary>
-    /// What the game would hover with the cursor at <paramref name="screenPoint"/>: its ray, keeping
-    /// as many hits as the game does.
-    /// </summary>
-    public WorkbenchThing? GamePickAt(Camera camera, Vector2 screenPoint, int mask, RaycastHit[] hits)
-    {
-        var count = Physics.RaycastNonAlloc(camera.ScreenPointToRay(screenPoint), hits, GameRayLength, mask);
-        return GamePickFor(hits, count);
     }
 
     /// <summary>
@@ -329,7 +313,6 @@ internal sealed class WorkbenchHitboxes
         var bounds = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
         if (!bounds.Overlaps(new Rect(0, 0, Screen.width, Screen.height))) return false;
 
-        thing.ScreenBounds = bounds;
         thing.Approximate = approximate;
         thing.Sizing = new HitboxThing<WorkbenchThing>(thing, Hitbox.FromShapes(shapes), Enlargeable: false, Seen: false);
         return true;

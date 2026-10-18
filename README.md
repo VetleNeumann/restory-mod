@@ -46,9 +46,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   holding rotate cancels it.
 - **Screw hints on drop**: when you drop a part you took off a device, the game briefly pulses yellow
   over the screws that are now the last thing holding another part. The pulse now also covers every
-  screw that part freed, so none are left out, and each screw gets one pulse instead of several
-  stacked. Dropping another part while a pulse is fading makes it brighten again, so every screw
-  hinted by that drop gets a full pulse.
+  screw that part freed, so none are left out.
+- **Tidy screw hints**: every yellow screw pulse (on drop, and the hint button) gives each screw one
+  pulse instead of several stacked, brightens again when more screws join while it fades, and drops a
+  screw's pulse the moment that screw goes in or comes out.
 - **Screw hint button**: at the workbench, the gamepad's Select button (Share / Create on PlayStation,
   View / Back on Xbox) shows the game's own hint (Space on a keyboard), which otherwise has no gamepad
   button. Hold it to keep the pulse lit; it fades once you let go.
@@ -88,6 +89,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | ShoulderButtons | MailFolders | true | L1/R1 mail folders in the mail app |
 | Mail | DpadSelectsMail | true | D-pad mail selection in the mail app |
 | Workbench | DropHintEveryFreedScrew | true | Screw hints on drop |
+| Workbench | TidyHintPulse | true | Tidy screw hints |
 | Workbench | HintShowsEveryScrew | true | Every-screw hint |
 | Stick scroll | Smoothing | 0.07 | Seconds for speed to follow the stick; 0 = instant |
 | Stick scroll | Invert | false | Flip direction |

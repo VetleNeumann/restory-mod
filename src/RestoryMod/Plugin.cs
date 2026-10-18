@@ -49,6 +49,7 @@ public class Plugin : BaseUnityPlugin
         HitboxEnlargingFeature.Bind(Config);
         HitboxOverlayFeature.Bind(Config);
         MailListFeature.Bind(Config);
+        HintPulse.Bind(Config);
         DropHintFeature.Bind(Config);
         ScrewHintButtonFeature.Bind(Config);
         EveryScrewHintFeature.Bind(Config);
@@ -97,10 +98,11 @@ public class Plugin : BaseUnityPlugin
             typeof(MailSelectedPatch),
             typeof(MailFolderChangedPatch),
             typeof(MailContentsChangedPatch),
-            typeof(DropHintOneGhostPatch),
+            typeof(HintPulseJoinPatch),
+            typeof(HintPulseStaleGhostPatch),
             typeof(DropHintFreedScrewsPatch),
             typeof(ScrewHintServicePatch),
-            typeof(StaleGhostPatch),
+            typeof(ScrewHintServiceDisposePatch),
             typeof(EveryScrewDisassembleHintPatch),
             typeof(EveryScrewAssembleHintPatch),
             typeof(SettingsMenuDumpPatch),

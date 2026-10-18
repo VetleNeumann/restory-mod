@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -19,6 +20,9 @@ namespace RestoryMod.Features.Diagnostics;
 [HarmonyPatch]
 internal static class GamepadBindingsDump
 {
+    /// <summary>The game reads gamepad input as this Rewired player.</summary>
+    private const int GamePlayerId = 0;
+
     public static ConfigEntry<bool> Enabled = null!;
     private static bool dumped;
 
@@ -64,7 +68,14 @@ internal static class GamepadBindingsDump
                        $"middle={mouse.middleButton.actionName}");
         }
 
-        AppendKeyboardOnly(log);
+        try
+        {
+            AppendKeyboardOnly(log);
+        }
+        catch (System.Exception e)
+        {
+            log.Append($"\n  Keyboard/mouse only: failed, {e.Message}");
+        }
         Plugin.Logger.LogInfo(log.ToString());
     }
 
@@ -74,7 +85,7 @@ internal static class GamepadBindingsDump
     /// </summary>
     private static void AppendKeyboardOnly(StringBuilder log)
     {
-        var joystick = ReInput.players.GetPlayer(0)?.controllers.Joysticks.FirstOrDefault();
+        var joystick = ReInput.players.GetPlayer(GamePlayerId)?.controllers.Joysticks.FirstOrDefault();
         log.Append($"\n  Keyboard/mouse only (gamepad: {joystick?.name ?? "none connected"}):");
         foreach (var category in ReInput.mapping.MapCategories)
         {
@@ -83,7 +94,7 @@ internal static class GamepadBindingsDump
                 var keyboard = ReInput.mapping.GetKeyboardMapInstance(category.id, layout);
                 var mouse = ReInput.mapping.GetMouseMapInstance(category.id, layout);
                 var pad = joystick is null ? null : ReInput.mapping.GetJoystickMapInstance(joystick, category.id, layout);
-                var padActions = pad?.AllMaps.Select(e => e.actionId).ToHashSet() ?? new System.Collections.Generic.HashSet<int>();
+                var padActions = pad?.AllMaps.Select(e => e.actionId).ToHashSet() ?? new HashSet<int>();
 
                 var desktop = (keyboard?.AllMaps ?? Enumerable.Empty<ActionElementMap>())
                     .Concat(mouse?.AllMaps ?? Enumerable.Empty<ActionElementMap>())

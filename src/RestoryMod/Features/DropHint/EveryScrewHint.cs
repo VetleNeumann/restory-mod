@@ -28,7 +28,12 @@ internal static class EveryScrewHintFeature
             "back, instead of only the next part's.");
     }
 
-    public static bool TargetsPresent() => DropHintFeature.TargetsPresent() && GameTargets.AllPresent(
+    public static bool TargetsPresent() => GameTargets.AllPresent(
+        PatchTargets.TooltipHighlighterCreate,
+        PatchTargets.ElementProjectionData,
+        PatchTargets.SocketIsBlocked,
+        PatchTargets.SocketNestedElement,
+        PatchTargets.SocketCompatibleElementInfo,
         PatchTargets.HintShowDisassembling,
         PatchTargets.HintShowAssembling,
         PatchTargets.HintHighlighter,
@@ -36,8 +41,25 @@ internal static class EveryScrewHintFeature
         PatchTargets.SocketIsAvailable,
         PatchTargets.SocketLastNestedElement);
 
-    /// <summary>Ghosts the screws (or screw slots) <paramref name="wanted"/> picks; true if any.</summary>
-    public static bool Show(Device device, TooltipProjectionHighlighter highlighter, Func<ElementSocket, ElementBase?> wanted)
+    /// <summary>
+    /// A prefix's body: ghosts the screws (or screw slots) <paramref name="wanted"/> picks, and returns
+    /// whether the game's own hint should still run (off, or no screw to show).
+    /// </summary>
+    public static bool RunGameHint(Device device, TooltipProjectionHighlighter highlighter, Func<ElementSocket, ElementBase?> wanted)
+    {
+        if (!Enabled.Value || !device || !highlighter) return true;
+        try
+        {
+            return !Show(device, highlighter, wanted);
+        }
+        catch (Exception e)
+        {
+            LogOnce(e);
+            return true;
+        }
+    }
+
+    private static bool Show(Device device, TooltipProjectionHighlighter highlighter, Func<ElementSocket, ElementBase?> wanted)
     {
         var any = false;
         foreach (var socket in device.ElementSockets)
@@ -54,7 +76,7 @@ internal static class EveryScrewHintFeature
     private static bool errorLogged;
 
     /// <summary>Logs the first failure only, then lets the game's own hint run.</summary>
-    public static void LogOnce(Exception e)
+    private static void LogOnce(Exception e)
     {
         if (errorLogged) return;
         errorLogged = true;
@@ -70,20 +92,9 @@ internal static class EveryScrewDisassembleHintPatch
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.HintShowDisassembling)!;
 
-    private static bool Prefix(Device targetDevice, TooltipProjectionHighlighter ___projectionHighlighter)
-    {
-        if (!EveryScrewHintFeature.Enabled.Value || !targetDevice || !___projectionHighlighter) return true;
-        try
-        {
-            return !EveryScrewHintFeature.Show(targetDevice, ___projectionHighlighter,
-                socket => socket.IsBlocked ? null : socket.NestedElement);
-        }
-        catch (Exception e)
-        {
-            EveryScrewHintFeature.LogOnce(e);
-            return true;
-        }
-    }
+    private static bool Prefix(Device targetDevice, TooltipProjectionHighlighter ___projectionHighlighter) =>
+        EveryScrewHintFeature.RunGameHint(targetDevice, ___projectionHighlighter,
+            socket => socket.IsBlocked ? null : socket.NestedElement);
 }
 
 /// <summary>Putting back: every empty screw slot the game would take a screw in now.</summary>
@@ -94,18 +105,7 @@ internal static class EveryScrewAssembleHintPatch
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.HintShowAssembling)!;
 
-    private static bool Prefix(Device targetDevice, TooltipProjectionHighlighter ___projectionHighlighter)
-    {
-        if (!EveryScrewHintFeature.Enabled.Value || !targetDevice || !___projectionHighlighter) return true;
-        try
-        {
-            return !EveryScrewHintFeature.Show(targetDevice, ___projectionHighlighter,
-                socket => socket.IsAvailable ? socket.LastNestedElement : null);
-        }
-        catch (Exception e)
-        {
-            EveryScrewHintFeature.LogOnce(e);
-            return true;
-        }
-    }
+    private static bool Prefix(Device targetDevice, TooltipProjectionHighlighter ___projectionHighlighter) =>
+        EveryScrewHintFeature.RunGameHint(targetDevice, ___projectionHighlighter,
+            socket => socket.IsAvailable ? socket.LastNestedElement : null);
 }

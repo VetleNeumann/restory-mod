@@ -201,8 +201,9 @@ public static class PatchTargets
     public static readonly PatchTarget WorkDetectionResetObject = new(DetectionWorkState, "ResetSelectedObject");
     public static readonly PatchTarget WorkDetectionVisitsBlock = new(DetectionWorkState, "DoesVisitsStateBlockDetection");
 
-    // Drop hint: a screw already ghosted in the pulse gets no second ghost, a fading pulse rises again
-    // when screws join it, and after the game's pick every screw the dropped part freed gets one.
+    // Drop hint: after the game's pick every screw the dropped part freed gets a ghost. The hint pulse
+    // (highlighter) members: one ghost per screw, a fading pulse rises again when screws join it, Select
+    // holds it at its peak, and a screw going in or out takes its ghost away.
     private const string DropHint = "Restory.Gameplay.Disassemble.Tooltips.SmallElementTooltipHandler";
     private const string TooltipHighlighter = "Restory.Gameplay.Elements.TooltipProjectionHighlighter";
     public static readonly PatchTarget DropHintHandleBlocked = new(DropHint, "HandleBlockedSockets");
@@ -214,6 +215,7 @@ public static class PatchTargets
     public static readonly PatchTarget HighlighterSequence = new(Highlighter, "transitionSequence");
     public static readonly PatchTarget HighlighterToPeak = new(Highlighter, "toPeakDuration");
     public static readonly PatchTarget HighlighterToBase = new(Highlighter, "toBaseDuration");
+    public static readonly PatchTarget HighlighterPeakScale = new(Highlighter, "peakScale");
     private const string Socket = "Restory.Gameplay.Elements.ElementSocket";
     public static readonly PatchTarget SocketBlockedSockets = new(Socket, "BlockedSockets");
     public static readonly PatchTarget SocketIsBlocked = new(Socket, "IsBlocked");
@@ -225,6 +227,7 @@ public static class PatchTargets
     // has no gamepad button), reaching it and its highlighter through the game's tooltip service.
     private const string TooltipService = "Restory.Gameplay.Disassemble.Tooltips.DisassembleTooltipService";
     public static readonly PatchTarget TooltipServiceInitialize = new(TooltipService, "Initialize");
+    public static readonly PatchTarget TooltipServiceDispose = new(TooltipService, "Dispose");
     public static readonly PatchTarget TooltipServiceShow = new(TooltipService, "ResolveGetTooltipButtonPressed");
     public static readonly PatchTarget TooltipServiceSmallHandler = new(TooltipService, "smallElementTooltipHandler");
     // A screw going in or out takes its own ghost away, so a hint never lingers on a changed slot.
@@ -403,7 +406,9 @@ public static class PatchTargets
         HighlighterSequence,
         HighlighterToPeak,
         HighlighterToBase,
+        HighlighterPeakScale,
         TooltipServiceInitialize,
+        TooltipServiceDispose,
         TooltipServiceShow,
         TooltipServiceSmallHandler,
         TooltipServiceSocketChanged,

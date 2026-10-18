@@ -63,10 +63,6 @@ internal sealed class ScrewHintPoller : MonoBehaviour
     /// <summary>The game reads gamepad input as this Rewired player.</summary>
     private const int GamePlayerId = 0;
 
-    private static readonly AccessTools.FieldRef<DisassembleTooltipService, SmallElementTooltipHandler> SmallHandler =
-        AccessTools.FieldRefAccess<DisassembleTooltipService, SmallElementTooltipHandler>("smallElementTooltipHandler");
-    private static readonly AccessTools.FieldRef<SmallElementTooltipHandler, TooltipProjectionHighlighter> Highlighter =
-        AccessTools.FieldRefAccess<SmallElementTooltipHandler, TooltipProjectionHighlighter>("tooltipProjectionHighlighter");
     private static readonly MethodInfo? ShowHint = GameTargets.Method(PatchTargets.TooltipServiceShow);
     private static readonly object[] NoEvent = { default(InputActionEventData) };
 
@@ -123,12 +119,64 @@ internal sealed class ScrewHintPoller : MonoBehaviour
     {
         var service = ScrewHintServicePatch.Service;
         if (service is null || ShowHint is null) return null;
-        var handler = SmallHandler(service);
-        var highlighter = handler is null ? null : Highlighter(handler);
+        var highlighter = StaleGhostPatch.HighlighterOf(service);
         if (!highlighter) return null;
 
         ShowHint.Invoke(service, NoEvent);
         var pulse = DropHintOneGhostPatch.Pulse(highlighter!);
         return pulse is not null && pulse.IsActive() ? highlighter : null;
+    }
+}
+
+/// <summary>
+/// A screw taken out or put in while its slot still pulses takes that ghost away; the game would leave
+/// it showing where the screw no longer is (or now is) until the pulse ends.
+/// </summary>
+[HarmonyPatch]
+internal static class StaleGhostPatch
+{
+    private static readonly AccessTools.FieldRef<DisassembleTooltipService, SmallElementTooltipHandler> SmallHandler =
+        AccessTools.FieldRefAccess<DisassembleTooltipService, SmallElementTooltipHandler>("smallElementTooltipHandler");
+    private static readonly AccessTools.FieldRef<SmallElementTooltipHandler, TooltipProjectionHighlighter> Highlighter =
+        AccessTools.FieldRefAccess<SmallElementTooltipHandler, TooltipProjectionHighlighter>("tooltipProjectionHighlighter");
+    private static readonly AccessTools.FieldRef<TooltipProjectionHighlighter, ElementProjectionFactory> Factory =
+        AccessTools.FieldRefAccess<TooltipProjectionHighlighter, ElementProjectionFactory>("elementProjectionFactory");
+
+    /// <summary>The highlighter the game's hints pulse with, or null.</summary>
+    public static TooltipProjectionHighlighter? HighlighterOf(DisassembleTooltipService service)
+    {
+        var handler = SmallHandler(service);
+        return handler is null ? null : Highlighter(handler);
+    }
+
+    private static bool Prepare() => DropHintFeature.TargetsPresent() && GameTargets.AllPresent(
+        PatchTargets.TooltipServiceSmallHandler,
+        PatchTargets.TooltipServiceSocketChanged,
+        PatchTargets.TooltipHighlighterFactory,
+        PatchTargets.ProjectionFactoryDestroySmall);
+
+    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.TooltipServiceSocketChanged)!;
+
+    private static void Postfix(DisassembleTooltipService __instance, ElementSocket socket)
+    {
+        if (!DropHintFeature.Enabled.Value || !socket) return;
+        try
+        {
+            var highlighter = HighlighterOf(__instance);
+            if (!highlighter) return;
+            var ghosts = DropHintOneGhostPatch.Ghosts(highlighter!);
+            var factory = Factory(highlighter!);
+            for (var i = ghosts.Count - 1; i >= 0; i--)
+            {
+                var ghost = ghosts[i];
+                if (!ghost || ghost.transform.parent != socket.transform) continue;
+                ghosts.RemoveAt(i);
+                factory.DestroySmallElementProjection(ghost);
+            }
+        }
+        catch (Exception e)
+        {
+            ScrewHintButtonFeature.LogOnce(e);
+        }
     }
 }

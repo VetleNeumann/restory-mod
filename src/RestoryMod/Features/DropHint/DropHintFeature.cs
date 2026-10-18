@@ -51,7 +51,7 @@ internal static class DropHintFeature
 [HarmonyPatch]
 internal static class DropHintOneGhostPatch
 {
-    private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, List<ElementProjection>> Ghosts =
+    internal static readonly AccessTools.FieldRef<ProjectionHighlighterBase, List<ElementProjection>> Ghosts =
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, List<ElementProjection>>("highlightedProjections");
     internal static readonly AccessTools.FieldRef<ProjectionHighlighterBase, Sequence?> Pulse =
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, Sequence?>("transitionSequence");

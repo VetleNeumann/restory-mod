@@ -227,6 +227,10 @@ public static class PatchTargets
     public static readonly PatchTarget TooltipServiceInitialize = new(TooltipService, "Initialize");
     public static readonly PatchTarget TooltipServiceShow = new(TooltipService, "ResolveGetTooltipButtonPressed");
     public static readonly PatchTarget TooltipServiceSmallHandler = new(TooltipService, "smallElementTooltipHandler");
+    // A screw going in or out takes its own ghost away, so a hint never lingers on a changed slot.
+    public static readonly PatchTarget TooltipServiceSocketChanged = new(TooltipService, "ResolveDeviceSocketChanged");
+    public static readonly PatchTarget TooltipHighlighterFactory = new(TooltipHighlighter, "elementProjectionFactory");
+    public static readonly PatchTarget ProjectionFactoryDestroySmall = new("Restory.Gameplay.Elements.ElementProjectionFactory", "DestroySmallElementProjection");
 
     // Every-screw hint: the game's hint shows every screw that can come out now (taking apart) or every
     // empty screw slot that can take its screw now (putting back), instead of only the next part's.
@@ -402,6 +406,9 @@ public static class PatchTargets
         TooltipServiceInitialize,
         TooltipServiceShow,
         TooltipServiceSmallHandler,
+        TooltipServiceSocketChanged,
+        TooltipHighlighterFactory,
+        ProjectionFactoryDestroySmall,
         HintShowDisassembling,
         HintShowAssembling,
         HintHighlighter,

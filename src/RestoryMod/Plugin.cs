@@ -100,6 +100,7 @@ public class Plugin : BaseUnityPlugin
             typeof(DropHintOneGhostPatch),
             typeof(DropHintFreedScrewsPatch),
             typeof(ScrewHintServicePatch),
+            typeof(StaleGhostPatch),
             typeof(EveryScrewDisassembleHintPatch),
             typeof(EveryScrewAssembleHintPatch),
             typeof(SettingsMenuDumpPatch),

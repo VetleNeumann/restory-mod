@@ -32,6 +32,7 @@
     <Reference Include="EPO" HintPath="$(GameManaged)/EPO.dll" Private="false" />
     <Reference Include="DOTween" HintPath="$(GameManaged)/DOTween.dll" Private="false" />
     <Reference Include="Sirenix.Serialization" HintPath="$(GameManaged)/Sirenix.Serialization.dll" Private="false" />
+    <Reference Include="com.rlabrecque.steamworks.net" HintPath="$(GameManaged)/com.rlabrecque.steamworks.net.dll" Private="false" />
   </ItemGroup>
 
   <Target Name="RequireGameDir" BeforeTargets="ResolveAssemblyReferences" Condition="'$(GameManaged)' == '' Or !Exists('$(GameManaged)/Restory.Assembly.dll')">

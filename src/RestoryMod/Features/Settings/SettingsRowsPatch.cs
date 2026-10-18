@@ -3,6 +3,7 @@ using System.Reflection;
 using BepInEx.Configuration;
 using HarmonyLib;
 using RestoryMod.Core;
+using RestoryMod.Features.ButtonPrompts;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.RotationSpeed;
 using TMPro;
@@ -13,29 +14,37 @@ using Object = UnityEngine.Object;
 namespace RestoryMod.Features.Settings;
 
 /// <summary>
-/// Adds the "Controller sensitivity" and "Rotation sensitivity" rows to the settings menu. The menu is
-/// prefab-wired, so each row is cloned from the dialogue volume row and inserted below it (and below
-/// each other) on the first Show().
+/// Adds the mod's rows to the settings menu: "Controller sensitivity", "Rotation sensitivity" and
+/// "Button prompts". The menu is prefab-wired, so each row is cloned from the dialogue volume row and
+/// inserted below it (and below each other) on the first Show(). Every row is a stepped slider, so
+/// left/right on the D-pad changes it.
 /// </summary>
 [HarmonyPatch]
-internal static class SensitivitySlidersPatch
+internal static class SettingsRowsPatch
 {
     // A class, not a positional record: the plugin targets netstandard2.1, which lacks IsExternalInit.
-    private sealed class RowSpec(string name, string label, Func<ConfigEntry<float>> entry, Func<bool> available)
+    private sealed class RowSpec(string name, string label, int steps, Func<bool> available,
+        Func<GameObject, Slider, TMP_Text?, ISettingsRow> attach)
     {
         public string Name => name;
         public string Label => label;
-        public ConfigEntry<float> Entry => entry();
+        public int Steps => steps;
         public bool Available => available();
+        public ISettingsRow Attach(GameObject row, Slider slider, TMP_Text? valueText) => attach(row, slider, valueText);
     }
 
     private static readonly RowSpec[] Rows =
     {
-        new("RestoryMod_ControllerSensitivity", "Controller sensitivity", () => CursorSpeedFeature.Speed,
-            () => GameTargets.AllPresent(PatchTargets.CursorControlsTypeChanged, PatchTargets.CursorPlayerMouse)),
+        new("RestoryMod_ControllerSensitivity", "Controller sensitivity", Sensitivity.SliderSteps,
+            () => GameTargets.AllPresent(PatchTargets.CursorControlsTypeChanged, PatchTargets.CursorPlayerMouse),
+            (row, slider, text) => row.AddComponent<SensitivityRow>().Init(slider, text, CursorSpeedFeature.Speed)),
         // No row when the rotation patch skipped itself after a game update: the slider would do nothing.
-        new("RestoryMod_RotationSensitivity", "Rotation sensitivity", () => RotationSpeedFeature.Speed,
-            RotationSpeedFeature.TargetsPresent),
+        new("RestoryMod_RotationSensitivity", "Rotation sensitivity", Sensitivity.SliderSteps,
+            RotationSpeedFeature.TargetsPresent,
+            (row, slider, text) => row.AddComponent<SensitivityRow>().Init(slider, text, RotationSpeedFeature.Speed)),
+        new("RestoryMod_ButtonPrompts", "Button prompts", PromptStyles.InSliderOrder.Length - 1,
+            ButtonPromptsFeature.TargetsPresent,
+            (row, slider, text) => row.AddComponent<ButtonPromptsRow>().Init(slider, text, ButtonPromptsFeature.Style)),
     };
 
     private static bool Prepare() => GameTargets.AllPresent(
@@ -52,7 +61,7 @@ internal static class SensitivitySlidersPatch
             var soundView = GameTargets.Field(PatchTargets.SettingsMenuSoundSettingsView)!.GetValue(__instance);
             if (GameTargets.Field(PatchTargets.SoundViewDialogueVolumeSlider)!.GetValue(soundView) is not Slider template)
             {
-                Plugin.Logger.LogWarning("Sensitivity rows: dialogue volume slider not found.");
+                Plugin.Logger.LogWarning("Settings rows: dialogue volume slider not found.");
                 return;
             }
 
@@ -66,8 +75,8 @@ internal static class SensitivitySlidersPatch
                 var row = templateRow.parent.Find(spec.Name);
                 if (row)
                 {
-                    var existing = row.GetComponent<SensitivityRow>();
-                    if (existing) existing.Refresh();
+                    var existing = row.GetComponent<ISettingsRow>();
+                    if (existing is MonoBehaviour component && component) existing.Refresh();
                 }
                 else
                     row = CreateRow(spec, templateRow, above, aboveRow);
@@ -78,7 +87,7 @@ internal static class SensitivitySlidersPatch
         }
         catch (Exception e)
         {
-            Plugin.Logger.LogError($"Sensitivity rows failed: {e}");
+            Plugin.Logger.LogError($"Settings rows failed: {e}");
         }
     }
 
@@ -106,7 +115,7 @@ internal static class SensitivitySlidersPatch
             slider.onValueChanged = new Slider.SliderEvent();
             slider.wholeNumbers = true;
             slider.minValue = 0;
-            slider.maxValue = Sensitivity.SliderSteps;
+            slider.maxValue = spec.Steps;
 
             var label = row.transform.GetChild(0).GetComponent<TMP_Text>();
             if (label != null) label.text = spec.Label;
@@ -115,7 +124,7 @@ internal static class SensitivitySlidersPatch
             var navigationMode = above.navigation.mode;
             SpliceNavigation(above, slider);
 
-            row.AddComponent<SensitivityRow>().Init(slider, valueText, spec.Entry);
+            spec.Attach(row, slider, valueText);
             row.transform.SetParent(templateRow.parent, false);
             row.transform.SetSiblingIndex(aboveRow.GetSiblingIndex() + 1);
 
@@ -159,19 +168,27 @@ internal static class SensitivitySlidersPatch
     }
 }
 
+/// <summary>A mod row in the settings menu.</summary>
+internal interface ISettingsRow
+{
+    /// <summary>Pulls the current config value into the slider (it may have been edited by hand).</summary>
+    void Refresh();
+}
+
 /// <summary>Binds a cloned slider to a sensitivity config entry.</summary>
-internal sealed class SensitivityRow : MonoBehaviour
+internal sealed class SensitivityRow : MonoBehaviour, ISettingsRow
 {
     private Slider slider = null!;
     private TMP_Text? valueText;
     private ConfigEntry<float> entry = null!;
 
-    public void Init(Slider slider, TMP_Text? valueText, ConfigEntry<float> entry)
+    public SensitivityRow Init(Slider slider, TMP_Text? valueText, ConfigEntry<float> entry)
     {
         this.slider = slider;
         this.valueText = valueText;
         this.entry = entry;
         slider.onValueChanged.AddListener(OnSliderChanged);
+        return this;
     }
 
     private void OnEnable()
@@ -181,7 +198,6 @@ internal sealed class SensitivityRow : MonoBehaviour
 
     private float Current => Sensitivity.Normalize(entry.Value);
 
-    /// <summary>Pulls the current config value into the slider (it may have been edited by hand).</summary>
     public void Refresh()
     {
         slider.SetValueWithoutNotify(Sensitivity.ToStep(Current));
@@ -197,5 +213,44 @@ internal sealed class SensitivityRow : MonoBehaviour
     private void UpdateText()
     {
         if (valueText != null) valueText.text = Sensitivity.Format(Current);
+    }
+}
+
+/// <summary>Binds a cloned slider to the "Button prompts" setting, one step per choice.</summary>
+internal sealed class ButtonPromptsRow : MonoBehaviour, ISettingsRow
+{
+    private Slider slider = null!;
+    private TMP_Text? valueText;
+    private ConfigEntry<PromptStyle> entry = null!;
+
+    public ButtonPromptsRow Init(Slider slider, TMP_Text? valueText, ConfigEntry<PromptStyle> entry)
+    {
+        this.slider = slider;
+        this.valueText = valueText;
+        this.entry = entry;
+        slider.onValueChanged.AddListener(OnSliderChanged);
+        return this;
+    }
+
+    private void OnEnable()
+    {
+        if (slider != null) Refresh();
+    }
+
+    public void Refresh()
+    {
+        slider.SetValueWithoutNotify(PromptStyles.ToStep(entry.Value));
+        UpdateText();
+    }
+
+    private void OnSliderChanged(float step)
+    {
+        entry.Value = PromptStyles.FromStep((int)step);
+        UpdateText();
+    }
+
+    private void UpdateText()
+    {
+        if (valueText != null) valueText.text = PromptStyles.Label(entry.Value);
     }
 }

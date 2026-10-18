@@ -253,8 +253,28 @@ public static class PatchTargets
     public static readonly PatchTarget EmptyDetectionDeviceService = new(EmptyDetection, "deviceService");
     public static readonly PatchTarget DeviceServiceWorkSurface = new("Restory.Gameplay.Devices.DeviceService", "workSurface");
 
+    // Button prompts: every prompt picks its glyph set in this one method; the patch swaps the pick for
+    // the pad Steam Input hides from Rewired, or for the "Button prompts" setting.
+    private const string InputActionElement = "Restory.UI.Presenters.Controllers.GUI_InputActionElement";
+    public static readonly PatchTarget PromptGetControllerId = new(InputActionElement, "TryGetControllerId");
+    public static readonly PatchTarget PromptUpdateData = new(InputActionElement, "UpdateData");
+    public static readonly PatchTarget PromptControllerIdsList = new(InputActionElement, "controllerIdsList");
+    public static readonly PatchTarget PromptControllerIdsMap = new(InputActionElement, "rewiredControllerIdsDependencyMap");
+    public static readonly PatchTarget PromptGameSettings = new(InputActionElement, "gameSettingsManager");
+    public static readonly PatchTarget ControllerIdsMapLookup = new("IAmFuture.Data.Controllers.RewiredControllerIdsDependencyMap", "TryGetControllerId");
+    public static readonly PatchTarget ControllerIdsDefaultGamepad = new("IAmFuture.Data.Controllers.ControllerIdsList", "DefaultGamepadId");
+    public static readonly PatchTarget GameSettingsGamepadScheme = new("Restory.Gameplay.GameSettings.GameSettingsManager", "GamepadScheme");
+
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
+        PromptGetControllerId,
+        PromptUpdateData,
+        PromptControllerIdsList,
+        PromptControllerIdsMap,
+        PromptGameSettings,
+        ControllerIdsMapLookup,
+        ControllerIdsDefaultGamepad,
+        GameSettingsGamepadScheme,
         CursorControlsTypeChanged,
         CursorPlayerMouse,
         CursorControlsManager,

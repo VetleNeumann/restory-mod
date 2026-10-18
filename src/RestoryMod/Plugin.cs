@@ -2,6 +2,7 @@ using System.IO;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using RestoryMod.Features.ButtonPrompts;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
 using RestoryMod.Features.DpadSend;
@@ -50,13 +51,14 @@ public class Plugin : BaseUnityPlugin
         HitboxOverlayFeature.Bind(Config);
         MailListFeature.Bind(Config);
         DropHintFeature.Bind(Config);
+        ButtonPromptsFeature.Bind(Config);
         WatchConfigFile();
 
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
         FeaturePatcher.Apply(harmony, Logger,
             typeof(CursorSpeedPatch),
             typeof(RotationSpeedPatch),
-            typeof(SensitivitySlidersPatch),
+            typeof(SettingsRowsPatch),
             typeof(DropdownOpenPatch),
             typeof(DropdownFramePatch),
             typeof(DropdownStickMovePatch),
@@ -102,9 +104,11 @@ public class Plugin : BaseUnityPlugin
             typeof(OutlineAdapterActivePatch),
             typeof(OutlineAdapterPresetPatch),
             typeof(ProjectionPulsePatch),
-            typeof(DropHintGraphPatch));
+            typeof(DropHintGraphPatch),
+            typeof(ButtonPromptsPatch));
         if (StickScrollFeature.TargetsPresent()) gameObject.AddComponent<StickScrollDriver>();
         gameObject.AddComponent<ShoulderButtonsPoller>();
+        if (ButtonPromptsFeature.TargetsPresent()) gameObject.AddComponent<ButtonPromptsPoller>();
         // Idle unless DpadSendSlotPressPatch applied: it is what records a pressed slot.
         gameObject.AddComponent<DpadSendPoller>();
         // Idle unless the mail list targets resolve and MailLaunchPatch has captured the Mail app.

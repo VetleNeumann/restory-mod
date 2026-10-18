@@ -8,6 +8,12 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   volume" (0.2 to 4.0). The game otherwise fixes the gamepad cursor speed.
 - **Controller rotation speed**: a "Rotation sensitivity" slider right under it (0.2 to 4.0) sets how fast
   the right stick spins the device on the workbench. Defaults to 0.4; 1.0 is the game's own speed.
+- **Button prompts that match your pad**: with Steam Input on, every pad looks like an Xbox pad to the
+  game, so a PlayStation player saw Xbox letters. The mod asks Steam which pad is really connected and
+  shows PlayStation, Xbox or Steam Deck prompts to match. Switch and unrecognised pads get the game's
+  generic prompts. A "Button prompts" row under "Rotation sensitivity" (Auto, Xbox, PlayStation, Steam
+  Deck, Generic) can pin one set. If the game ignores your pad altogether (an older or unusual
+  DirectInput pad), turn on Steam Input for ReStory in Steam (Properties → Controller).
 - **Parts box sections**: while a device is on the workbench, the parts box sorts in "How to reassemble"
   order and splits into *Missing parts* and *Other parts*. Within a step, burnt parts come first, then
   damaged, dirty and perfect.
@@ -64,6 +70,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 |---|---|---|---|
 | Controller | CursorSpeed | 1.0 | Gamepad cursor speed |
 | Controller | RotationSpeed | 0.4 | Gamepad speed for spinning the device at the workbench |
+| Controller | ButtonPrompts | Auto | Prompt art: Auto, Xbox, PlayStation, SteamDeck or Generic |
+| Controller | DetectThroughSteamInput | true | Ask Steam which pad is behind Steam Input |
 | Controller | DropdownModes | true | Gamepad dropdowns |
 | Controller | DpadSendParts | true | D-pad part sends |
 | Controller | HoverGraceMs | 150 | Hover grace window in ms (0 to 500, 0 = off) |

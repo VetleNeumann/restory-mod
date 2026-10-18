@@ -228,6 +228,16 @@ public static class PatchTargets
     public static readonly PatchTarget TooltipServiceShow = new(TooltipService, "ResolveGetTooltipButtonPressed");
     public static readonly PatchTarget TooltipServiceSmallHandler = new(TooltipService, "smallElementTooltipHandler");
 
+    // Every-screw hint: the game's hint shows every screw that can come out now (taking apart) or every
+    // empty screw slot that can take its screw now (putting back), instead of only the next part's.
+    private const string SimpleHint = "Restory.Gameplay.Disassemble.Tooltips.SimpleDisassembleTooltipHandler";
+    public static readonly PatchTarget HintShowDisassembling = new(SimpleHint, "ShowDisassemblingTooltip");
+    public static readonly PatchTarget HintShowAssembling = new(SimpleHint, "ShowAssemblingTooltip");
+    public static readonly PatchTarget HintHighlighter = new(SimpleHint, "projectionHighlighter");
+    public static readonly PatchTarget DeviceElementSockets = new("Restory.Gameplay.Devices.Device", "ElementSockets");
+    public static readonly PatchTarget SocketIsAvailable = new(Socket, "IsAvailable");
+    public static readonly PatchTarget SocketLastNestedElement = new(Socket, "LastNestedElement");
+
     // Outline diagnostics ([Debug] OutlineDiagnostics): every outline switch and preset change on
     // parts, screws and slots, the slot pulse, and the socket graph the drop hint reads.
     private const string OutlinableAdapter = "Restory.Gameplay.Common.OutlinableAdapter";
@@ -392,6 +402,12 @@ public static class PatchTargets
         TooltipServiceInitialize,
         TooltipServiceShow,
         TooltipServiceSmallHandler,
+        HintShowDisassembling,
+        HintShowAssembling,
+        HintHighlighter,
+        DeviceElementSockets,
+        SocketIsAvailable,
+        SocketLastNestedElement,
         SocketBlockedSockets,
         SocketIsBlocked,
         ElementProjectionData,

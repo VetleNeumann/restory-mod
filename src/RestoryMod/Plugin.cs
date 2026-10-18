@@ -51,6 +51,7 @@ public class Plugin : BaseUnityPlugin
         MailListFeature.Bind(Config);
         DropHintFeature.Bind(Config);
         ScrewHintButtonFeature.Bind(Config);
+        EveryScrewHintFeature.Bind(Config);
         WatchConfigFile();
 
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -99,6 +100,8 @@ public class Plugin : BaseUnityPlugin
             typeof(DropHintOneGhostPatch),
             typeof(DropHintFreedScrewsPatch),
             typeof(ScrewHintServicePatch),
+            typeof(EveryScrewDisassembleHintPatch),
+            typeof(EveryScrewAssembleHintPatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump),
             typeof(OutlineAdapterActivePatch),

@@ -13,9 +13,9 @@ namespace RestoryMod.Features.DropHint;
 
 /// <summary>
 /// The gamepad's Select button (Share / Create on PlayStation, View / Back on Xbox) at the workbench
-/// runs the game's own hint, whose GetTooltip action has no gamepad button: the screws holding the
-/// next part to take off, or the empty screw slots of the next part to put back. Holding it keeps the
-/// pulse at full brightness; letting go fades it as usual.
+/// runs the game's own hint, whose GetTooltip action (Space) has no gamepad button; see
+/// <see cref="EveryScrewHintFeature"/> for what it shows. Holding it keeps the pulse at full
+/// brightness; letting go fades it as usual.
 /// </summary>
 internal static class ScrewHintButtonFeature
 {
@@ -24,9 +24,8 @@ internal static class ScrewHintButtonFeature
     public static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("Controller", "SelectShowsScrewHints", true,
-            "At the workbench, the gamepad's Select button (Share / Create, View / Back) shows the game's hint: " +
-            "the screws holding the next part to take off, or the empty screw slots of the next part to put " +
-            "back. Hold it to keep them lit until you let go.");
+            "At the workbench, the gamepad's Select button (Share / Create, View / Back) shows the game's screw " +
+            "hint, as Space does on a keyboard. Hold it to keep the hint lit until you let go.");
     }
 
     public static bool TargetsPresent() => DropHintFeature.TargetsPresent() && GameTargets.AllPresent(

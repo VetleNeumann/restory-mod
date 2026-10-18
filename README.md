@@ -50,9 +50,12 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   stacked. Dropping another part while a pulse is fading makes it brighten again, so every screw
   hinted by that drop gets a full pulse.
 - **Screw hint button**: at the workbench, the gamepad's Select button (Share / Create on PlayStation,
-  View / Back on Xbox) shows the game's own hint, which otherwise has no gamepad button: it pulses
-  yellow over the screws holding the next part to take off, or the empty screw slots of the next part
-  to put back, and marks damaged parts. Hold it to keep the pulse lit; it fades once you let go.
+  View / Back on Xbox) shows the game's own hint (Space on a keyboard), which otherwise has no gamepad
+  button. Hold it to keep the pulse lit; it fades once you let go.
+- **Every-screw hint**: the game's hint pulses every screw you can unscrew now while you take a device
+  apart, and every empty screw slot you can screw into now while you put it back, not only the next
+  part's. The game decides which of the two you are doing from your last change to the device. With no
+  screw to show, the game's own hint runs.
 - **Hitbox overlay** (debug, off by default): at the workbench, draws each thing's hitbox over the game,
   its enlarged hitbox, what the cursor hovers, and a readout of everything under the cursor.
 
@@ -85,6 +88,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | ShoulderButtons | MailFolders | true | L1/R1 mail folders in the mail app |
 | Mail | DpadSelectsMail | true | D-pad mail selection in the mail app |
 | Workbench | DropHintEveryFreedScrew | true | Screw hints on drop |
+| Workbench | HintShowsEveryScrew | true | Every-screw hint |
 | Stick scroll | Smoothing | 0.07 | Seconds for speed to follow the stick; 0 = instant |
 | Stick scroll | Invert | false | Flip direction |
 

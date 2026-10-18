@@ -3,9 +3,6 @@ using System.Reflection;
 using BepInEx.Configuration;
 using DG.Tweening;
 using HarmonyLib;
-using Restory.Data.Elements;
-using Restory.Gameplay.Devices;
-using Restory.Gameplay.Disassemble.StateMachine;
 using Restory.Gameplay.Disassemble.Tooltips;
 using Restory.Gameplay.Elements;
 using RestoryMod.Core;
@@ -16,8 +13,9 @@ namespace RestoryMod.Features.DropHint;
 
 /// <summary>
 /// The gamepad's Select button (Share / Create on PlayStation, View / Back on Xbox) at the workbench
-/// pulses the drop hint's yellow ghosts over every screw that can come out now. Holding it keeps them
-/// at full brightness; letting go fades them as usual.
+/// runs the game's own hint, whose GetTooltip action has no gamepad button: the screws holding the
+/// next part to take off, or the empty screw slots of the next part to put back. Holding it keeps the
+/// pulse at full brightness; letting go fades it as usual.
 /// </summary>
 internal static class ScrewHintButtonFeature
 {
@@ -26,21 +24,15 @@ internal static class ScrewHintButtonFeature
     public static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("Controller", "SelectShowsScrewHints", true,
-            "At the workbench, the gamepad's Select button (Share / Create, View / Back) pulses yellow over every " +
-            "screw you can unscrew now. Hold it to keep them lit until you let go.");
+            "At the workbench, the gamepad's Select button (Share / Create, View / Back) shows the game's hint: " +
+            "the screws holding the next part to take off, or the empty screw slots of the next part to put " +
+            "back. Hold it to keep them lit until you let go.");
     }
 
     public static bool TargetsPresent() => DropHintFeature.TargetsPresent() && GameTargets.AllPresent(
         PatchTargets.TooltipServiceInitialize,
-        PatchTargets.TooltipServiceIsActive,
-        PatchTargets.TooltipServiceDevices,
-        PatchTargets.TooltipServiceStateMachine,
-        PatchTargets.TooltipServiceSmallHandler,
-        PatchTargets.DisassembleDetectionState,
-        PatchTargets.StateMachineActiveState,
-        PatchTargets.PlacedDevice,
-        PatchTargets.DeviceContainerDevice,
-        PatchTargets.DeviceElementSockets);
+        PatchTargets.TooltipServiceShow,
+        PatchTargets.TooltipServiceSmallHandler);
 
     private static bool errorLogged;
 
@@ -53,7 +45,7 @@ internal static class ScrewHintButtonFeature
     }
 }
 
-/// <summary>Keeps the game's tooltip service, which holds the workbench device and the highlighter.</summary>
+/// <summary>Keeps the game's tooltip service, which runs the hint and holds its highlighter.</summary>
 [HarmonyPatch]
 internal static class ScrewHintServicePatch
 {
@@ -66,20 +58,18 @@ internal static class ScrewHintServicePatch
     private static void Postfix(DisassembleTooltipService __instance) => Service = __instance;
 }
 
-/// <summary>Reads Select each frame: a press ghosts the screws, holding keeps the pulse at its peak.</summary>
+/// <summary>Reads Select each frame: a press runs the game's hint, holding keeps the pulse at its peak.</summary>
 internal sealed class ScrewHintPoller : MonoBehaviour
 {
     /// <summary>The game reads gamepad input as this Rewired player.</summary>
     private const int GamePlayerId = 0;
 
-    private static readonly AccessTools.FieldRef<DisassembleTooltipService, DeviceService> Devices =
-        AccessTools.FieldRefAccess<DisassembleTooltipService, DeviceService>("deviceService");
-    private static readonly AccessTools.FieldRef<DisassembleTooltipService, DisassembleStateMachine> StateMachine =
-        AccessTools.FieldRefAccess<DisassembleTooltipService, DisassembleStateMachine>("disassembleStateMachine");
     private static readonly AccessTools.FieldRef<DisassembleTooltipService, SmallElementTooltipHandler> SmallHandler =
         AccessTools.FieldRefAccess<DisassembleTooltipService, SmallElementTooltipHandler>("smallElementTooltipHandler");
     private static readonly AccessTools.FieldRef<SmallElementTooltipHandler, TooltipProjectionHighlighter> Highlighter =
         AccessTools.FieldRefAccess<SmallElementTooltipHandler, TooltipProjectionHighlighter>("tooltipProjectionHighlighter");
+    private static readonly MethodInfo? ShowHint = GameTargets.Method(PatchTargets.TooltipServiceShow);
+    private static readonly object[] NoEvent = { default(InputActionEventData) };
 
     /// <summary>The highlighter whose pulse Select started and still holds, null once let go.</summary>
     private TooltipProjectionHighlighter? holding;
@@ -126,30 +116,20 @@ internal sealed class ScrewHintPoller : MonoBehaviour
         }
     }
 
-    /// <summary>Ghosts every screw on the workbench device that can come out now; the highlighter, or null.</summary>
+    /// <summary>
+    /// Runs the game's hint as its own button would (it checks for the workbench itself); the
+    /// highlighter when that started a pulse, else null.
+    /// </summary>
     private static TooltipProjectionHighlighter? ShowHints()
     {
         var service = ScrewHintServicePatch.Service;
-        if (service is null || !service.IsActive) return null;
-        var machine = StateMachine(service);
-        if (!machine || machine.ActiveState is not DetectionDisassembleState) return null;
-        var devices = Devices(service);
-        var container = devices ? devices.PlacedDeviceContainer : null;
-        var device = container ? container!.Device : null;
+        if (service is null || ShowHint is null) return null;
         var handler = SmallHandler(service);
         var highlighter = handler is null ? null : Highlighter(handler);
-        if (!device || !highlighter) return null;
+        if (!highlighter) return null;
 
-        var any = false;
-        foreach (var socket in device!.ElementSockets)
-        {
-            var screw = socket.NestedElement;
-            if (socket.CompatibleElementInfo.Category != ElementCategory.Small || !screw ||
-                screw.Info.Category != ElementCategory.Small || socket.IsBlocked)
-                continue;
-            highlighter!.CreateAndHighlightProjection(screw.ProjectionData, socket.transform);
-            any = true;
-        }
-        return any ? highlighter : null;
+        ShowHint.Invoke(service, NoEvent);
+        var pulse = DropHintOneGhostPatch.Pulse(highlighter!);
+        return pulse is not null && pulse.IsActive() ? highlighter : null;
     }
 }

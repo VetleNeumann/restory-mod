@@ -50,12 +50,9 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   stacked. Dropping another part while a pulse is fading makes it brighten again, so every screw
   hinted by that drop gets a full pulse.
 - **Screw hint button**: at the workbench, the gamepad's Select button (Share / Create on PlayStation,
-  View / Back on Xbox) pulses yellow over every screw you can unscrew now. Hold it to keep them lit;
-  they fade once you let go.
-- **Minimum hitbox size** (trial, off by default): at the workbench with a gamepad, small things (screws,
-  screw slots, loose parts, attached parts, switches) get hitboxes at least a set share of the screen
-  across, so they are easier to hover. Where enlarged hitboxes overlap, the thing nearest the cursor wins;
-  a thing the camera can't see, a blocked part or a part ghost never grows.
+  View / Back on Xbox) shows the game's own hint, which otherwise has no gamepad button: it pulses
+  yellow over the screws holding the next part to take off, or the empty screw slots of the next part
+  to put back, and marks damaged parts. Hold it to keep the pulse lit; it fades once you let go.
 - **Hitbox overlay** (debug, off by default): at the workbench, draws each thing's hitbox over the game,
   its enlarged hitbox, what the cursor hovers, and a readout of everything under the cursor.
 

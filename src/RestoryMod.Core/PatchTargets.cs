@@ -221,6 +221,20 @@ public static class PatchTargets
     public static readonly PatchTarget SocketCompatibleElementInfo = new(Socket, "CompatibleElementInfo");
     public static readonly PatchTarget ElementProjectionData = new("Restory.Gameplay.Elements.ElementBase", "ProjectionData");
 
+    // Screw hint button: Select at the workbench ghosts every screw that can come out now, reaching the
+    // device, the disassemble state and the highlighter through the game's own tooltip service.
+    private const string TooltipService = "Restory.Gameplay.Disassemble.Tooltips.DisassembleTooltipService";
+    public static readonly PatchTarget TooltipServiceInitialize = new(TooltipService, "Initialize");
+    public static readonly PatchTarget TooltipServiceIsActive = new(TooltipService, "IsActive");
+    public static readonly PatchTarget TooltipServiceDevices = new(TooltipService, "deviceService");
+    public static readonly PatchTarget TooltipServiceStateMachine = new(TooltipService, "disassembleStateMachine");
+    public static readonly PatchTarget TooltipServiceSmallHandler = new(TooltipService, "smallElementTooltipHandler");
+    public static readonly PatchTarget DisassembleDetectionState = new(DisassembleDetection);
+    public static readonly PatchTarget StateMachineActiveState = new("Restory.Infrastructure.StateMachines.StateMachineMonoBase", "ActiveState");
+    public static readonly PatchTarget PlacedDevice = new("Restory.Gameplay.Devices.DeviceService", "PlacedDeviceContainer");
+    public static readonly PatchTarget DeviceContainerDevice = new("Restory.Gameplay.Devices.DeviceContainer", "Device");
+    public static readonly PatchTarget DeviceElementSockets = new("Restory.Gameplay.Devices.Device", "ElementSockets");
+
     // Outline diagnostics ([Debug] OutlineDiagnostics): every outline switch and preset change on
     // parts, screws and slots, the slot pulse, and the socket graph the drop hint reads.
     private const string OutlinableAdapter = "Restory.Gameplay.Common.OutlinableAdapter";
@@ -382,6 +396,14 @@ public static class PatchTargets
         HighlighterSequence,
         HighlighterToPeak,
         HighlighterToBase,
+        TooltipServiceInitialize,
+        TooltipServiceIsActive,
+        TooltipServiceDevices,
+        TooltipServiceStateMachine,
+        TooltipServiceSmallHandler,
+        DisassembleDetectionState,
+        StateMachineActiveState,
+        DeviceElementSockets,
         SocketBlockedSockets,
         SocketIsBlocked,
         ElementProjectionData,
@@ -416,13 +438,13 @@ public static class PatchTargets
         new PatchTarget(UiInputModule, "SubmitActionId"),
         new PatchTarget("Restory.UI.Presenters.Inventory.InventoryPanel", "IsVisible"),
         new PatchTarget("Restory.UI.Presenters.Inventory.InventoryPanelFilter", "Sort"),
-        new PatchTarget("Restory.Gameplay.Devices.DeviceService", "PlacedDeviceContainer"),
+        PlacedDevice,
         new PatchTarget("Restory.Gameplay.Devices.Device", "SortedSockets"),
         new PatchTarget("Restory.Gameplay.Elements.ElementSocket", "NestedElement"),
         new PatchTarget("Restory.Gameplay.Elements.ElementSocket", "CompatibleElementInfo"),
         new PatchTarget("Restory.Gameplay.Workplace.WorkSurface", "PlacedElements"),
         new PatchTarget("Restory.Gameplay.Devices.DismantledDevicePack", "PlacedElements"),
-        new PatchTarget("Restory.Gameplay.Devices.DeviceContainer", "Device"),
+        DeviceContainerDevice,
         new PatchTarget("Restory.Gameplay.Elements.ElementBase", "Info"),
         new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsSelected"),
         new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsHighlighted"),

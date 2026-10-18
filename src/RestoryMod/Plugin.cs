@@ -50,6 +50,7 @@ public class Plugin : BaseUnityPlugin
         HitboxOverlayFeature.Bind(Config);
         MailListFeature.Bind(Config);
         DropHintFeature.Bind(Config);
+        ScrewHintButtonFeature.Bind(Config);
         WatchConfigFile();
 
         harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
@@ -97,6 +98,7 @@ public class Plugin : BaseUnityPlugin
             typeof(MailContentsChangedPatch),
             typeof(DropHintOneGhostPatch),
             typeof(DropHintFreedScrewsPatch),
+            typeof(ScrewHintServicePatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump),
             typeof(OutlineAdapterActivePatch),
@@ -109,6 +111,7 @@ public class Plugin : BaseUnityPlugin
         gameObject.AddComponent<DpadSendPoller>();
         // Idle unless the mail list targets resolve and MailLaunchPatch has captured the Mail app.
         gameObject.AddComponent<MailListPoller>();
+        if (ScrewHintButtonFeature.TargetsPresent()) gameObject.AddComponent<ScrewHintPoller>();
         if (OutlineDiagnostics.Enabled) gameObject.AddComponent<OutlineWatcher>();
         // Idle unless ShowHitboxes is on and a workbench hover state recorded this frame.
         gameObject.AddComponent<HitboxOverlay>();

@@ -53,9 +53,9 @@ internal static class DropHintOneGhostPatch
 {
     private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, List<ElementProjection>> Ghosts =
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, List<ElementProjection>>("highlightedProjections");
-    private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, Sequence?> Pulse =
+    internal static readonly AccessTools.FieldRef<ProjectionHighlighterBase, Sequence?> Pulse =
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, Sequence?>("transitionSequence");
-    private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, float> ToPeak =
+    internal static readonly AccessTools.FieldRef<ProjectionHighlighterBase, float> ToPeak =
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, float>("toPeakDuration");
     private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, float> ToBase =
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, float>("toBaseDuration");

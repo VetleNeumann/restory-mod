@@ -49,6 +49,9 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   screw that part freed, so none are left out, and each screw gets one pulse instead of several
   stacked. Dropping another part while a pulse is fading makes it brighten again, so every screw
   hinted by that drop gets a full pulse.
+- **Screw hint button**: at the workbench, the gamepad's Select button (Share / Create on PlayStation,
+  View / Back on Xbox) pulses yellow over every screw you can unscrew now. Hold it to keep them lit;
+  they fade once you let go.
 - **Minimum hitbox size** (trial, off by default): at the workbench with a gamepad, small things (screws,
   screw slots, loose parts, attached parts, switches) get hitboxes at least a set share of the screen
   across, so they are easier to hover. Where enlarged hitboxes overlap, the thing nearest the cursor wins;
@@ -66,6 +69,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | Controller | RotationSpeed | 0.4 | Gamepad speed for spinning the device at the workbench |
 | Controller | DropdownModes | true | Gamepad dropdowns |
 | Controller | DpadSendParts | true | D-pad part sends |
+| Controller | SelectShowsScrewHints | true | Screw hint button |
 | Controller | HoverGraceMs | 150 | Hover grace window in ms (0 to 500, 0 = off) |
 | Controller | EnlargeSmallHitboxes | false | Minimum hitbox size at the workbench, with a gamepad |
 | Controller | MinimumHitboxSize | 4 | Minimum hitbox size in % of screen height (0 to 15) |

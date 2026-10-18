@@ -43,4 +43,14 @@ public class PulseRewindTests
     {
         Assert.Equal(0.5f, PulseRewind.Position(0.5001f, toPeak: 0.5f, toBase: 0f), 4);
     }
+
+    [Theory]
+    [InlineData(0.2f, null)]
+    [InlineData(0.5f, null)]
+    [InlineData(0.51f, 0.5f)]
+    [InlineData(0.9f, 0.5f)]
+    public void Held_pulse_stops_at_its_peak(float elapsed, float? expected)
+    {
+        Assert.Equal(expected, PulseRewind.HoldAtPeak(elapsed, toPeak: 0.5f));
+    }
 }

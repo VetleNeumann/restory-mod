@@ -25,6 +25,7 @@
   <ItemGroup Condition="'$(GameManaged)' != ''">
     <Reference Include="Restory.Assembly" HintPath="$(GameManaged)/Restory.Assembly.dll" Private="false" />
     <Reference Include="Rewired_Core" HintPath="$(GameManaged)/Rewired_Core.dll" Private="false" />
+    <Reference Include="RewiredAssembly" HintPath="$(GameManaged)/RewiredAssembly.dll" Private="false" />
     <Reference Include="Zenject" HintPath="$(GameManaged)/Zenject.dll" Private="false" />
     <Reference Include="Zenject-usage" HintPath="$(GameManaged)/Zenject-usage.dll" Private="false" />
     <Reference Include="UnityEngine.UI" HintPath="$(GameManaged)/UnityEngine.UI.dll" Private="false" />

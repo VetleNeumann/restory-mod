@@ -21,4 +21,10 @@ public static class PulseRewind
         var faded = Math.Min(1f, (elapsed - toPeak) / toBase);
         return toPeak * (1f - faded);
     }
+
+    /// <summary>
+    /// While the hint button is held the pulse waits at its peak: where to put it back once it has
+    /// passed the peak, or null while it is still rising.
+    /// </summary>
+    public static float? HoldAtPeak(float elapsed, float toPeak) => elapsed > toPeak ? toPeak : null;
 }

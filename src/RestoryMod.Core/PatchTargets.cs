@@ -241,6 +241,14 @@ public static class PatchTargets
     public static readonly PatchTarget CursorDetectorCamera = new("Restory.Gameplay.GameCursor.GameCursorDetector", "gameCamera");
     public static readonly PatchTarget SocketScrewSlot = new(Socket, "smallElementProjection");
 
+    // Minimum hitbox size: during the workbench hover states' detection, the game's hover ray reports
+    // the enlarged hitbox that wins instead of what it hit. Things are listed from the placed device
+    // and the loose parts on the bench.
+    public static readonly PatchTarget CursorDetectorTryToDetect = new("Restory.Gameplay.GameCursor.GameCursorDetector", "TryToDetect");
+    public static readonly PatchTarget DisassembleDetectionDeviceService = new(DisassembleDetection, "deviceService");
+    public static readonly PatchTarget EmptyDetectionDeviceService = new(EmptyDetection, "deviceService");
+    public static readonly PatchTarget DeviceServiceWorkSurface = new("Restory.Gameplay.Devices.DeviceService", "workSurface");
+
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
         CursorControlsTypeChanged,
@@ -387,6 +395,10 @@ public static class PatchTargets
         EmptyDetectionElement,
         CursorDetectorCamera,
         SocketScrewSlot,
+        CursorDetectorTryToDetect,
+        DisassembleDetectionDeviceService,
+        EmptyDetectionDeviceService,
+        DeviceServiceWorkSurface,
 
         // Members the plugin reads directly (compiled against) rather than through the entries above;
         // listed so the TargetCheck tests catch a game update that moves them.

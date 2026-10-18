@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using HarmonyLib;
 using Restory.Constants;
 using Restory.Data.Elements;
+using Restory.Gameplay.Devices;
 using Restory.Gameplay.Elements;
 using Restory.Gameplay.Equipment.Ultrasonic;
+using Restory.Gameplay.Workplace;
 using RestoryMod.Core;
 using UnityEngine;
 using NVector2 = System.Numerics.Vector2;
@@ -39,34 +41,47 @@ internal sealed class WorkbenchThing(Object identity, ThingKind kind, string nam
 }
 
 /// <summary>
-/// Everything the workbench hover ray can hit, grouped into things the way the game identifies a ray
-/// hit, each with its native hitbox on screen and whether the camera can see it.
+/// The things on the workbench the hover ray can hit: the placed device and the loose parts on the
+/// bench, grouped the way the game identifies a ray hit, each with its native hitbox on screen and
+/// whether the camera can see it.
 /// </summary>
 internal sealed class WorkbenchHitboxes
 {
     /// <summary>The game's hover ray length, in metres (a literal in its cursor detector).</summary>
     public const float GameRayLength = 4f;
 
-    private const float RescanSeconds = 0.5f;
+    private const float RescanSeconds = 0.25f;
 
     private static AccessTools.FieldRef<ElementSocket, ElementProjection>? screwSlotOf;
+    private static AccessTools.FieldRef<DeviceService, WorkSurface>? workSurfaceOf;
 
-    private readonly List<Collider> colliders = new();
+    /// <summary>A collider and the thing it belongs to. Kind is null for a part, whose kind changes as it is worked on.</summary>
+    private readonly struct Entry(Collider collider, Object identity, ThingKind? kind, string name)
+    {
+        public Collider Collider { get; } = collider;
+        public Object Identity { get; } = identity;
+        public ThingKind? Kind { get; } = kind;
+        public string Name { get; } = name;
+    }
+
+    private readonly List<Entry> entries = new();
+    private readonly List<Collider> gathered = new();
     private float nextScan;
-    private int scannedMask;
 
-    private readonly List<WorkbenchThing> found = new();
     private readonly Dictionary<Object, WorkbenchThing> byIdentity = new();
     private readonly Dictionary<Collider, WorkbenchThing> byCollider = new();
+    private readonly List<WorkbenchThing> found = new();
     private readonly List<HitboxThing<WorkbenchThing>> sizings = new();
     private readonly List<List<NVector2>> shapes = new();
     private readonly RaycastHit[] viewHits = new RaycastHit[16];
+    private readonly List<RayHit<WorkbenchThing>> rayHits = new();
 
-    /// <summary>Resolves what telling screw slots from part ghosts needs; for the patches' Prepare().</summary>
+    /// <summary>Resolves the private members the listing needs; for the patches' Prepare().</summary>
     public static bool Prepare()
     {
-        if (!GameTargets.AllPresent(PatchTargets.SocketScrewSlot)) return false;
+        if (!GameTargets.AllPresent(PatchTargets.SocketScrewSlot, PatchTargets.DeviceServiceWorkSurface)) return false;
         screwSlotOf ??= AccessTools.FieldRefAccess<ElementSocket, ElementProjection>(PatchTargets.SocketScrewSlot.MemberName!);
+        workSurfaceOf ??= AccessTools.FieldRefAccess<DeviceService, WorkSurface>(PatchTargets.DeviceServiceWorkSurface.MemberName!);
         return true;
     }
 
@@ -76,34 +91,43 @@ internal sealed class WorkbenchHitboxes
     /// <summary>This frame's things as the minimum hitbox size sees them, front to back.</summary>
     public IReadOnlyList<HitboxThing<WorkbenchThing>> Sizings => sizings;
 
-    public void Update(Camera camera, int mask)
+    /// <summary>
+    /// Works out this frame's things. With <paramref name="near"/>, only things whose hitbox could
+    /// reach that screen point once enlarged by up to <paramref name="reach"/> px.
+    /// </summary>
+    public void Update(Camera camera, int mask, DeviceService? devices, Vector2? near = null, float reach = 0f)
     {
-        if (Time.unscaledTime >= nextScan || mask != scannedMask) Rescan(mask);
+        if (Time.unscaledTime >= nextScan) Rescan(devices);
+
+        var nearRay = near is { } point ? camera.ScreenPointToRay(point) : default;
+        // World size of one pixel per metre of depth, for the near test.
+        var pixelPerDepth = 2f * Mathf.Tan(camera.fieldOfView * Mathf.Deg2Rad / 2f) / Screen.height;
 
         found.Clear();
         byIdentity.Clear();
-        foreach (var collider in colliders)
+        foreach (var entry in entries)
         {
+            var collider = entry.Collider;
             if (!collider || !collider.enabled || !collider.gameObject.activeInHierarchy) continue;
             if ((mask & (1 << collider.gameObject.layer)) == 0) continue;
 
-            var (identity, kind, name) = Identify(collider);
-            if (!byIdentity.TryGetValue(identity, out var thing))
+            if (!byIdentity.TryGetValue(entry.Identity, out var thing))
             {
-                thing = new WorkbenchThing(identity, kind, name);
-                byIdentity.Add(identity, thing);
+                thing = new WorkbenchThing(entry.Identity, entry.Kind ?? KindOf((ElementBase)entry.Identity), entry.Name);
+                byIdentity.Add(entry.Identity, thing);
                 found.Add(thing);
             }
             thing.Colliders.Add(collider);
         }
 
-        // Only things on screen stay findable, so everything found has a hitbox.
+        // Only things on screen (and near, when asked) stay findable, so everything found has a hitbox.
         Things.Clear();
         byIdentity.Clear();
         byCollider.Clear();
         var origin = camera.transform.position;
         foreach (var thing in found)
         {
+            if (near is not null && !NearRay(thing, nearRay, reach, pixelPerDepth)) continue;
             if (!Measure(camera, thing)) continue;
 
             var depth = float.MaxValue;
@@ -121,7 +145,7 @@ internal sealed class WorkbenchHitboxes
         sizings.Clear();
         foreach (var thing in Things)
         {
-            thing.Sizing = thing.Sizing with { Enlargeable = thing.Kind.Enlargeable(), Seen = IsSeen(camera, thing, mask) };
+            thing.Sizing = thing.Sizing with { Enlargeable = Enlargeable(thing), Seen = IsSeen(camera, thing, mask) };
             sizings.Add(thing.Sizing);
         }
     }
@@ -133,17 +157,38 @@ internal sealed class WorkbenchHitboxes
     /// <summary>The thing a collider belongs to, if it is on screen.</summary>
     public WorkbenchThing? Find(Collider collider) => byCollider.TryGetValue(collider, out var thing) ? thing : null;
 
+    /// <summary>What the game hovers for these ray hits, read the way the game reads them.</summary>
+    public WorkbenchThing? GamePickFor(RaycastHit[] hits, int count)
+    {
+        rayHits.Clear();
+        for (var i = 0; i < count; i++) rayHits.Add(ToRayHit(hits[i]));
+        return GamePick.AtWorkbench(rayHits);
+    }
+
     /// <summary>
     /// What the game would hover with the cursor at <paramref name="screenPoint"/>: its ray, keeping
-    /// as many hits as the game does, read the way the game reads them.
+    /// as many hits as the game does.
     /// </summary>
-    public WorkbenchThing? GamePickAt(Camera camera, Vector2 screenPoint, int mask, RaycastHit[] hits,
-        List<RayHit<WorkbenchThing>> scratch)
+    public WorkbenchThing? GamePickAt(Camera camera, Vector2 screenPoint, int mask, RaycastHit[] hits)
     {
         var count = Physics.RaycastNonAlloc(camera.ScreenPointToRay(screenPoint), hits, GameRayLength, mask);
-        scratch.Clear();
-        for (var i = 0; i < count; i++) scratch.Add(ToRayHit(hits[i]));
-        return GamePick.AtWorkbench(scratch);
+        return GamePickFor(hits, count);
+    }
+
+    /// <summary>
+    /// A real hit on the thing, as the game's own ray would report it, along a line from the camera to
+    /// the centre of one of its shapes.
+    /// </summary>
+    public static bool HitOn(Camera camera, WorkbenchThing thing, out RaycastHit hit)
+    {
+        var origin = camera.transform.position;
+        foreach (var collider in thing.Colliders)
+        {
+            var toCentre = collider.bounds.center - origin;
+            if (collider.Raycast(new Ray(origin, toCentre), out hit, toCentre.magnitude + 1f)) return true;
+        }
+        hit = default;
+        return false;
     }
 
     private RayHit<WorkbenchThing> ToRayHit(RaycastHit hit)
@@ -170,19 +215,39 @@ internal sealed class WorkbenchHitboxes
         return true;
     }
 
-    private void Rescan(int mask)
+    /// <summary>The minimum hitbox size applies to it, and the game would hover it once picked.</summary>
+    private static bool Enlargeable(WorkbenchThing thing) => thing.Kind.Enlargeable() && Hoverable(thing);
+
+    /// <summary>Lists the colliders of the placed device and of the loose parts on the bench.</summary>
+    private void Rescan(DeviceService? devices)
     {
         nextScan = Time.unscaledTime + RescanSeconds;
-        scannedMask = mask;
-        colliders.Clear();
-        foreach (var collider in Object.FindObjectsByType<Collider>(FindObjectsSortMode.None))
+        entries.Clear();
+        if (!devices) return;
+
+        var container = devices!.PlacedDeviceContainer;
+        if (container && container.Device) Gather(container.Device);
+
+        var surface = workSurfaceOf!(devices);
+        if (!surface) return;
+        foreach (var part in surface.PlacedElements)
         {
-            if ((mask & (1 << collider.gameObject.layer)) != 0) colliders.Add(collider);
+            if (part) Gather(part);
+        }
+    }
+
+    private void Gather(Component root)
+    {
+        root.GetComponentsInChildren(false, gathered);
+        foreach (var collider in gathered)
+        {
+            var (identity, kind, name) = Identify(collider);
+            entries.Add(new Entry(collider, identity, kind, name));
         }
     }
 
     /// <summary>Groups a collider the way the game identifies what its ray hit.</summary>
-    private static (Object Identity, ThingKind Kind, string Name) Identify(Collider collider)
+    private static (Object Identity, ThingKind? Kind, string Name) Identify(Collider collider)
     {
         // A ray hit's transform is the rigidbody's when the collider belongs to one.
         var owner = collider.attachedRigidbody ? collider.attachedRigidbody.transform : collider.transform;
@@ -202,26 +267,44 @@ internal sealed class WorkbenchHitboxes
             return (button, ThingKind.Switch, part ? NameOf(part) : button.name);
         }
 
-        if (owner.TryGetComponent<ElementBase>(out var element))
-        {
-            var kind = ThingKinds.OfPart(
-                inWashingBin: element.GetComponentInParent<SonicBath>(),
-                inSocket: element.InSocket,
-                small: element.Info && element.Info.Category == ElementCategory.Small,
-                blocked: element.IsBlocked,
-                switchable: element is ISwitchableElement);
-            return (element, kind, NameOf(element));
-        }
+        if (owner.TryGetComponent<ElementBase>(out var element)) return (element, null, NameOf(element));
 
         return collider.gameObject.layer == ProjectConstants.Layers.Device
             ? (collider, ThingKind.DeviceBody, collider.name)
             : (collider, ThingKind.Equipment, collider.name);
     }
 
+    private static ThingKind KindOf(ElementBase element) => ThingKinds.OfPart(
+        inWashingBin: element.GetComponentInParent<SonicBath>(),
+        inSocket: element.InSocket,
+        small: element.Info && element.Info.Category == ElementCategory.Small,
+        blocked: element.IsBlocked,
+        switchable: element is ISwitchableElement);
+
     private static string NameOf(ElementBase element) => element.Info ? element.Info.ID : element.name;
 
     private static bool IsScrewSlot(ElementSocket? socket, ElementProjection projection) =>
         socket && screwSlotOf!(socket!) == projection;
+
+    /// <summary>
+    /// Whether any of the thing's shapes lies close enough to the ray for its hitbox, enlarged by up
+    /// to <paramref name="reach"/> px, to take in the point the ray goes through.
+    /// </summary>
+    private static bool NearRay(WorkbenchThing thing, Ray ray, float reach, float pixelPerDepth)
+    {
+        foreach (var collider in thing.Colliders)
+        {
+            var bounds = collider.bounds;
+            var toCentre = bounds.center - ray.origin;
+            var depth = Vector3.Dot(toCentre, ray.direction);
+            var radius = bounds.extents.magnitude;
+            if (depth < -radius) continue;
+
+            var offRay = (toCentre - depth * ray.direction).magnitude;
+            if (offRay <= radius + reach * pixelPerDepth * Mathf.Max(depth, 0f)) return true;
+        }
+        return false;
+    }
 
     /// <summary>Builds the thing's hitbox on screen. False when it is behind the camera or off screen.</summary>
     private bool Measure(Camera camera, WorkbenchThing thing)

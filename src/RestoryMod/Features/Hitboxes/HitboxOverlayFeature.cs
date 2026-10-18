@@ -1,6 +1,7 @@
 using System.Reflection;
 using BepInEx.Configuration;
 using HarmonyLib;
+using Restory.Gameplay.Devices;
 using Restory.Gameplay.Disassemble;
 using Restory.Gameplay.Disassemble.StateMachine;
 using Restory.Gameplay.Elements;
@@ -14,14 +15,12 @@ namespace RestoryMod.Features.Hitboxes;
 
 /// <summary>
 /// Hitbox overlay: a debug view at the workbench that draws native and enlarged hitboxes over the
-/// game and lists what lies under the cursor. It previews the minimum hitbox size; nothing here
-/// changes what the game hovers.
+/// game and lists what lies under the cursor. It only reads; enlarging is HitboxEnlargingFeature.
 /// </summary>
 internal static class HitboxOverlayFeature
 {
     public static ConfigEntry<bool> Show = null!;
     public static ConfigEntry<bool> PickMap = null!;
-    public static ConfigEntry<float> MinimumSizePercent = null!;
 
     public static void Bind(ConfigFile config)
     {
@@ -35,18 +34,7 @@ internal static class HitboxOverlayFeature
             "HitboxPickMap",
             false,
             "Hitbox overlay: also tint each spot on screen by the thing the cursor would hover there.");
-        MinimumSizePercent = config.Bind(
-            "Controller",
-            "MinimumHitboxSize",
-            MinimumHitboxSize.DefaultPercent,
-            new ConfigDescription(
-                "Minimum hitbox size, as a percentage of screen height. For now only the hitbox overlay previews it; the game's hitboxes are not enlarged yet.",
-                new AcceptableValueRange<float>(0f, MinimumHitboxSize.MaxPercent)));
     }
-
-    /// <summary>The minimum hitbox size in pixels at the current screen height.</summary>
-    public static float MinimumSizePixels =>
-        Mathf.Clamp(MinimumSizePercent.Value, 0f, MinimumHitboxSize.MaxPercent) / 100f * Screen.height;
 }
 
 /// <summary>What a workbench hover state saw in its latest frame.</summary>
@@ -54,6 +42,7 @@ internal sealed class HoverSnapshot
 {
     public int Frame = -1;
     public Camera? Camera;
+    public DeviceService? Devices;
     public int LayerMask;
 
     /// <summary>How many ray hits the game keeps; it drops the rest, in no particular order.</summary>
@@ -84,8 +73,12 @@ internal static class HoverCapture
         return true;
     }
 
+    /// <summary>The camera the game's hover ray is cast from.</summary>
+    public static Camera CameraOf(GameCursorDetector detector) => gameCamera!(detector);
+
     public static void Record(
         CursorDetectorService detectors,
+        DeviceService devices,
         LayerMask mask,
         RaycastHit[] gameHits,
         IPlayerInput input,
@@ -95,7 +88,8 @@ internal static class HoverCapture
     {
         var snapshot = Latest;
         snapshot.Frame = Time.frameCount;
-        snapshot.Camera = gameCamera!(detectors.GameDetector);
+        snapshot.Camera = CameraOf(detectors.GameDetector);
+        snapshot.Devices = devices;
         snapshot.LayerMask = mask.value;
         snapshot.GameHitLimit = gameHits.Length;
         snapshot.Cursor = input.GetMousePosition();
@@ -123,7 +117,8 @@ internal static class HitboxOverlayDetectionPatch
             PatchTargets.DisassembleDetectionWaiting,
             PatchTargets.DisassembleDetectionElement,
             PatchTargets.DisassembleDetectionProjection,
-            PatchTargets.DisassembleDetectionButton)
+            PatchTargets.DisassembleDetectionButton,
+            PatchTargets.DisassembleDetectionDeviceService)
         && HoverCapture.Prepare()
         && WorkbenchHitboxes.Prepare();
 
@@ -134,6 +129,7 @@ internal static class HitboxOverlayDetectionPatch
     private static void Postfix(
         IPlayerInput ___playerInput,
         CursorDetectorService ___cursorDetectorService,
+        DeviceService ___deviceService,
         LayerMask ___detectionLayerMask,
         RaycastHit[] ___raycastHits,
         CursorSelectionService ___cursorSelectionService,
@@ -155,8 +151,8 @@ internal static class HitboxOverlayDetectionPatch
         else if (___playerInput.GetButton(MiniGameAction.Activate)) notPicking = "press held";
         else if (___rotationController && ___rotationController.IsRotationButtonPressed) notPicking = "rotating";
 
-        HoverCapture.Record(___cursorDetectorService, ___detectionLayerMask, ___raycastHits, ___playerInput,
-            ___cursorSelectionService, gamePick, notPicking);
+        HoverCapture.Record(___cursorDetectorService, ___deviceService, ___detectionLayerMask, ___raycastHits,
+            ___playerInput, ___cursorSelectionService, gamePick, notPicking);
     }
 }
 
@@ -172,7 +168,8 @@ internal static class HitboxOverlayEmptyBenchPatch
             PatchTargets.EmptyDetectionMask,
             PatchTargets.EmptyDetectionHits,
             PatchTargets.EmptyDetectionSelection,
-            PatchTargets.EmptyDetectionElement)
+            PatchTargets.EmptyDetectionElement,
+            PatchTargets.EmptyDetectionDeviceService)
         && HoverCapture.Prepare()
         && WorkbenchHitboxes.Prepare();
 
@@ -181,6 +178,7 @@ internal static class HitboxOverlayEmptyBenchPatch
     private static void Postfix(
         IPlayerInput ___playerInput,
         CursorDetectorService ___cursorDetectorService,
+        DeviceService ___deviceService,
         LayerMask ___detectionLayerMask,
         RaycastHit[] ___raycastHits,
         CursorSelectionService ___cursorSelectionService,
@@ -188,7 +186,7 @@ internal static class HitboxOverlayEmptyBenchPatch
     {
         if (!HitboxOverlayFeature.Show.Value) return;
 
-        HoverCapture.Record(___cursorDetectorService, ___detectionLayerMask, ___raycastHits, ___playerInput,
-            ___cursorSelectionService, ___selectedElement ? ___selectedElement : null, notPicking: null);
+        HoverCapture.Record(___cursorDetectorService, ___deviceService, ___detectionLayerMask, ___raycastHits,
+            ___playerInput, ___cursorSelectionService, ___selectedElement ? ___selectedElement : null, notPicking: null);
     }
 }

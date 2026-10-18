@@ -54,8 +54,8 @@ internal sealed class HitboxOverlay : MonoBehaviour
 
     private void Compute(HoverSnapshot snapshot, Camera camera)
     {
-        minimumSize = HitboxOverlayFeature.MinimumSizePixels;
-        scene.Update(camera, snapshot.LayerMask);
+        minimumSize = HitboxEnlargingFeature.MinimumSizePixels;
+        scene.Update(camera, snapshot.LayerMask, snapshot.Devices);
         gamePick = scene.Find(snapshot.GamePick);
         enlargingPick = snapshot.NotPicking is null
             ? HitboxPicker.Pick(ToCore(snapshot.Cursor), minimumSize, scene.Sizings, gamePick, snapshot.PanelUnderCursor)
@@ -130,8 +130,9 @@ internal sealed class HitboxOverlay : MonoBehaviour
     private void WriteReadout(HoverSnapshot snapshot, Camera camera)
     {
         text.Clear();
-        var percent = HitboxOverlayFeature.MinimumSizePercent.Value;
-        text.Append($"<b>HITBOX OVERLAY</b>  minimum {minimumSize:0} px ({percent:0.#}% of {Screen.height})");
+        var percent = HitboxEnlargingFeature.MinimumSizePercent.Value;
+        text.Append($"<b>HITBOX OVERLAY</b>  minimum {minimumSize:0} px ({percent:0.#}% of {Screen.height}), enlarging ")
+            .Append(HitboxEnlargingFeature.Enabled.Value ? "on" : "off");
         if (HitboxOverlayFeature.PickMap.Value) text.Append("  · pick map");
         text.AppendLine();
 
@@ -249,7 +250,6 @@ internal sealed class PickMap
     private int rows;
     private int nextRow;
     private RaycastHit[] gameHits = [];
-    private readonly List<RayHit<WorkbenchThing>> scratch = new();
     private readonly List<HitboxThing<WorkbenchThing>> near = new();
 
     public void Clear()
@@ -279,7 +279,7 @@ internal sealed class PickMap
             for (var column = 0; column < columns; column++)
             {
                 var point = new Vector2((column + 0.5f) * Cell, (row + 0.5f) * Cell);
-                var native = scene.GamePickAt(camera, point, snapshot.LayerMask, gameHits, scratch);
+                var native = scene.GamePickAt(camera, point, snapshot.LayerMask, gameHits);
 
                 near.Clear();
                 foreach (var sizing in scene.Sizings)

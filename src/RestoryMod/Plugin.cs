@@ -46,6 +46,7 @@ public class Plugin : BaseUnityPlugin
         OutlineDiagnostics.Bind(Config);
         StickScrollFeature.Bind(Config);
         HoverGraceFeature.Bind(Config);
+        HitboxEnlargingFeature.Bind(Config);
         HitboxOverlayFeature.Bind(Config);
         MailListFeature.Bind(Config);
         DropHintFeature.Bind(Config);
@@ -86,6 +87,9 @@ public class Plugin : BaseUnityPlugin
             typeof(HoverGraceWorkSelectPatch),
             typeof(HitboxOverlayDetectionPatch),
             typeof(HitboxOverlayEmptyBenchPatch),
+            typeof(HitboxEnlargingDetectionPatch),
+            typeof(HitboxEnlargingEmptyBenchPatch),
+            typeof(HitboxEnlargingRayPatch),
             typeof(MailLaunchPatch),
             typeof(MailStopPatch),
             typeof(MailSelectedPatch),

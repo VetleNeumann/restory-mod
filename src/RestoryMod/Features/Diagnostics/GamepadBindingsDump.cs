@@ -64,6 +64,38 @@ internal static class GamepadBindingsDump
                        $"middle={mouse.middleButton.actionName}");
         }
 
+        AppendKeyboardOnly(log);
         Plugin.Logger.LogInfo(log.ToString());
+    }
+
+    /// <summary>
+    /// Every action bound on keyboard or mouse but on no gamepad button, across all map categories
+    /// (not only those the player has loaded now), from Rewired's map definitions.
+    /// </summary>
+    private static void AppendKeyboardOnly(StringBuilder log)
+    {
+        var joystick = ReInput.players.GetPlayer(0)?.controllers.Joysticks.FirstOrDefault();
+        log.Append($"\n  Keyboard/mouse only (gamepad: {joystick?.name ?? "none connected"}):");
+        foreach (var category in ReInput.mapping.MapCategories)
+        {
+            foreach (var layout in ReInput.mapping.KeyboardLayouts.Select(l => l.id).DefaultIfEmpty(0).Take(1))
+            {
+                var keyboard = ReInput.mapping.GetKeyboardMapInstance(category.id, layout);
+                var mouse = ReInput.mapping.GetMouseMapInstance(category.id, layout);
+                var pad = joystick is null ? null : ReInput.mapping.GetJoystickMapInstance(joystick, category.id, layout);
+                var padActions = pad?.AllMaps.Select(e => e.actionId).ToHashSet() ?? new System.Collections.Generic.HashSet<int>();
+
+                var desktop = (keyboard?.AllMaps ?? Enumerable.Empty<ActionElementMap>())
+                    .Concat(mouse?.AllMaps ?? Enumerable.Empty<ActionElementMap>())
+                    .Where(e => !padActions.Contains(e.actionId))
+                    .GroupBy(e => e.actionId);
+                foreach (var group in desktop)
+                {
+                    var action = ReInput.mapping.GetAction(group.Key)?.name;
+                    var keys = string.Join(", ", group.Select(e => e.elementIdentifierName).Distinct());
+                    log.Append($"\n    [{category.name}] {action} ({group.Key}) <- {keys}");
+                }
+            }
+        }
     }
 }

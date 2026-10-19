@@ -141,11 +141,14 @@ public class Plugin : BaseUnityPlugin
         // After a hot reload the scene is already set up, so the hooks that run at scene load won't
         // fire for this copy: pick up their work here. On a normal start these find nothing.
         NotepadKeyListenPatch.Resume();
+        ScrewHintServicePatch.Resume();
         DropdownModesFeature.FindCursors();
         PartsBoxSections.AttachToPanels();
         Teardown.Add(NotepadKeyListenPatch.Unload);
         Teardown.Add(DropdownModesFeature.Unload);
         Teardown.Add(PartsBoxSections.Unload);
+        Teardown.Add(ScrewHintServicePatch.Unload);
+        Teardown.Add(ButtonPromptsFeature.Unload);
     }
 
     /// <summary>

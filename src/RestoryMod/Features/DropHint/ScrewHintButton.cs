@@ -56,6 +56,20 @@ internal static class ScrewHintServicePatch
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.TooltipServiceInitialize)!;
 
     private static void Postfix(DisassembleTooltipService __instance) => Service = __instance;
+
+    /// <summary>On unload: leaves the service for the next copy, which won't see Initialize again this scene.</summary>
+    internal static void Unload()
+    {
+        if (Service is not null) Handoff.Leave(nameof(ScrewHintServicePatch), Service);
+    }
+
+    /// <summary>Picks up the service the previous copy kept on a hot reload; nothing on a normal start.</summary>
+    internal static void Resume()
+    {
+        if (!Prepare() || Handoff.Take(nameof(ScrewHintServicePatch)) is not [DisassembleTooltipService service]) return;
+        Service = service;
+        Plugin.Logger.LogInfo("Screw hint service taken over from the previous plugin copy.");
+    }
 }
 
 /// <summary>Forgets the tooltip service when its scene unloads.</summary>
@@ -97,6 +111,20 @@ internal sealed class ScrewHintPoller : MonoBehaviour
             }
             HintPulse.Release(holding!);
             holding = null;
+        }
+        catch (Exception e)
+        {
+            ScrewHintButtonFeature.LogOnce(e);
+        }
+    }
+
+    /// <summary>Unloaded while R2 holds the pulse (a hot reload): lets it fade as letting go of R2 would.</summary>
+    private void OnDestroy()
+    {
+        if (!holding) return;
+        try
+        {
+            HintPulse.Release(holding!);
         }
         catch (Exception e)
         {

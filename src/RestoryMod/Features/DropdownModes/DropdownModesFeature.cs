@@ -71,8 +71,37 @@ internal static class DropdownModesFeature
         return dropdownListField is not null && cursorPlayerMouseField is not null && cursorUpdateImage is not null;
     }
 
-    /// <summary>Cursor views announce themselves when they first draw (Awake), so we never search for them.</summary>
+    /// <summary>
+    /// Cursor views announce themselves when they draw (Awake, or a switch of controller type), so the
+    /// only search is <see cref="FindCursors"/> after a hot reload.
+    /// </summary>
     public static void RegisterCursor(VirtualCursorView view) => CursorViews.Add(view);
+
+    /// <summary>On load: after a hot reload the cursors have long drawn, so look for them once.</summary>
+    public static void FindCursors()
+    {
+        if (!TargetsPresent()) return;
+        foreach (var view in Object.FindObjectsByType<VirtualCursorView>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            CursorViews.Add(view);
+    }
+
+    /// <summary>On unload, once the patches are gone: the game redraws each cursor, showing any the mod hid.</summary>
+    public static void Unload()
+    {
+        if (cursorUpdateImage is null) return;
+        CursorViews.RemoveWhere(view => !view);
+        foreach (var view in CursorViews)
+        {
+            try
+            {
+                cursorUpdateImage.Invoke(view, null);
+            }
+            catch (TargetInvocationException e)
+            {
+                Plugin.Logger.LogWarning($"Cursor redraw on unload failed: {e.InnerException}");
+            }
+        }
+    }
 
     public static void NoteOpener(DropdownMode opener) => pendingOpener = opener;
     public static void ClearOpener() => pendingOpener = null;

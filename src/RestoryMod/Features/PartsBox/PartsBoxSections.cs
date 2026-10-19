@@ -53,6 +53,33 @@ internal sealed class PartsBoxSections : MonoBehaviour
         return sections;
     }
 
+    /// <summary>
+    /// On unload: these components live on the game's panel and container, so they would outlive the
+    /// plugin. Each one's OnDestroy takes its headers; the game's own grid takes over again.
+    /// </summary>
+    public static void Unload()
+    {
+        foreach (var layout in FindObjectsByType<SectionedGridLayout>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (layout.TryGetComponent<GridLayoutGroup>(out var grid)) grid.enabled = true;
+            Destroy(layout);
+            LayoutRebuilder.MarkLayoutForRebuild((RectTransform)layout.transform);
+        }
+        foreach (var sections in FindObjectsByType<PartsBoxSections>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            Destroy(sections);
+    }
+
+    /// <summary>
+    /// On load: after a hot reload, starts the poll on the live parts box, which re-sorts it into
+    /// sections at once if a device is on the workbench. On a normal start there is no panel yet.
+    /// </summary>
+    public static void AttachToPanels()
+    {
+        if (SortItems is null || UpdateItemsView is null) return;
+        foreach (var panel in FindObjectsByType<InventoryPanel>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            For(panel);
+    }
+
     /// <summary>Called after each sort. A null bench means the game's own order is in effect.</summary>
     public void SetSorted(BenchState? bench, int missing)
     {

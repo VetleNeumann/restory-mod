@@ -75,6 +75,15 @@ internal static class ButtonPromptsFeature
         }
     }
 
+    /// <summary>
+    /// On unload, once the patches are gone: the game redraws each prompt for the pad as it sees it,
+    /// with its own art (its UpdateView always sets the sprite, replacing the PlayStation one).
+    /// </summary>
+    public static void Unload()
+    {
+        if (TargetsPresent()) Redraw();
+    }
+
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void Redraw()
     {

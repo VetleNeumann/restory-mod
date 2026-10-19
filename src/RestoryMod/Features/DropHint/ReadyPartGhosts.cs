@@ -68,16 +68,13 @@ internal static class ReadyPartGhosts
             try
             {
                 keep = tracked.Ghost && HintPulse.GhostsOf(tracked.Highlighter).Contains(tracked.Ghost) && tracked.StillReady();
+                if (keep && tracked.Missing) Tint(tracked);
             }
             catch (Exception)
             {
-                keep = false; // its part or socket was destroyed with the device
+                keep = false; // its part, socket or ghost was destroyed with the device
             }
-            if (keep)
-            {
-                if (tracked.Missing) Tint(tracked);
-                continue;
-            }
+            if (keep) continue;
             Ghosts.RemoveAt(i);
             Restore(tracked);
             if (tracked.Ghost && tracked.Highlighter) HintPulse.Remove(tracked.Highlighter, tracked.Ghost);

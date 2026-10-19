@@ -121,7 +121,9 @@ internal sealed class BenchState
     internal static IEnumerable<ElementBase> LooseParts(Device device)
     {
         var container = device.GetComponentInParent<DeviceContainer>();
-        return container ? LooseParts(container) : Usable(FindWorkSurface()?.PlacedElements);
+        if (container) return LooseParts(container);
+        var surface = FindWorkSurface();
+        return Usable(surface ? surface!.PlacedElements : null);
     }
 
     /// <summary>Parts lying loose next to the device, excluding small parts and quest items.</summary>

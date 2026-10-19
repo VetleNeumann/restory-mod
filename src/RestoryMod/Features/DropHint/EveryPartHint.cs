@@ -6,6 +6,7 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using Restory.Data.Elements;
 using Restory.Gameplay.Devices;
+using Restory.Gameplay.Disassemble.StateMachine;
 using Restory.Gameplay.Disassemble.Tooltips;
 using Restory.Gameplay.Elements;
 using RestoryMod.Core;
@@ -33,6 +34,7 @@ internal static class EveryPartHintFeature
     {
         var definition = new ConfigDefinition(Section, "HintShowsEveryPart");
         var orphans = Orphans(config);
+        if (orphans is null) Plugin.Logger.LogWarning($"Can't read old config entries; {OldKey} is not carried over.");
         var carried = orphans is not null && !orphans.ContainsKey(definition)
             && orphans.TryGetValue(new ConfigDefinition(Section, OldKey), out var old) ? old : null;
 
@@ -79,6 +81,29 @@ internal static class EveryPartHintFeature
 
     private static readonly AccessTools.FieldRef<ElementSocket, HashSet<ElementSocket>> AdditionalBlockers =
         AccessTools.FieldRefAccess<ElementSocket, HashSet<ElementSocket>>("additionalBlockers");
+    private static readonly AccessTools.FieldRef<DisassembleTooltipService, Device> TargetDevice =
+        AccessTools.FieldRefAccess<DisassembleTooltipService, Device>("targetDevice");
+    private static readonly AccessTools.FieldRef<DisassembleTooltipService, bool> IsDisassembling =
+        AccessTools.FieldRefAccess<DisassembleTooltipService, bool>("isDisassembling");
+    private static readonly AccessTools.FieldRef<DisassembleTooltipService, DisassembleStateMachine> StateMachine =
+        AccessTools.FieldRefAccess<DisassembleTooltipService, DisassembleStateMachine>("disassembleStateMachine");
+
+    private static bool? refreshPresent;
+
+    /// <summary>
+    /// Checks again for ready parts, as the game's hint button would but without its other hints, so
+    /// parts that became ready while R2 is held join the pulse.
+    /// </summary>
+    public static void Refresh(DisassembleTooltipService service, TooltipProjectionHighlighter highlighter)
+    {
+        refreshPresent ??= TargetsPresent() && GameTargets.AllPresent(
+            PatchTargets.TooltipServiceTargetDevice,
+            PatchTargets.TooltipServiceIsDisassembling,
+            PatchTargets.TooltipServiceIsActive,
+            PatchTargets.TooltipServiceStateMachine);
+        if (refreshPresent != true || !service.IsActive || StateMachine(service).ActiveState is not DetectionDisassembleState) return;
+        RunGameHint(TargetDevice(service), highlighter, IsDisassembling(service) ? ShowTakingApart : ShowPuttingBack);
+    }
 
     /// <summary>
     /// A prefix's body: ghosts what <paramref name="show"/> picks and returns whether the game's own
@@ -139,8 +164,9 @@ internal static class EveryPartHintFeature
         foreach (var i in ReadyParts.MissingSockets(types, loose.Select(p => p.Info)))
         {
             var socket = sockets[i];
-            ReadyPartGhosts.Add(highlighter, PrefabLook(socket.CompatibleElementInfo), socket.transform,
-                () => IsReadyToFill(socket), missing: true);
+            var type = socket.CompatibleElementInfo;
+            ReadyPartGhosts.Add(highlighter, PrefabLook(type), socket.transform,
+                () => IsReadyToFill(socket) && !BenchState.LooseParts(device).Any(p => p.Info == type), missing: true);
         }
     }
 
@@ -153,7 +179,7 @@ internal static class EveryPartHintFeature
         var part = socket.NestedElement;
         if (part.Info.Category == ElementCategory.Small) return false;
         var data = part.ConditionHandler.ElementData;
-        return ReadyParts.IsTarget(data.IsInspected, BenchState.ConditionOf(data.Condition));
+        return ReadyParts.IsTarget(data.IsInspected, () => BenchState.ConditionOf(data.Condition));
     }
 
     // A flip group's lid blocks the part inside through the runtime set, not the serialized list.

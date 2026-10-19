@@ -63,7 +63,7 @@ A part whose condition the player hasn't seen yet because it has never been take
 _Avoid_: Uninspected part, hidden part
 
 **Missing socket**:
-An empty socket that no loose part on the bench can fill; the parts box lists the parts that could fill it under "Missing parts". The hint shows its part ghost in red.
+A socket that could take a part right now but that no loose part on the bench is left to fill, each loose part counting toward one socket of its kind; the parts box lists the parts that could fill it under "Missing parts". The hint shows its part ghost in red.
 _Avoid_: Empty slot, missing part
 
 ### Hitboxes

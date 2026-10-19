@@ -84,7 +84,15 @@ public class ReadyPartsTests
     [InlineData(true, PartCondition.Damaged, true)]
     public void Target_is_an_unknown_part_or_one_known_to_need_work(bool inspected, PartCondition condition, bool target)
     {
-        Assert.Equal(target, ReadyParts.IsTarget(inspected, condition));
+        Assert.Equal(target, ReadyParts.IsTarget(inspected, () => condition));
+    }
+
+    [Fact]
+    public void Unknown_part_condition_is_never_read()
+    {
+        var read = false;
+        Assert.True(ReadyParts.IsTarget(false, () => { read = true; return PartCondition.Perfect; }));
+        Assert.False(read);
     }
 
     [Fact]

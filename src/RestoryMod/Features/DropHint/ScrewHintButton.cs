@@ -13,7 +13,8 @@ namespace RestoryMod.Features.DropHint;
 /// <summary>
 /// R2 at the workbench runs the game's own hint, whose GetTooltip action (Space) has no gamepad
 /// button; see <see cref="EveryPartHintFeature"/> for what it shows. Holding it keeps the pulse at
-/// full brightness; letting go fades it as usual. R2 otherwise zooms out, which
+/// full brightness and keeps checking for ready parts, so parts that become ready join it; letting go
+/// fades it as usual. R2 otherwise zooms out, which
 /// <see cref="ZoomToggle.ZoomToggleFeature"/> takes over.
 /// </summary>
 internal static class ScrewHintButtonFeature
@@ -92,8 +93,13 @@ internal sealed class ScrewHintPoller : MonoBehaviour
     private static readonly MethodInfo? GameHintPressed = GameTargets.Method(PatchTargets.TooltipServiceShow);
     private static readonly object[] NoEvent = { default(InputActionEventData) };
 
+    /// <summary>How often a held R2 checks again for parts that became ready.</summary>
+    private const float RecheckSeconds = 0.2f;
+
     /// <summary>The highlighter whose pulse R2 started and still holds, null once let go.</summary>
     private TooltipProjectionHighlighter? holding;
+
+    private float nextRecheck;
 
     private void Update()
     {
@@ -101,7 +107,17 @@ internal sealed class ScrewHintPoller : MonoBehaviour
         {
             GamepadTriggers.Right(out var pressed, out var down);
 
-            if (pressed && ScrewHintButtonFeature.Enabled.Value) holding = RunGameHint();
+            if (pressed && ScrewHintButtonFeature.Enabled.Value)
+            {
+                holding = RunGameHint();
+                nextRecheck = Time.unscaledTime + RecheckSeconds;
+            }
+            else if (down && ScrewHintButtonFeature.Enabled.Value && Time.unscaledTime >= nextRecheck)
+            {
+                nextRecheck = Time.unscaledTime + RecheckSeconds;
+                var rechecked = Recheck();
+                if (rechecked) holding = rechecked;
+            }
             if (!holding) return;
 
             if (down)
@@ -137,15 +153,22 @@ internal sealed class ScrewHintPoller : MonoBehaviour
     /// highlighter when the hint pulsed some screw, else null, so a pulse R2 didn't add to (a drop's)
     /// is never held.
     /// </summary>
-    private static TooltipProjectionHighlighter? RunGameHint()
+    private static TooltipProjectionHighlighter? RunGameHint() =>
+        GameHintPressed is null ? null : Pulsed((service, _) => GameHintPressed.Invoke(service, NoEvent));
+
+    /// <summary>Checks again for ready parts while R2 is held; the highlighter if that pulsed a new one.</summary>
+    private static TooltipProjectionHighlighter? Recheck() =>
+        EveryPartHintFeature.Enabled.Value ? Pulsed(EveryPartHintFeature.Refresh) : null;
+
+    private static TooltipProjectionHighlighter? Pulsed(Action<DisassembleTooltipService, TooltipProjectionHighlighter> hint)
     {
         var service = ScrewHintServicePatch.Service;
-        if (service is null || GameHintPressed is null) return null;
+        if (service is null) return null;
         var highlighter = TooltipServiceParts.Highlighter(service);
         if (!highlighter) return null;
 
         var before = HintPulse.Requests;
-        GameHintPressed.Invoke(service, NoEvent);
+        hint(service, highlighter!);
         return HintPulse.Requests != before && HintPulse.Running(highlighter!) is not null ? highlighter : null;
     }
 }

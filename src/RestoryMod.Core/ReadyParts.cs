@@ -11,10 +11,10 @@ public static class ReadyParts
 {
     /// <summary>
     /// A part worth taking out: one the player hasn't seen yet (its real condition stays hidden), or
-    /// one they know needs cleaning or replacing.
+    /// one they know needs cleaning or replacing. The condition is read only once the part is inspected.
     /// </summary>
-    public static bool IsTarget(bool inspected, PartCondition condition) =>
-        !inspected || condition != PartCondition.Perfect;
+    public static bool IsTarget(bool inspected, Func<PartCondition> condition) =>
+        !inspected || condition() != PartCondition.Perfect;
 
     /// <summary>
     /// Taking a device apart: the installed parts that aren't blocked and are, or stand in the way

@@ -16,7 +16,8 @@ namespace RestoryMod.Features.DropHint;
 /// the drop hint, the game's hint button and the mod's additions all add ghosts to it. With
 /// [Workbench] TidyHintPulse each screw gets one ghost (the game checks a part once per screw holding
 /// it, stacking ghosts), a fading pulse rises again when screws join it so they don't get only its dim
-/// tail, and a screw going in or out takes its ghost away instead of leaving it until the pulse ends.
+/// tail, a screw going in or out takes its ghost away instead of leaving it until the pulse ends, and
+/// ghosts keep their part's size instead of swelling with the pulse (only the brightness pulses).
 /// </summary>
 internal static class HintPulse
 {
@@ -26,7 +27,8 @@ internal static class HintPulse
     {
         Tidy = config.Bind("Workbench", "TidyHintPulse", true,
             "Keeps the yellow screw hints tidy: one pulse per screw, a fading pulse brightens again when more " +
-            "screws join it, and a screw going in or out loses its pulse straight away.");
+            "screws join it, a screw going in or out loses its pulse straight away, and a pulse stays the size " +
+            "of its part instead of growing past it.");
     }
 
     private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, List<ElementProjection>> Ghosts =
@@ -69,7 +71,17 @@ internal static class HintPulse
     /// </summary>
     public static ElementProjection? Add(TooltipProjectionHighlighter highlighter, ElementProjectionData data, Transform parent)
     {
+        var ghost = GhostUnder(highlighter, parent);
+        if (ghost) return ghost;
         highlighter.CreateAndHighlightProjection(data, parent);
+        ghost = GhostUnder(highlighter, parent);
+        // A pooled ghost keeps the size another highlighter left it at.
+        if (ghost && Tidy.Value) ghost!.transform.localScale = Vector3.one;
+        return ghost;
+    }
+
+    private static ElementProjection? GhostUnder(ProjectionHighlighterBase highlighter, Transform parent)
+    {
         var ghosts = Ghosts(highlighter);
         for (var i = ghosts.Count - 1; i >= 0; i--)
         {
@@ -116,7 +128,7 @@ internal static class HintPulse
         if (peak is not null) pulse.Goto(peak.Value, andPlay: false);
         else if (elapsed < toPeak) return;
 
-        var scale = Vector3.one * PeakScale(highlighter);
+        var scale = Tidy.Value ? Vector3.one : Vector3.one * PeakScale(highlighter);
         foreach (var ghost in Ghosts(highlighter))
         {
             if (ghost) ghost.transform.localScale = scale;
@@ -158,6 +170,20 @@ internal static class HintPulseJoinPatch
             if (ghost && ghost.transform.parent == parent) return false;
         }
         return true;
+    }
+}
+
+/// <summary>The hint's pulse swells only in brightness: its ghosts stay their part's size.</summary>
+[HarmonyPatch]
+internal static class HintPulseSizePatch
+{
+    private static bool Prepare() => HintPulse.TargetsPresent() && GameTargets.AllPresent(PatchTargets.HighlighterSetScale);
+
+    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.HighlighterSetScale)!;
+
+    private static void Prefix(ProjectionHighlighterBase __instance, ref Vector3 scale)
+    {
+        if (HintPulse.Tidy.Value && __instance is TooltipProjectionHighlighter) scale = Vector3.one;
     }
 }
 

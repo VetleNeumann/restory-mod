@@ -220,6 +220,7 @@ public static class PatchTargets
     public static readonly PatchTarget HighlighterToPeak = new(Highlighter, "toPeakDuration");
     public static readonly PatchTarget HighlighterToBase = new(Highlighter, "toBaseDuration");
     public static readonly PatchTarget HighlighterPeakScale = new(Highlighter, "peakScale");
+    public static readonly PatchTarget HighlighterSetScale = new(Highlighter, "SetHighlightedProjectionsScale");
     private const string Socket = "Restory.Gameplay.Elements.ElementSocket";
     public static readonly PatchTarget SocketBlockedSockets = new(Socket, "BlockedSockets");
     public static readonly PatchTarget SocketIsBlocked = new(Socket, "IsBlocked");
@@ -263,6 +264,11 @@ public static class PatchTargets
     public static readonly PatchTarget HighlighterFrontOutline = new(Highlighter, "frontOutlineProperties");
     public static readonly PatchTarget HighlighterBackOutline = new(Highlighter, "backOutlineProperties");
     public static readonly PatchTarget TooltipHighlighterComplete = new(TooltipHighlighter, "CompleteTransitionSequence");
+    // Holding R2 checks again for ready parts, as the game's hint button would, without its other hints.
+    public static readonly PatchTarget TooltipServiceTargetDevice = new(TooltipService, "targetDevice");
+    public static readonly PatchTarget TooltipServiceIsDisassembling = new(TooltipService, "isDisassembling");
+    public static readonly PatchTarget TooltipServiceIsActive = new(TooltipService, "IsActive");
+    public static readonly PatchTarget TooltipServiceStateMachine = new(TooltipService, "disassembleStateMachine");
 
     // Zoom toggle: an L2 press at the workbench becomes a full zoom input to the game's zoom update,
     // and the triggers' own zoom input is muted there.
@@ -499,6 +505,11 @@ public static class PatchTargets
         HighlighterFrontOutline,
         HighlighterBackOutline,
         TooltipHighlighterComplete,
+        HighlighterSetScale,
+        TooltipServiceTargetDevice,
+        TooltipServiceIsDisassembling,
+        TooltipServiceIsActive,
+        TooltipServiceStateMachine,
         SocketBlockedSockets,
         SocketIsBlocked,
         ElementProjectionData,

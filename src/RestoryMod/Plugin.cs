@@ -111,6 +111,7 @@ public class Plugin : BaseUnityPlugin
             typeof(MailContentsChangedPatch),
             typeof(HintPulseJoinPatch),
             typeof(HintPulseStaleGhostPatch),
+            typeof(HintPulseSizePatch),
             typeof(DropHintFreedScrewsPatch),
             typeof(ScrewHintServicePatch),
             typeof(ScrewHintServiceDisposePatch),

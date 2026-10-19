@@ -90,18 +90,30 @@ internal static class EveryPartHintFeature
 
     private static bool? refreshPresent;
 
+    private static bool RefreshPresent => refreshPresent ??= TargetsPresent() && GameTargets.AllPresent(
+        PatchTargets.TooltipServiceTargetDevice,
+        PatchTargets.TooltipServiceIsDisassembling,
+        PatchTargets.TooltipServiceIsActive,
+        PatchTargets.TooltipServiceStateMachine);
+
+    /// <summary>
+    /// A ghost's check that also ends it once the game switches between taking apart and putting back
+    /// (say a screw goes back in by mistake, then out again).
+    /// </summary>
+    private static Func<bool> While(bool takingApart, Func<bool> ready) => () =>
+    {
+        var service = ScrewHintServicePatch.Service;
+        var now = service is not null && RefreshPresent ? IsDisassembling(service) : takingApart;
+        return now == takingApart && ready();
+    };
+
     /// <summary>
     /// Checks again for ready parts, as the game's hint button would but without its other hints, so
     /// parts that became ready while R2 is held join the pulse.
     /// </summary>
     public static void Refresh(DisassembleTooltipService service, TooltipProjectionHighlighter highlighter)
     {
-        refreshPresent ??= TargetsPresent() && GameTargets.AllPresent(
-            PatchTargets.TooltipServiceTargetDevice,
-            PatchTargets.TooltipServiceIsDisassembling,
-            PatchTargets.TooltipServiceIsActive,
-            PatchTargets.TooltipServiceStateMachine);
-        if (refreshPresent != true || !service.IsActive || StateMachine(service).ActiveState is not DetectionDisassembleState) return;
+        if (!RefreshPresent || !service.IsActive || StateMachine(service).ActiveState is not DetectionDisassembleState) return;
         RunGameHint(TargetDevice(service), highlighter, IsDisassembling(service) ? ShowTakingApart : ShowPuttingBack);
     }
 
@@ -134,7 +146,7 @@ internal static class EveryPartHintFeature
         {
             var part = socket.NestedElement;
             ReadyPartGhosts.Add(highlighter, InstalledLook(part), socket.transform,
-                () => socket.NestedElement == part && !socket.IsBlocked);
+                While(true, () => socket.NestedElement == part && !socket.IsBlocked));
         }
     }
 
@@ -149,7 +161,7 @@ internal static class EveryPartHintFeature
         {
             var screw = slot.LastNestedElement;
             if (!screw || screw.Info.Category != ElementCategory.Small) continue;
-            ReadyPartGhosts.Add(highlighter, screw.ProjectionData, slot.transform, () => IsReadyToFill(slot));
+            ReadyPartGhosts.Add(highlighter, screw.ProjectionData, slot.transform, While(false, () => IsReadyToFill(slot)));
         }
 
         var sockets = ready.Where(s => s.CompatibleElementInfo.Category != ElementCategory.Small).ToList();
@@ -157,8 +169,8 @@ internal static class EveryPartHintFeature
         var loose = BenchState.LooseParts(device).ToList();
         foreach (var part in loose.Where(p => types.Contains(p.Info)))
         {
-            ReadyPartGhosts.Add(highlighter, part.ProjectionData, part.transform,
-                () => part.IsOnSurface && !part.IsDragging && device.ElementSockets.Any(s => s.CompatibleElementInfo == part.Info && IsReadyToFill(s)));
+            ReadyPartGhosts.Add(highlighter, part.ProjectionData, part.transform, While(false, () =>
+                part.IsOnSurface && !part.IsDragging && device.ElementSockets.Any(s => s.CompatibleElementInfo == part.Info && IsReadyToFill(s))));
         }
 
         foreach (var i in ReadyParts.MissingSockets(types, loose.Select(p => p.Info)))
@@ -166,7 +178,7 @@ internal static class EveryPartHintFeature
             var socket = sockets[i];
             var type = socket.CompatibleElementInfo;
             ReadyPartGhosts.Add(highlighter, PrefabLook(type), socket.transform,
-                () => IsReadyToFill(socket) && !BenchState.LooseParts(device).Any(p => p.Info == type), missing: true);
+                While(false, () => IsReadyToFill(socket) && !BenchState.LooseParts(device).Any(p => p.Info == type)), missing: true);
         }
     }
 

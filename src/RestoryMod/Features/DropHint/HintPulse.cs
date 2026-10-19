@@ -84,6 +84,8 @@ internal static class HintPulse
         ghost = GhostUnder(highlighter, parent);
         // A pooled ghost keeps the size another highlighter left it at.
         if (ghost && Tidy.Value) ghost!.transform.localScale = Vector3.one;
+        // The pool is shared with the game's screw-slot markers, whose outline the hint may have muted.
+        if (ghost) ghost!.OutlinableAdapter.Outlinable.enabled = true;
         return ghost;
     }
 

@@ -81,12 +81,15 @@ internal static class EveryPartHintFeature
         PatchTargets.SocketBlockedSockets,
         PatchTargets.SerialSubordinates,
         PatchTargets.SubordinateSocket,
-        PatchTargets.ElementProgress);
+        PatchTargets.ElementProgress,
+        PatchTargets.SocketScrewSlot);
 
     private static readonly AccessTools.FieldRef<ElementSocket, HashSet<ElementSocket>> AdditionalBlockers =
         AccessTools.FieldRefAccess<ElementSocket, HashSet<ElementSocket>>("additionalBlockers");
     private static readonly AccessTools.FieldRef<SerialElementSocket, List<SubordinateElementSocket>> TubePlaces =
         AccessTools.FieldRefAccess<SerialElementSocket, List<SubordinateElementSocket>>("subordinateSockets");
+    private static readonly AccessTools.FieldRef<ElementSocket, ElementProjection> SlotMarker =
+        AccessTools.FieldRefAccess<ElementSocket, ElementProjection>("smallElementProjection");
     private static readonly AccessTools.FieldRef<DisassembleTooltipService, Device> TargetDevice =
         AccessTools.FieldRefAccess<DisassembleTooltipService, Device>("targetDevice");
     private static readonly AccessTools.FieldRef<DisassembleTooltipService, bool> IsDisassembling =
@@ -164,7 +167,8 @@ internal static class EveryPartHintFeature
         {
             var part = socket.NestedElement;
             ReadyPartGhosts.Add(highlighter, InstalledLook(part), socket.transform,
-                While(true, () => socket.NestedElement == part && !socket.IsBlocked));
+                While(true, () => socket.NestedElement == part && !socket.IsBlocked),
+                restyle: part.Info.Category != ElementCategory.Small);
         }
     }
 
@@ -180,7 +184,9 @@ internal static class EveryPartHintFeature
         var slots = ready.Where(IsScrewSlot).ToList();
         foreach (var slot in slots)
         {
-            ReadyPartGhosts.Add(highlighter, slot.LastNestedElement.ProjectionData, slot.transform, While(false, () => IsReadyToFill(slot)));
+            var marker = SlotMarker(slot);
+            ReadyPartGhosts.Add(highlighter, slot.LastNestedElement.ProjectionData, slot.transform, While(false, () => IsReadyToFill(slot)),
+                restyle: false, covering: marker ? marker : null);
         }
         // A tube (batteries) shows once per part it still takes, so each pairs with one loose part.
         var sockets = ready.Where(s => s.CompatibleElementInfo.Category != ElementCategory.Small)

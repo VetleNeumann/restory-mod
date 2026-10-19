@@ -28,8 +28,10 @@ internal static class ReadyPartGhosts
     private sealed class Tracked
     {
         public Tracked(TooltipProjectionHighlighter highlighter, ElementProjection ghost, Func<bool> stillReady, bool missing,
-            Func<bool>? waiting)
+            Func<bool>? waiting, bool restyle, ElementProjection? muted)
         {
+            Restyle = restyle;
+            Muted = muted;
             Highlighter = highlighter;
             Ghost = ghost;
             StillReady = stillReady;
@@ -41,6 +43,18 @@ internal static class ReadyPartGhosts
         public ElementProjection Ghost { get; }
         public Func<bool> StillReady { get; }
         public bool Missing { get; }
+
+        /// <summary>
+        /// False for a ghost that keeps the pulse's own look: screw slots, where the game draws its own
+        /// marker on an empty one and a restyled ghost ends up hidden under it, and screws still in, to match.
+        /// </summary>
+        public bool Restyle { get; }
+
+        /// <summary>
+        /// The game's own marker on the same spot, its outline switched off while this ghost shows: the
+        /// two would draw in no set order, so the marker could hide the ghost.
+        /// </summary>
+        public ElementProjection? Muted { get; }
 
         /// <summary>True while something else should go first: the ghost shows faint and doesn't pulse.</summary>
         public Func<bool>? Waiting { get; }
@@ -67,13 +81,15 @@ internal static class ReadyPartGhosts
     /// faint while <paramref name="waiting"/> does.
     /// </summary>
     public static void Add(TooltipProjectionHighlighter highlighter, ElementProjectionData data, Transform parent,
-        Func<bool> stillReady, bool missing = false, Func<bool>? waiting = null)
+        Func<bool> stillReady, bool missing = false, Func<bool>? waiting = null, bool restyle = true,
+        ElementProjection? covering = null)
     {
         var ghost = HintPulse.Add(highlighter, data, parent);
         if (!ghost) return;
         var wearing = Ghosts.Find(t => t.Ghost == ghost)?.Wearing;
         Ghosts.RemoveAll(t => t.Ghost == ghost);
-        var tracked = new Tracked(highlighter, ghost!, stillReady, missing, waiting) { Wearing = wearing };
+        var tracked = new Tracked(highlighter, ghost!, stillReady, missing, waiting, restyle, covering) { Wearing = wearing };
+        if (covering) covering!.OutlinableAdapter.Outlinable.enabled = false;
         Ghosts.Add(tracked);
         Tint(tracked);
     }
@@ -133,7 +149,9 @@ internal static class ReadyPartGhosts
 
     private static void Restore(Tracked tracked)
     {
-        if (tracked.Ghost && tracked.Highlighter)
+        // Even a marker the game has put back in its pool: the next one made from it must draw.
+        if (tracked.Muted) tracked.Muted!.OutlinableAdapter.Outlinable.enabled = true;
+        if (tracked.Restyle && tracked.Ghost && tracked.Highlighter)
             tracked.Ghost.OutlinableAdapter.OverridePreset = Preset(tracked.Highlighter);
     }
 
@@ -143,6 +161,7 @@ internal static class ReadyPartGhosts
     /// </summary>
     private static void Tint(Tracked tracked)
     {
+        if (!tracked.Restyle) return;
         var front = Front(tracked.Highlighter);
         if (front is null) return;
         var waiting = tracked.Waiting?.Invoke() ?? false;
@@ -164,10 +183,10 @@ internal static class ReadyPartGhosts
 
     private static void Paint(Outlinable.OutlineProperties properties, Color pulse, bool missing, bool waiting)
     {
-        // Waiting: the pulse's peak color held still, faint.
-        if (waiting) pulse = new Color(1f, 1f, 0f, pulse.a);
+        // Waiting: the pulse's peak color held still and darkened (the outline ignores alpha).
+        if (waiting) pulse = new Color(0.45f, 0.45f, 0f, pulse.a);
         var color = missing ? Red(pulse) : pulse;
-        properties.Color = waiting ? new Color(color.r, color.g, color.b, color.a * 0.35f) : color;
+        properties.Color = color;
         if (!FillShader) return;
         if (properties.FillPass.Shader != FillShader) properties.FillPass.Shader = FillShader;
         // The pulse runs white (blue 1) to yellow (blue 0): the fill thickens as it brightens.

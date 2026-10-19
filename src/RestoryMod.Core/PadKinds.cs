@@ -23,19 +23,32 @@ public enum PromptStyle
     Generic,
 }
 
-/// <summary>The "Button prompts" settings row: one slider step per style.</summary>
+/// <summary>The "Button prompts" settings dropdown: one entry per style.</summary>
 public static class PromptStyles
 {
-    public static readonly PromptStyle[] InSliderOrder =
+    public static readonly PromptStyle[] InMenuOrder =
     {
         PromptStyle.Auto, PromptStyle.Xbox, PromptStyle.PlayStation, PromptStyle.SteamDeck, PromptStyle.Generic,
     };
 
-    public static PromptStyle FromStep(int step) => InSliderOrder[Math.Max(0, Math.Min(step, InSliderOrder.Length - 1))];
+    public static PromptStyle FromIndex(int index) => InMenuOrder[Math.Max(0, Math.Min(index, InMenuOrder.Length - 1))];
 
-    public static int ToStep(PromptStyle style) => Math.Max(0, Array.IndexOf(InSliderOrder, style));
+    public static int ToIndex(PromptStyle style) => Math.Max(0, Array.IndexOf(InMenuOrder, style));
 
     public static string Label(PromptStyle style) => style == PromptStyle.SteamDeck ? "Steam Deck" : style.ToString();
+
+    /// <summary>The menu entry for a style; Auto names the pad it detected, e.g. "Auto (PlayStation)".</summary>
+    public static string Label(PromptStyle style, PadKind detected)
+    {
+        if (style != PromptStyle.Auto || detected == PadKind.Unknown) return Label(style);
+        var pad = detected switch
+        {
+            PadKind.Nintendo => "Switch",
+            PadKind.SteamDeck => "Steam Deck",
+            _ => detected.ToString(),
+        };
+        return $"Auto ({pad})";
+    }
 }
 
 /// <summary>

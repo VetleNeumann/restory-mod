@@ -76,21 +76,35 @@ public class PadKindsTests
     }
 
     [Fact]
-    public void Slider_offers_every_style_once_with_a_label()
+    public void Menu_offers_every_style_once_with_a_label()
     {
-        Assert.Equal(Enum.GetValues<PromptStyle>().OrderBy(s => s), PromptStyles.InSliderOrder.OrderBy(s => s));
-        Assert.Equal(PromptStyle.Auto, PromptStyles.InSliderOrder[0]);
+        Assert.Equal(Enum.GetValues<PromptStyle>().OrderBy(s => s), PromptStyles.InMenuOrder.OrderBy(s => s));
+        Assert.Equal(PromptStyle.Auto, PromptStyles.InMenuOrder[0]);
         Assert.Equal("Steam Deck", PromptStyles.Label(PromptStyle.SteamDeck));
-        Assert.All(PromptStyles.InSliderOrder, s => Assert.False(string.IsNullOrEmpty(PromptStyles.Label(s))));
+        Assert.All(PromptStyles.InMenuOrder, s => Assert.False(string.IsNullOrEmpty(PromptStyles.Label(s))));
     }
 
     [Theory]
     [InlineData(-3, PromptStyle.Auto)]
     [InlineData(2, PromptStyle.PlayStation)]
     [InlineData(99, PromptStyle.Generic)]
-    public void Slider_steps_clamp_to_a_style(int step, PromptStyle expected)
+    public void Menu_indexes_clamp_to_a_style(int index, PromptStyle expected)
     {
-        Assert.Equal(expected, PromptStyles.FromStep(step));
-        Assert.Equal(Math.Clamp(step, 0, PromptStyles.InSliderOrder.Length - 1), PromptStyles.ToStep(expected));
+        Assert.Equal(expected, PromptStyles.FromIndex(index));
+        Assert.Equal(Math.Clamp(index, 0, PromptStyles.InMenuOrder.Length - 1), PromptStyles.ToIndex(expected));
+    }
+
+    [Theory]
+    [InlineData(PromptStyle.Auto, PadKind.PlayStation, "Auto (PlayStation)")]
+    [InlineData(PromptStyle.Auto, PadKind.Xbox, "Auto (Xbox)")]
+    [InlineData(PromptStyle.Auto, PadKind.SteamDeck, "Auto (Steam Deck)")]
+    [InlineData(PromptStyle.Auto, PadKind.Nintendo, "Auto (Switch)")]
+    [InlineData(PromptStyle.Auto, PadKind.Generic, "Auto (Generic)")]
+    [InlineData(PromptStyle.Auto, PadKind.Unknown, "Auto")]
+    [InlineData(PromptStyle.Xbox, PadKind.PlayStation, "Xbox")]
+    [InlineData(PromptStyle.SteamDeck, PadKind.Unknown, "Steam Deck")]
+    public void Auto_names_the_detected_pad(PromptStyle style, PadKind detected, string expected)
+    {
+        Assert.Equal(expected, PromptStyles.Label(style, detected));
     }
 }

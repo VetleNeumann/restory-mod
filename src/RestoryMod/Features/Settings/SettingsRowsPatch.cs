@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Reflection;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -9,43 +10,40 @@ using RestoryMod.Features.RotationSpeed;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Zenject;
 using Object = UnityEngine.Object;
 
 namespace RestoryMod.Features.Settings;
 
 /// <summary>
-/// Adds the mod's rows to the settings menu: "Controller sensitivity", "Rotation sensitivity" and
-/// "Button prompts". The menu is prefab-wired, so each row is cloned from the dialogue volume row and
-/// inserted below it (and below each other) on the first Show(). Every row is a stepped slider, so
-/// left/right on the D-pad changes it.
+/// Adds the mod's rows to the settings menu, below "Dialogue volume": the "Controller sensitivity" and
+/// "Rotation sensitivity" sliders, then the "Button prompts" dropdown. The menu is prefab-wired, so
+/// each row is cloned on the first Show(): sliders from the dialogue volume row, the dropdown from the
+/// monitor row.
 /// </summary>
 [HarmonyPatch]
 internal static class SettingsRowsPatch
 {
     // A class, not a positional record: the plugin targets netstandard2.1, which lacks IsExternalInit.
-    private sealed class RowSpec(string name, string label, int steps, Func<bool> available,
-        Func<GameObject, Slider, TMP_Text?, ISettingsRow> attach)
+    private sealed class SliderRowSpec(string name, string label, Func<ConfigEntry<float>> entry, Func<bool> available)
     {
         public string Name => name;
         public string Label => label;
-        public int Steps => steps;
+        public ConfigEntry<float> Entry => entry();
         public bool Available => available();
-        public ISettingsRow Attach(GameObject row, Slider slider, TMP_Text? valueText) => attach(row, slider, valueText);
     }
 
-    private static readonly RowSpec[] Rows =
+    private static readonly SliderRowSpec[] SliderRows =
     {
-        new("RestoryMod_ControllerSensitivity", "Controller sensitivity", Sensitivity.SliderSteps,
-            () => GameTargets.AllPresent(PatchTargets.CursorControlsTypeChanged, PatchTargets.CursorPlayerMouse),
-            (row, slider, text) => row.AddComponent<SensitivityRow>().Init(slider, text, CursorSpeedFeature.Speed)),
+        new("RestoryMod_ControllerSensitivity", "Controller sensitivity", () => CursorSpeedFeature.Speed,
+            () => GameTargets.AllPresent(PatchTargets.CursorControlsTypeChanged, PatchTargets.CursorPlayerMouse)),
         // No row when the rotation patch skipped itself after a game update: the slider would do nothing.
-        new("RestoryMod_RotationSensitivity", "Rotation sensitivity", Sensitivity.SliderSteps,
-            RotationSpeedFeature.TargetsPresent,
-            (row, slider, text) => row.AddComponent<SensitivityRow>().Init(slider, text, RotationSpeedFeature.Speed)),
-        new("RestoryMod_ButtonPrompts", "Button prompts", PromptStyles.InSliderOrder.Length - 1,
-            ButtonPromptsFeature.TargetsPresent,
-            (row, slider, text) => row.AddComponent<ButtonPromptsRow>().Init(slider, text, ButtonPromptsFeature.Style)),
+        new("RestoryMod_RotationSensitivity", "Rotation sensitivity", () => RotationSpeedFeature.Speed,
+            RotationSpeedFeature.TargetsPresent),
     };
+
+    private const string ButtonPromptsRowName = "RestoryMod_ButtonPrompts";
+    private const string ButtonPromptsLabel = "Button prompts";
 
     private static bool Prepare() => GameTargets.AllPresent(
         PatchTargets.SettingsMenuShow,
@@ -68,21 +66,23 @@ internal static class SettingsRowsPatch
             var templateRow = template.transform.parent;
             Selectable above = template;
             var aboveRow = templateRow;
-            foreach (var spec in Rows)
+            foreach (var spec in SliderRows)
             {
                 if (!spec.Available) continue;
 
                 var row = templateRow.parent.Find(spec.Name);
-                if (row)
-                {
-                    var existing = row.GetComponent<ISettingsRow>();
-                    if (existing is MonoBehaviour component && component) existing.Refresh();
-                }
-                else
-                    row = CreateRow(spec, templateRow, above, aboveRow);
+                if (row) RefreshRow(row);
+                else row = CreateSliderRow(spec, templateRow, above, aboveRow);
 
                 above = row.GetComponentInChildren<Slider>(true);
                 aboveRow = row;
+            }
+
+            if (ButtonPromptsDropdownAvailable())
+            {
+                var row = templateRow.parent.Find(ButtonPromptsRowName);
+                if (row) RefreshRow(row);
+                else CreateButtonPromptsRow(__instance, above, aboveRow);
             }
         }
         catch (Exception e)
@@ -91,7 +91,64 @@ internal static class SettingsRowsPatch
         }
     }
 
-    private static Transform CreateRow(RowSpec spec, Transform templateRow, Selectable above, Transform aboveRow)
+    private static void RefreshRow(Transform row)
+    {
+        var existing = row.GetComponent<ISettingsRow>();
+        if (existing is MonoBehaviour component && component) existing.Refresh();
+    }
+
+    private static Transform CreateSliderRow(SliderRowSpec spec, Transform templateRow, Selectable above, Transform aboveRow) =>
+        CloneRow(templateRow, spec.Name, spec.Label, above, aboveRow, row =>
+        {
+            var slider = row.GetComponentInChildren<Slider>(true);
+            slider.onValueChanged = new Slider.SliderEvent();
+            slider.wholeNumbers = true;
+            slider.minValue = 0;
+            slider.maxValue = Sensitivity.SliderSteps;
+
+            // Slider only uses left/right to change its value while those links are empty, so keep the template's.
+            SpliceNavigation(above, slider, clearSideLinks: false);
+            row.AddComponent<SensitivityRow>().Init(slider, slider.GetComponentInChildren<TMP_Text>(true), spec.Entry);
+        });
+
+    private static bool ButtonPromptsDropdownAvailable() =>
+        ButtonPromptsFeature.TargetsPresent() && GameTargets.AllPresent(
+            PatchTargets.SettingsMenuMainView,
+            PatchTargets.MainViewMonitorDropdown,
+            PatchTargets.RestoryDropdownContainer);
+
+    private static void CreateButtonPromptsRow(MonoBehaviour menu, Selectable above, Transform aboveRow)
+    {
+        var mainView = GameTargets.Field(PatchTargets.SettingsMenuMainView)!.GetValue(menu);
+        if (GameTargets.Field(PatchTargets.MainViewMonitorDropdown)!.GetValue(mainView) is not TMP_Dropdown template || !template)
+        {
+            Plugin.Logger.LogWarning("Settings rows: monitor dropdown not found.");
+            return;
+        }
+        // The game's dropdown builds its list through Zenject; the clone needs the same container.
+        if (GameTargets.Field(PatchTargets.RestoryDropdownContainer)!.GetValue(template) is not DiContainer container)
+        {
+            Plugin.Logger.LogWarning("Settings rows: monitor dropdown has no Zenject container yet.");
+            return;
+        }
+
+        CloneRow(template.transform.parent, ButtonPromptsRowName, ButtonPromptsLabel, above, aboveRow, row =>
+        {
+            var dropdown = row.GetComponentInChildren<TMP_Dropdown>(true);
+            dropdown.onValueChanged = new TMP_Dropdown.DropdownEvent();
+            container.InjectGameObject(row);
+
+            SpliceNavigation(above, dropdown, clearSideLinks: true);
+            row.AddComponent<ButtonPromptsRow>().Init(dropdown, ButtonPromptsFeature.Style);
+        });
+    }
+
+    /// <summary>
+    /// Clones a settings row, relabels it and inserts it below <paramref name="aboveRow"/> (which may sit in
+    /// another section than the template). <paramref name="bind"/> wires the clone's control.
+    /// </summary>
+    private static Transform CloneRow(Transform templateRow, string name, string label, Selectable above,
+        Transform aboveRow, Action<GameObject> bind)
     {
         // Clone under an inactive holder so no Awake/OnEnable runs before we strip game components.
         // The holder is always destroyed; if anything throws before the row is moved out, the
@@ -101,7 +158,7 @@ internal static class SettingsRowsPatch
         try
         {
             var row = Object.Instantiate(templateRow.gameObject, holder.transform);
-            row.name = spec.Name;
+            row.name = name;
 
             foreach (var component in row.GetComponentsInChildren<MonoBehaviour>(true))
             {
@@ -111,24 +168,15 @@ internal static class SettingsRowsPatch
                     Object.DestroyImmediate(component);
             }
 
-            var slider = row.GetComponentInChildren<Slider>(true);
-            slider.onValueChanged = new Slider.SliderEvent();
-            slider.wholeNumbers = true;
-            slider.minValue = 0;
-            slider.maxValue = spec.Steps;
-
-            var label = row.transform.GetChild(0).GetComponent<TMP_Text>();
-            if (label != null) label.text = spec.Label;
-            var valueText = slider.GetComponentInChildren<TMP_Text>(true);
+            var labelText = row.transform.GetChild(0).GetComponent<TMP_Text>();
+            if (labelText != null) labelText.text = label;
 
             var navigationMode = above.navigation.mode;
-            SpliceNavigation(above, slider);
-
-            spec.Attach(row, slider, valueText);
-            row.transform.SetParent(templateRow.parent, false);
+            bind(row);
+            row.transform.SetParent(aboveRow.parent, false);
             row.transform.SetSiblingIndex(aboveRow.GetSiblingIndex() + 1);
 
-            Plugin.Logger.LogInfo($"{spec.Label} row added (navigation: {navigationMode}).");
+            Plugin.Logger.LogInfo($"{label} row added (navigation: {navigationMode}).");
             return row.transform;
         }
         finally
@@ -138,12 +186,11 @@ internal static class SettingsRowsPatch
     }
 
     /// <summary>
-    /// With explicit navigation, splice the slider in between the row above and whatever was below
-    /// it. Only up/down are rewired: the slider keeps the template slider's own left/right links,
-    /// because Slider only uses left/right to change its value when those links are empty.
-    /// Automatic navigation needs nothing.
+    /// With explicit navigation, splice the control in between the row above and whatever was below
+    /// it. Up/down are rewired; left/right are either kept from the template or cleared, since the
+    /// template's point at its own neighbours. Automatic navigation needs nothing.
     /// </summary>
-    private static void SpliceNavigation(Selectable above, Slider inserted)
+    private static void SpliceNavigation(Selectable above, Selectable inserted, bool clearSideLinks)
     {
         var aboveNav = above.navigation;
         if (aboveNav.mode != Navigation.Mode.Explicit) return;
@@ -154,6 +201,11 @@ internal static class SettingsRowsPatch
         insertedNav.mode = Navigation.Mode.Explicit;
         insertedNav.selectOnUp = above;
         insertedNav.selectOnDown = below;
+        if (clearSideLinks)
+        {
+            insertedNav.selectOnLeft = null;
+            insertedNav.selectOnRight = null;
+        }
         inserted.navigation = insertedNav;
 
         aboveNav.selectOnDown = inserted;
@@ -171,7 +223,7 @@ internal static class SettingsRowsPatch
 /// <summary>A mod row in the settings menu.</summary>
 internal interface ISettingsRow
 {
-    /// <summary>Pulls the current config value into the slider (it may have been edited by hand).</summary>
+    /// <summary>Pulls the current config value into the control (it may have been edited by hand).</summary>
     void Refresh();
 }
 
@@ -182,13 +234,12 @@ internal sealed class SensitivityRow : MonoBehaviour, ISettingsRow
     private TMP_Text? valueText;
     private ConfigEntry<float> entry = null!;
 
-    public SensitivityRow Init(Slider slider, TMP_Text? valueText, ConfigEntry<float> entry)
+    public void Init(Slider slider, TMP_Text? valueText, ConfigEntry<float> entry)
     {
         this.slider = slider;
         this.valueText = valueText;
         this.entry = entry;
         slider.onValueChanged.AddListener(OnSliderChanged);
-        return this;
     }
 
     private void OnEnable()
@@ -216,41 +267,41 @@ internal sealed class SensitivityRow : MonoBehaviour, ISettingsRow
     }
 }
 
-/// <summary>Binds a cloned slider to the "Button prompts" setting, one step per choice.</summary>
+/// <summary>
+/// Binds a cloned dropdown to the "Button prompts" setting. The Auto entry names the pad in hand, e.g.
+/// "Auto (PlayStation)", and follows it when another pad is detected.
+/// </summary>
 internal sealed class ButtonPromptsRow : MonoBehaviour, ISettingsRow
 {
-    private Slider slider = null!;
-    private TMP_Text? valueText;
+    private TMP_Dropdown dropdown = null!;
     private ConfigEntry<PromptStyle> entry = null!;
 
-    public ButtonPromptsRow Init(Slider slider, TMP_Text? valueText, ConfigEntry<PromptStyle> entry)
+    public void Init(TMP_Dropdown dropdown, ConfigEntry<PromptStyle> entry)
     {
-        this.slider = slider;
-        this.valueText = valueText;
+        this.dropdown = dropdown;
         this.entry = entry;
-        slider.onValueChanged.AddListener(OnSliderChanged);
-        return this;
+        dropdown.onValueChanged.AddListener(OnDropdownChanged);
     }
 
     private void OnEnable()
     {
-        if (slider != null) Refresh();
+        ButtonPromptsPoller.DetectedChanged += Refresh;
+        if (dropdown) Refresh();
     }
+
+    private void OnDisable() => ButtonPromptsPoller.DetectedChanged -= Refresh;
 
     public void Refresh()
     {
-        slider.SetValueWithoutNotify(PromptStyles.ToStep(entry.Value));
-        UpdateText();
+        // Rebuilding the options under an open list would leave its rows stale; the next open picks it up.
+        if (!dropdown || dropdown.IsExpanded) return;
+
+        var detected = ButtonPromptsPoller.Detected;
+        dropdown.ClearOptions();
+        dropdown.AddOptions(PromptStyles.InMenuOrder.Select(style => PromptStyles.Label(style, detected)).ToList());
+        dropdown.SetValueWithoutNotify(PromptStyles.ToIndex(entry.Value));
+        dropdown.RefreshShownValue();
     }
 
-    private void OnSliderChanged(float step)
-    {
-        entry.Value = PromptStyles.FromStep((int)step);
-        UpdateText();
-    }
-
-    private void UpdateText()
-    {
-        if (valueText != null) valueText.text = PromptStyles.Label(entry.Value);
-    }
+    private void OnDropdownChanged(int index) => entry.Value = PromptStyles.FromIndex(index);
 }

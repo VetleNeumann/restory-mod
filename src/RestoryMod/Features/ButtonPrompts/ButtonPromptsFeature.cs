@@ -119,6 +119,12 @@ internal sealed class ButtonPromptsPoller : MonoBehaviour
 
     public static bool Running { get; private set; }
 
+    /// <summary>The pad last seen, Unknown until one is.</summary>
+    public static PadKind Detected { get; private set; }
+
+    /// <summary>Raised when <see cref="Detected"/> changes.</summary>
+    public static event Action? DetectedChanged;
+
     private float nextCheck;
     private PadKind? lastKind;
     private string? lastSteamType;
@@ -147,6 +153,11 @@ internal sealed class ButtonPromptsPoller : MonoBehaviour
             lastSteamType = steamType;
             // Also on the first sighting: prompts drawn before Steam answered went by Rewired's view.
             RefreshPrompts();
+            if (Detected != kind)
+            {
+                Detected = kind;
+                DetectedChanged?.Invoke();
+            }
         }
         catch (Exception e)
         {

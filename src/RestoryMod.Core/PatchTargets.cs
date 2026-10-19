@@ -64,6 +64,10 @@ public static class PatchTargets
     public static readonly PatchTarget SettingsMenuShow = new(SettingsMenu, "Show");
     public static readonly PatchTarget SettingsMenuSoundSettingsView = new(SettingsMenu, "soundSettingsView");
     public static readonly PatchTarget SoundViewDialogueVolumeSlider = new(SettingsMenuSoundView, "dialogueVolumeSlider");
+    // The "Button prompts" dropdown is cloned from the monitor row; the game's dropdown builds its list via Zenject.
+    public static readonly PatchTarget SettingsMenuMainView = new(SettingsMenu, "mainView");
+    public static readonly PatchTarget MainViewMonitorDropdown = new("Restory.UI.Views.SettingsMenu.GUI_SettingsMenuMainView", "monitorDropdown");
+    public static readonly PatchTarget RestoryDropdownContainer = new("Restory.UI.Presenters.DevicePaintingTool.GUI_RestoryDropdown", "container");
 
     // Parts box: re-sorted after the game's sort; headers placed after the slot views are parented.
     public static readonly PatchTarget InventoryPanelConstruct = new(InventoryPanel, "Construct");
@@ -291,6 +295,9 @@ public static class PatchTargets
         SettingsMenuShow,
         SettingsMenuSoundSettingsView,
         SoundViewDialogueVolumeSlider,
+        SettingsMenuMainView,
+        MainViewMonitorDropdown,
+        RestoryDropdownContainer,
         InventoryPanelConstruct,
         InventoryPanelShow,
         InventoryPanelSortItems,

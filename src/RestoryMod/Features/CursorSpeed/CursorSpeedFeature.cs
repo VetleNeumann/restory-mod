@@ -32,6 +32,10 @@ internal static class CursorSpeedFeature
 
     public static float Current => Core.Sensitivity.Normalize(Speed.Value);
 
+    public static bool TargetsPresent() => GameTargets.AllPresent(
+        PatchTargets.CursorControlsTypeChanged,
+        PatchTargets.CursorPlayerMouse);
+
     /// <summary>Re-runs the game's handler on every live cursor so our postfix sets the new speed.</summary>
     private static void ReapplyToActiveCursors()
     {
@@ -50,9 +54,7 @@ internal static class CursorSpeedFeature
 [HarmonyPatch]
 internal static class CursorSpeedPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
-        PatchTargets.CursorControlsTypeChanged,
-        PatchTargets.CursorPlayerMouse);
+    private static bool Prepare() => CursorSpeedFeature.TargetsPresent();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.CursorControlsTypeChanged)!;
 

@@ -64,6 +64,8 @@ target that moved; that feature's patch skips itself at runtime until fixed.
 
 `docs/research/mod-repo-structure.md`: read when changing tooling, CI, loader version or update-resilience
 patterns.
+`docs/research/controller-support.md`: read when touching button prompts, controller detection, Steam
+Input or rebinding (the game ships a remap backend with no UI).
 
 Ideas not started: camera look speed (`CameraRotationController`, legacy `Input.GetAxis`, `rotationSpeed`
 100) and shoulder buttons in the PC apps other than the browser and mail.

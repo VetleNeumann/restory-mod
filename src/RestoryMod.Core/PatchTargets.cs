@@ -64,6 +64,10 @@ public static class PatchTargets
     public static readonly PatchTarget SettingsMenuShow = new(SettingsMenu, "Show");
     public static readonly PatchTarget SettingsMenuSoundSettingsView = new(SettingsMenu, "soundSettingsView");
     public static readonly PatchTarget SoundViewDialogueVolumeSlider = new(SettingsMenuSoundView, "dialogueVolumeSlider");
+    // The "Button prompts" dropdown is cloned from the monitor row; the game's dropdown builds its list via Zenject.
+    public static readonly PatchTarget SettingsMenuMainView = new(SettingsMenu, "mainView");
+    public static readonly PatchTarget MainViewMonitorDropdown = new("Restory.UI.Views.SettingsMenu.GUI_SettingsMenuMainView", "monitorDropdown");
+    public static readonly PatchTarget RestoryDropdownContainer = new("Restory.UI.Presenters.DevicePaintingTool.GUI_RestoryDropdown", "container");
 
     // Parts box: re-sorted after the game's sort; headers placed after the slot views are parented.
     public static readonly PatchTarget InventoryPanelConstruct = new(InventoryPanel, "Construct");
@@ -285,8 +289,41 @@ public static class PatchTargets
     public static readonly PatchTarget EmptyDetectionDeviceService = new(EmptyDetection, "deviceService");
     public static readonly PatchTarget DeviceServiceWorkSurface = new("Restory.Gameplay.Devices.DeviceService", "workSurface");
 
+    // Button prompts: every prompt picks its glyph set in this one method; the patch swaps the pick for
+    // the pad Steam Input hides from Rewired, or for the "Button prompts" setting.
+    private const string InputActionElement = "Restory.UI.Presenters.Controllers.GUI_InputActionElement";
+    public static readonly PatchTarget PromptGetControllerId = new(InputActionElement, "TryGetControllerId");
+    public static readonly PatchTarget PromptUpdateData = new(InputActionElement, "UpdateData");
+    public static readonly PatchTarget PromptControllerIdsList = new(InputActionElement, "controllerIdsList");
+    public static readonly PatchTarget PromptControllerIdsMap = new(InputActionElement, "rewiredControllerIdsDependencyMap");
+    public static readonly PatchTarget PromptGameSettings = new(InputActionElement, "gameSettingsManager");
+    public static readonly PatchTarget ControllerIdsMapLookup = new("IAmFuture.Data.Controllers.RewiredControllerIdsDependencyMap", "TryGetControllerId");
+    public static readonly PatchTarget ControllerIdsLookup = new("IAmFuture.Data.Controllers.ControllerIdsList", "TryGetControllerId");
+    public static readonly PatchTarget ControllerIdsDefaultGamepad = new("IAmFuture.Data.Controllers.ControllerIdsList", "DefaultGamepadId");
+    public static readonly PatchTarget GameSettingsGamepadScheme = new("Restory.Gameplay.GameSettings.GameSettingsManager", "GamepadScheme");
+    // PlayStation art: the prompt image is swapped for one of the game's unused PS5 sprites after it draws.
+    private const string PromptImageView = "Restory.UI.Views.Controllers.GUI_InputActionElementImageView";
+    private const string PromptView = "Restory.UI.Views.Controllers.GUI_InputActionElementView";
+    public static readonly PatchTarget PromptImageUpdateView = new(PromptImageView, "UpdateView");
+    public static readonly PatchTarget PromptImageTarget = new(PromptImageView, "targetImage");
+    public static readonly PatchTarget PromptViewControllerId = new(PromptView, "controllerId");
+    public static readonly PatchTarget PromptViewElementId = new(PromptView, "elementId");
+
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
+        PromptGetControllerId,
+        PromptUpdateData,
+        PromptControllerIdsList,
+        PromptControllerIdsMap,
+        PromptGameSettings,
+        ControllerIdsMapLookup,
+        ControllerIdsLookup,
+        ControllerIdsDefaultGamepad,
+        GameSettingsGamepadScheme,
+        PromptImageUpdateView,
+        PromptImageTarget,
+        PromptViewControllerId,
+        PromptViewElementId,
         CursorControlsTypeChanged,
         CursorPlayerMouse,
         CursorControlsManager,
@@ -303,6 +340,9 @@ public static class PatchTargets
         SettingsMenuShow,
         SettingsMenuSoundSettingsView,
         SoundViewDialogueVolumeSlider,
+        SettingsMenuMainView,
+        MainViewMonitorDropdown,
+        RestoryDropdownContainer,
         InventoryPanelConstruct,
         InventoryPanelShow,
         InventoryPanelSortItems,

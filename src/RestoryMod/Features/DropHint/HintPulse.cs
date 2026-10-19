@@ -39,6 +39,8 @@ internal static class HintPulse
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, float>("toBaseDuration");
     private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, float> PeakScale =
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, float>("peakScale");
+    private static readonly AccessTools.FieldRef<TooltipProjectionHighlighter, ElementProjectionFactory> Factory =
+        AccessTools.FieldRefAccess<TooltipProjectionHighlighter, ElementProjectionFactory>("elementProjectionFactory");
 
     /// <summary>The pulse's own members, which every user of this class reads.</summary>
     public static bool TargetsPresent() => GameTargets.AllPresent(
@@ -47,7 +49,9 @@ internal static class HintPulse
         PatchTargets.HighlighterToPeak,
         PatchTargets.HighlighterToBase,
         PatchTargets.HighlighterPeakScale,
-        PatchTargets.TooltipHighlighterCreate);
+        PatchTargets.TooltipHighlighterCreate,
+        PatchTargets.TooltipHighlighterFactory,
+        PatchTargets.ProjectionFactoryDestroySmall);
 
     /// <summary>
     /// Ghosts asked for so far, counted whether or not one was made: compared before and after running
@@ -58,6 +62,28 @@ internal static class HintPulse
     internal static void CountRequest() => Requests++;
 
     internal static List<ElementProjection> GhostsOf(ProjectionHighlighterBase highlighter) => Ghosts(highlighter);
+
+    /// <summary>
+    /// Asks for a ghost under <paramref name="parent"/>; returns it, or the one already there (the pulse
+    /// keeps one per parent), or null when the pulse just ended and made none.
+    /// </summary>
+    public static ElementProjection? Add(TooltipProjectionHighlighter highlighter, ElementProjectionData data, Transform parent)
+    {
+        highlighter.CreateAndHighlightProjection(data, parent);
+        var ghosts = Ghosts(highlighter);
+        for (var i = ghosts.Count - 1; i >= 0; i--)
+        {
+            if (ghosts[i] && ghosts[i].transform.parent == parent) return ghosts[i];
+        }
+        return null;
+    }
+
+    /// <summary>Takes one ghost out of the pulse before it ends.</summary>
+    public static void Remove(TooltipProjectionHighlighter highlighter, ElementProjection ghost)
+    {
+        if (!Ghosts(highlighter).Remove(ghost)) return;
+        Factory(highlighter).DestroySmallElementProjection(ghost);
+    }
 
     /// <summary>The pulse while it plays (or waits paused), else null.</summary>
     public static Sequence? Running(ProjectionHighlighterBase highlighter)
@@ -139,15 +165,10 @@ internal static class HintPulseJoinPatch
 [HarmonyPatch]
 internal static class HintPulseStaleGhostPatch
 {
-    private static readonly AccessTools.FieldRef<TooltipProjectionHighlighter, ElementProjectionFactory> Factory =
-        AccessTools.FieldRefAccess<TooltipProjectionHighlighter, ElementProjectionFactory>("elementProjectionFactory");
-
     private static bool Prepare() => HintPulse.TargetsPresent() && GameTargets.AllPresent(
         PatchTargets.TooltipServiceSmallHandler,
         PatchTargets.DropHintHighlighter,
-        PatchTargets.TooltipServiceSocketChanged,
-        PatchTargets.TooltipHighlighterFactory,
-        PatchTargets.ProjectionFactoryDestroySmall);
+        PatchTargets.TooltipServiceSocketChanged);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.TooltipServiceSocketChanged)!;
 
@@ -159,13 +180,10 @@ internal static class HintPulseStaleGhostPatch
             var highlighter = TooltipServiceParts.Highlighter(__instance);
             if (!highlighter) return;
             var ghosts = HintPulse.GhostsOf(highlighter!);
-            var factory = Factory(highlighter!);
             for (var i = ghosts.Count - 1; i >= 0; i--)
             {
                 var ghost = ghosts[i];
-                if (!ghost || ghost.transform.parent != socket.transform) continue;
-                ghosts.RemoveAt(i);
-                factory.DestroySmallElementProjection(ghost);
+                if (ghost && ghost.transform.parent == socket.transform) HintPulse.Remove(highlighter!, ghost);
             }
         }
         catch (Exception e)

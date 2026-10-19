@@ -12,7 +12,7 @@ namespace RestoryMod.Features.DropHint;
 
 /// <summary>
 /// R2 at the workbench runs the game's own hint, whose GetTooltip action (Space) has no gamepad
-/// button; see <see cref="EveryScrewHintFeature"/> for what it shows. Holding it keeps the pulse at
+/// button; see <see cref="EveryPartHintFeature"/> for what it shows. Holding it keeps the pulse at
 /// full brightness; letting go fades it as usual. R2 otherwise zooms out, which
 /// <see cref="ZoomToggle.ZoomToggleFeature"/> takes over.
 /// </summary>

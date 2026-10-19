@@ -62,10 +62,14 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   in and out while held. The mouse wheel zooms as before.
 - **Screw hint button**: at the workbench, R2 shows the game's own hint (Space on a keyboard), which
   otherwise has no gamepad button. Hold it to keep the pulse lit; it fades once you let go.
-- **Every-screw hint**: the game's hint pulses every screw you can unscrew now while you take a device
-  apart, and every empty screw slot you can screw into now while you put it back, not only the next
-  part's. The game decides which of the two you are doing from your last change to the device. With no
-  screw to show, the game's own hint runs.
+- **Every-part hint**: the game's hint pulses every part you can act on now, not only the next part's
+  screws. Taking a device apart: every part and screw you can take out now on the way to a part you
+  haven't seen yet or one known to need cleaning or replacing (it never gives away a part's condition
+  before you take it out). Putting it back: every empty screw slot and every loose part on the bench that
+  can go in now, and a red ghost in each socket ready for a part that isn't on the bench. A pulse leaves
+  as soon as its part is picked up, goes in, or its socket is taken. The game decides which of the two
+  you are doing from your last change to the device. Renamed from `HintShowsEveryScrew`; the old setting
+  carries over.
 - **Hitbox overlay** (debug, off by default): at the workbench, draws each thing's hitbox over the game,
   its enlarged hitbox, what the cursor hovers, and a readout of everything under the cursor.
 
@@ -102,7 +106,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | Mail | DpadSelectsMail | true | D-pad mail selection in the mail app |
 | Workbench | DropHintEveryFreedScrew | true | Screw hints on drop |
 | Workbench | TidyHintPulse | true | Tidy screw hints |
-| Workbench | HintShowsEveryScrew | true | Every-screw hint |
+| Workbench | HintShowsEveryPart | true | Every-part hint |
 | Stick scroll | Smoothing | 0.07 | Seconds for speed to follow the stick; 0 = instant |
 | Stick scroll | Invert | false | Flip direction |
 

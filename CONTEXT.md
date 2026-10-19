@@ -54,6 +54,18 @@ _Avoid_: Screw hole, projection, empty slot
 The see-through copy of a removed part shown in its empty socket; a press on it does nothing.
 _Avoid_: Projection, empty slot
 
+**Ready part**:
+A part or screw the hint points out because the player can act on it right now: while taking a device apart, one that isn't a blocked part and stands in the way of a broken, dirty or unknown part (or is one); while putting it back together, a loose part whose socket can take it now. Screws count the same as larger parts.
+_Avoid_: Next part, available part, removable part
+
+**Unknown part**:
+A part whose condition the player hasn't seen yet because it has never been taken out; the notepad lists it as unknown. The hint never reveals what the game knows about it.
+_Avoid_: Uninspected part, hidden part
+
+**Missing socket**:
+An empty socket that no loose part on the bench can fill; the parts box lists the parts that could fill it under "Missing parts". The hint shows its part ghost in red.
+_Avoid_: Empty slot, missing part
+
 ### Hitboxes
 
 **Hitbox**:

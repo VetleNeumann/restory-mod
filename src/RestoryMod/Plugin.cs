@@ -105,7 +105,8 @@ public class Plugin : BaseUnityPlugin
             typeof(OutlineAdapterPresetPatch),
             typeof(ProjectionPulsePatch),
             typeof(DropHintGraphPatch),
-            typeof(ButtonPromptsPatch));
+            typeof(ButtonPromptsPatch),
+            typeof(PlayStationArtPatch));
         if (StickScrollFeature.TargetsPresent()) gameObject.AddComponent<StickScrollDriver>();
         gameObject.AddComponent<ShoulderButtonsPoller>();
         if (ButtonPromptsFeature.TargetsPresent()) gameObject.AddComponent<ButtonPromptsPoller>();

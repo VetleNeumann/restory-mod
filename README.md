@@ -8,13 +8,13 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   volume" (0.2 to 4.0). The game otherwise fixes the gamepad cursor speed.
 - **Controller rotation speed**: a "Rotation sensitivity" slider right under it (0.2 to 4.0) sets how fast
   the right stick spins the device on the workbench. Defaults to 0.4; 1.0 is the game's own speed.
-- **Button prompts that match your pad**: with Steam Input on, every pad looks like an Xbox pad to the
-  game, so a PlayStation player saw Xbox letters. The mod asks Steam which pad is really connected and
-  shows PlayStation, Xbox or Steam Deck prompts to match. Switch and unrecognised pads get the game's
-  generic prompts. A "Button prompts" dropdown under "Rotation sensitivity" (Auto, Xbox, PlayStation,
-  Steam Deck, Generic) can pin one set; Auto names the pad it found, e.g. "Auto (PlayStation)". The game's
-  own menus draw the same A/B art for every pad, so the change shows in play, not on the menu screens. If
-  the game ignores your pad altogether (an older or unusual DirectInput pad), turn on Steam Input for
+- **PlayStation button prompts**: the game draws A/B/X/Y for every pad, though its files hold an unused
+  set of PS5 button icons. With a PlayStation pad the mod shows those instead (Cross, Circle, Square,
+  Triangle, L1/R1 and so on), in menus and in play. It asks Steam which pad is really connected, since
+  with Steam Input on every pad looks like an Xbox pad to the game. A "Button prompts" dropdown under
+  "Rotation sensitivity" (Auto, Xbox, PlayStation, Steam Deck, Generic) can pin one set; Auto names the
+  pad it found, e.g. "Auto (PlayStation)". Xbox, Steam Deck and Generic all show the game's A/B/X/Y art.
+  If the game ignores your pad altogether (an older or unusual DirectInput pad), turn on Steam Input for
   ReStory in Steam (Properties → Controller).
 - **Parts box sections**: while a device is on the workbench, the parts box sorts in "How to reassemble"
   order and splits into *Missing parts* and *Other parts*. Within a step, burnt parts come first, then

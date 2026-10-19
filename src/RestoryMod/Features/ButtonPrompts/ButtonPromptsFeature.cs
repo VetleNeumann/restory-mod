@@ -82,6 +82,9 @@ internal static class ButtonPromptsPatch
         try
         {
             if (controller is not { type: ControllerType.Joystick } || !___controllerIdsList) return;
+            if (!PlayStationArt.SonyId && ___rewiredControllerIdsDependencyMap &&
+                ___rewiredControllerIdsDependencyMap.TryGetControllerId(PadKinds.DualSense, out var sony))
+                PlayStationArt.SonyId = sony;
 
             var style = ButtonPromptsFeature.Style.Value;
             // The game's own scheme override (unused by the game today) wins over our detection, not over the setting.

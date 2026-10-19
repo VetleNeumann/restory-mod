@@ -268,6 +268,13 @@ public static class PatchTargets
     public static readonly PatchTarget ControllerIdsMapLookup = new("IAmFuture.Data.Controllers.RewiredControllerIdsDependencyMap", "TryGetControllerId");
     public static readonly PatchTarget ControllerIdsDefaultGamepad = new("IAmFuture.Data.Controllers.ControllerIdsList", "DefaultGamepadId");
     public static readonly PatchTarget GameSettingsGamepadScheme = new("Restory.Gameplay.GameSettings.GameSettingsManager", "GamepadScheme");
+    // PlayStation art: the prompt image is swapped for one of the game's unused PS5 sprites after it draws.
+    private const string PromptImageView = "Restory.UI.Views.Controllers.GUI_InputActionElementImageView";
+    private const string PromptView = "Restory.UI.Views.Controllers.GUI_InputActionElementView";
+    public static readonly PatchTarget PromptImageUpdateView = new(PromptImageView, "UpdateView");
+    public static readonly PatchTarget PromptImageTarget = new(PromptImageView, "targetImage");
+    public static readonly PatchTarget PromptViewControllerId = new(PromptView, "controllerId");
+    public static readonly PatchTarget PromptViewElementId = new(PromptView, "elementId");
 
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {
@@ -279,6 +286,10 @@ public static class PatchTargets
         ControllerIdsMapLookup,
         ControllerIdsDefaultGamepad,
         GameSettingsGamepadScheme,
+        PromptImageUpdateView,
+        PromptImageTarget,
+        PromptViewControllerId,
+        PromptViewElementId,
         CursorControlsTypeChanged,
         CursorPlayerMouse,
         CursorControlsManager,

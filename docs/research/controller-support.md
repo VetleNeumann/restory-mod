@@ -16,7 +16,7 @@ Paths: `D/` = `~/restory-decompiled/24885009/`. `M/` = `$GameDir/Restory_Data/Ma
    - **Then Rewired `Joystick.hardwareTypeGuid`.** This only identifies the pad when Steam Input is off for it.
    - **Then fall back to generic.** Unit-test the classifier in Core, taking `(steamType?, rewiredGuid?, name)` and returning `PadKind`.
 2. **Glyphs: feed the game's own glyph system.** The prompt widget `GUI_InputActionElement` already picks sprites from a `ControllerId`. Postfix its private `TryGetControllerId`, or `RewiredControllerIdsDependencyMap.TryGetControllerId(Guid)`, so it returns the id `PadKind` resolved.
-   - The existing Xbox, Sony and SteamDeck sets cover most players with no new art.
+   - **Correction (found in play, 2026-10-19):** the game has no PlayStation or Steam Deck art in use. In both template lists every pad's entry is a `GuiReuseGamepadTemplate` pointing at the universal A/B/X/Y template. Its image bundle does ship a full, unused PS5 sprite set (`PS5Cross`, `PS5_Circle`, `PS5_Triangle`, the Square misnamed `PS5_Triangle-1`, D-pad, L1–R2, sticks, Options, Share, plus `_LongAction` variants), which the mod swaps in for PlayStation prompts.
    - Phase 2 adds a Nintendo set (positional A/B/X/Y) and optionally a Steam-API PNG fallback, built from **Kenney Input Prompts (CC0)**.
    - Add a settings row, "Button prompts: Auto / Xbox / PlayStation / Steam Deck", that writes the dormant `GameSettingsManager.GamepadScheme`. The game already honours and saves that field.
 3. **Rebinding: reuse the game's backend.** Drive the game's `InputRemapping` and `IInputUserData` (Rewired `InputMapper` plus a dependency map that fans one logical action out to every map category). Persist with `IInputUserData.Save()`, which writes the game's `inputSettings` file and reloads it at boot.
@@ -97,7 +97,7 @@ Paths: `D/` = `~/restory-decompiled/24885009/`. `M/` = `$GameDir/Restory_Data/Ma
 **What the game has (reuse it).** `D/IAmFuture.Data.Controllers/` holds the glyph classes:
 - `GuiXInputGamepadTemplate`, `GuiSonyDualGamepadTemplate` and `GuiUniversalGamepadTemplate` each hold a sprite (and a "press" sprite) per Rewired Gamepad Template element id. `GetElement(int)` maps 4 to A/Cross, 5 to B/Circle, 7 to X/Square, 10–13 to the shoulders, 19–22 to the D-pad, and so on.
 - `GuiReuseGamepadTemplate` aliases one set to another ControllerId.
-- The bundle `CAB-fa72e6ef…` contains `ControllerTemplateList` and `ControllerTemplateList - Blue`, with templates for **XboxOne, SonyDualSense, SteamDeck and Unknown**. There is no Nintendo set.
+- The bundle `CAB-fa72e6ef…` contains `ControllerTemplateList` and `ControllerTemplateList - Blue`, with templates for **XboxOne, SonyDualSense, SteamDeck and Unknown**. There is no Nintendo set. The XboxOne, SonyDualSense and SteamDeck entries all reuse the Unknown (universal A/B) template, so every pad draws the same art (see the correction in the TL;DR).
 
 **How the game chooses** (`D/Restory.UI.Presenters.Controllers/GUI_InputActionElement.cs`):
 1. It finds the first `ActionElementMap` for the action on the current control type (`TryGetElementMap`, :171-206).

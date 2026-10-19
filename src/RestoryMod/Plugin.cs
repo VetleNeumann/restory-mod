@@ -62,7 +62,7 @@ public class Plugin : BaseUnityPlugin
         DropHintFeature.Bind(Config);
         ScrewHintButtonFeature.Bind(Config);
         ZoomToggleFeature.Bind(Config);
-        EveryScrewHintFeature.Bind(Config);
+        EveryPartHintFeature.Bind(Config);
         ButtonPromptsFeature.Bind(Config);
         WatchConfigFile();
 
@@ -111,13 +111,15 @@ public class Plugin : BaseUnityPlugin
             typeof(MailContentsChangedPatch),
             typeof(HintPulseJoinPatch),
             typeof(HintPulseStaleGhostPatch),
+            typeof(HintPulseSizePatch),
             typeof(DropHintFreedScrewsPatch),
             typeof(ScrewHintServicePatch),
             typeof(ScrewHintServiceDisposePatch),
             typeof(ZoomToggleUpdatePatch),
             typeof(ZoomToggleAxisPatch),
-            typeof(EveryScrewDisassembleHintPatch),
-            typeof(EveryScrewAssembleHintPatch),
+            typeof(EveryPartDisassembleHintPatch),
+            typeof(EveryPartAssembleHintPatch),
+            typeof(ReadyPartPulseEndPatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump),
             typeof(OutlineAdapterActivePatch),
@@ -134,6 +136,7 @@ public class Plugin : BaseUnityPlugin
         // Idle unless the mail list targets resolve and MailLaunchPatch has captured the Mail app.
         gameObject.AddComponent<MailListPoller>();
         if (ScrewHintButtonFeature.TargetsPresent()) gameObject.AddComponent<ScrewHintPoller>();
+        if (EveryPartHintFeature.TargetsPresent()) gameObject.AddComponent<ReadyPartGhostWatcher>();
         if (OutlineDiagnostics.Enabled) gameObject.AddComponent<OutlineWatcher>();
         // Idle unless ShowHitboxes is on and a workbench hover state recorded this frame.
         gameObject.AddComponent<HitboxOverlay>();
@@ -148,6 +151,7 @@ public class Plugin : BaseUnityPlugin
         Teardown.Add(DropdownModesFeature.Unload);
         Teardown.Add(PartsBoxSections.Unload);
         Teardown.Add(ScrewHintServicePatch.Unload);
+        Teardown.Add(ReadyPartGhosts.Unload);
         Teardown.Add(ButtonPromptsFeature.Unload);
     }
 

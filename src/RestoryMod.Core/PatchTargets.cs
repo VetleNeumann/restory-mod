@@ -220,6 +220,7 @@ public static class PatchTargets
     public static readonly PatchTarget HighlighterToPeak = new(Highlighter, "toPeakDuration");
     public static readonly PatchTarget HighlighterToBase = new(Highlighter, "toBaseDuration");
     public static readonly PatchTarget HighlighterPeakScale = new(Highlighter, "peakScale");
+    public static readonly PatchTarget HighlighterSetScale = new(Highlighter, "SetHighlightedProjectionsScale");
     private const string Socket = "Restory.Gameplay.Elements.ElementSocket";
     public static readonly PatchTarget SocketBlockedSockets = new(Socket, "BlockedSockets");
     public static readonly PatchTarget SocketIsBlocked = new(Socket, "IsBlocked");
@@ -239,8 +240,10 @@ public static class PatchTargets
     public static readonly PatchTarget TooltipHighlighterFactory = new(TooltipHighlighter, "elementProjectionFactory");
     public static readonly PatchTarget ProjectionFactoryDestroySmall = new("Restory.Gameplay.Elements.ElementProjectionFactory", "DestroySmallElementProjection");
 
-    // Every-screw hint: the game's hint shows every screw that can come out now (taking apart) or every
-    // empty screw slot that can take its screw now (putting back), instead of only the next part's.
+    // Every-part hint: the game's hint shows every ready part instead of only the next part's screws.
+    // Taking apart walks each target's blockers (the serialized list and a flip lid's runtime set) and
+    // never reads an unknown part's condition; putting back ghosts loose parts on the bench and, in red,
+    // sockets no loose part fills. Ghosts leave when their part stops being ready.
     private const string SimpleHint = "Restory.Gameplay.Disassemble.Tooltips.SimpleDisassembleTooltipHandler";
     public static readonly PatchTarget HintShowDisassembling = new(SimpleHint, "ShowDisassemblingTooltip");
     public static readonly PatchTarget HintShowAssembling = new(SimpleHint, "ShowAssemblingTooltip");
@@ -248,6 +251,28 @@ public static class PatchTargets
     public static readonly PatchTarget DeviceElementSockets = new("Restory.Gameplay.Devices.Device", "ElementSockets");
     public static readonly PatchTarget SocketIsAvailable = new(Socket, "IsAvailable");
     public static readonly PatchTarget SocketLastNestedElement = new(Socket, "LastNestedElement");
+    public static readonly PatchTarget SocketBlockers = new(Socket, "Blockers");
+    public static readonly PatchTarget ElementDataIsInspected = new("Restory.Gameplay.Elements.ElementData", "IsInspected");
+    public static readonly PatchTarget ElementIsDragging = new("Restory.Gameplay.Elements.ElementBase", "IsDragging");
+    public static readonly PatchTarget ElementIsOnSurface = new("Restory.Gameplay.Elements.ElementBase", "IsOnSurface");
+    public static readonly PatchTarget ElementInfoPrefab = new("Restory.Data.Elements.ElementInfo", "Prefab");
+    private const string FlexibleElement = "Restory.Gameplay.Elements.FlexibleElement";
+    public static readonly PatchTarget FlexibleAttachedModel = new(FlexibleElement, "AttachedModel");
+    public static readonly PatchTarget FlexiblePlacementModel = new(FlexibleElement, "PlacementModel");
+    public static readonly PatchTarget BehaviorSwitcherCastCollider = new("Restory.Gameplay.Elements.ElementBehaviorSwitcher", "CastCollider");
+    public static readonly PatchTarget HighlighterPreset = new(Highlighter, "outlinePresetInstance");
+    public static readonly PatchTarget HighlighterFrontOutline = new(Highlighter, "frontOutlineProperties");
+    public static readonly PatchTarget HighlighterBackOutline = new(Highlighter, "backOutlineProperties");
+    public static readonly PatchTarget TooltipHighlighterComplete = new(TooltipHighlighter, "CompleteTransitionSequence");
+    // Tubes (batteries): a serial socket's entry plus the places behind it, which take parts through it.
+    public static readonly PatchTarget SerialSubordinates = new("Restory.Gameplay.Elements.SerialElementSocket", "subordinateSockets");
+    public static readonly PatchTarget SubordinateSocket = new("Restory.Gameplay.Elements.SubordinateElementSocket");
+    public static readonly PatchTarget ElementProgress = new("Restory.Gameplay.Elements.ElementBase", "Progress");
+    // Holding R2 checks again for ready parts, as the game's hint button would, without its other hints.
+    public static readonly PatchTarget TooltipServiceTargetDevice = new(TooltipService, "targetDevice");
+    public static readonly PatchTarget TooltipServiceIsDisassembling = new(TooltipService, "isDisassembling");
+    public static readonly PatchTarget TooltipServiceIsActive = new(TooltipService, "IsActive");
+    public static readonly PatchTarget TooltipServiceStateMachine = new(TooltipService, "disassembleStateMachine");
 
     // Zoom toggle: an L2 press at the workbench becomes a full zoom input to the game's zoom update,
     // and the triggers' own zoom input is muted there.
@@ -472,6 +497,26 @@ public static class PatchTargets
         DeviceElementSockets,
         SocketIsAvailable,
         SocketLastNestedElement,
+        SocketBlockers,
+        ElementDataIsInspected,
+        ElementIsDragging,
+        ElementIsOnSurface,
+        ElementInfoPrefab,
+        FlexibleAttachedModel,
+        FlexiblePlacementModel,
+        BehaviorSwitcherCastCollider,
+        HighlighterPreset,
+        HighlighterFrontOutline,
+        HighlighterBackOutline,
+        TooltipHighlighterComplete,
+        SerialSubordinates,
+        SubordinateSocket,
+        ElementProgress,
+        HighlighterSetScale,
+        TooltipServiceTargetDevice,
+        TooltipServiceIsDisassembling,
+        TooltipServiceIsActive,
+        TooltipServiceStateMachine,
         SocketBlockedSockets,
         SocketIsBlocked,
         ElementProjectionData,
@@ -479,7 +524,6 @@ public static class PatchTargets
         OutlineAdapterSetPreset,
         ProjectionHighlighterPlay,
         SocketAdditionalBlockers,
-        new PatchTarget("Restory.Gameplay.Elements.ElementSocket", "Blockers"),
         DisassembleDetectionDetector,
         DisassembleDetectionMask,
         DisassembleDetectionHits,
@@ -578,7 +622,10 @@ public static class PatchTargets
         new PatchTarget("Restory.Infrastructure.StateMachines.StateMachineMonoBase", "Enter"),
         new PatchTarget("Restory.Gameplay.Work.StateMachine.DetectionWorkState"),
         new PatchTarget("Restory.Gameplay.Elements.ElementBase", "ConditionHandler"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsDragging"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "BehaviorSwitcher"),
+        new PatchTarget("Restory.Gameplay.Elements.ElementProjection", "OutlinableAdapter"),
+        new PatchTarget(OutlinableAdapter, "Outlinable"),
+        new PatchTarget("Restory.Gameplay.Devices.DeviceContainer"),
         new PatchTarget("Restory.Gameplay.Elements.ElementConditionHandler", "ElementData"),
         new PatchTarget("Restory.Gameplay.Quests.QuestItem"),
         new PatchTarget("Restory.Gameplay.Disassemble.DisassembleGameMode", "IsInCompetition"),

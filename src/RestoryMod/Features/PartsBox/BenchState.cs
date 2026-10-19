@@ -102,7 +102,7 @@ internal sealed class BenchState
     private static string Names(IEnumerable<ElementInfo> infos) => string.Join(", ", infos.Select(NameOf));
 
     // Burnt derives from Dirty in the game, so it must be matched first.
-    private static PartCondition ConditionOf(ElementConditionBase condition) => condition switch
+    internal static PartCondition ConditionOf(ElementConditionBase condition) => condition switch
     {
         BurntElementCondition => PartCondition.Burnt,
         DamagedElementCondition => PartCondition.Damaged,
@@ -117,6 +117,15 @@ internal sealed class BenchState
         return workSurface ? workSurface : null;
     }
 
+    /// <summary>Parts lying loose next to <paramref name="device"/>, excluding small parts and quest items.</summary>
+    internal static IEnumerable<ElementBase> LooseParts(Device device)
+    {
+        var container = device.GetComponentInParent<DeviceContainer>();
+        if (container) return LooseParts(container);
+        var surface = FindWorkSurface();
+        return Usable(surface ? surface!.PlacedElements : null);
+    }
+
     /// <summary>Parts lying loose next to the device, excluding small parts and quest items.</summary>
     private static IEnumerable<ElementBase> LooseParts(DeviceContainer container)
     {
@@ -127,6 +136,10 @@ internal sealed class BenchState
         else
             parts = FindWorkSurface()?.PlacedElements ?? Enumerable.Empty<ElementBase>();
 
-        return parts.Where(e => e && e.Info.Category != ElementCategory.Small && e is not QuestItem);
+        return Usable(parts);
     }
+
+    private static IEnumerable<ElementBase> Usable(IEnumerable<ElementBase>? parts) =>
+        (parts ?? Enumerable.Empty<ElementBase>())
+            .Where(e => e && e.Info.Category != ElementCategory.Small && e is not QuestItem);
 }

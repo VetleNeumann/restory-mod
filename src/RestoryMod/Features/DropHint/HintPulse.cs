@@ -16,7 +16,8 @@ namespace RestoryMod.Features.DropHint;
 /// the drop hint, the game's hint button and the mod's additions all add ghosts to it. With
 /// [Workbench] TidyHintPulse each screw gets one ghost (the game checks a part once per screw holding
 /// it, stacking ghosts), a fading pulse rises again when screws join it so they don't get only its dim
-/// tail, and a screw going in or out takes its ghost away instead of leaving it until the pulse ends.
+/// tail, a screw going in or out takes its ghost away instead of leaving it until the pulse ends, and
+/// ghosts keep their part's size instead of swelling with the pulse (only the brightness pulses).
 /// </summary>
 internal static class HintPulse
 {
@@ -26,7 +27,8 @@ internal static class HintPulse
     {
         Tidy = config.Bind("Workbench", "TidyHintPulse", true,
             "Keeps the yellow screw hints tidy: one pulse per screw, a fading pulse brightens again when more " +
-            "screws join it, and a screw going in or out loses its pulse straight away.");
+            "screws join it, a screw going in or out loses its pulse straight away, and a pulse stays the size " +
+            "of its part instead of growing past it.");
     }
 
     private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, List<ElementProjection>> Ghosts =
@@ -39,6 +41,8 @@ internal static class HintPulse
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, float>("toBaseDuration");
     private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, float> PeakScale =
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, float>("peakScale");
+    private static readonly AccessTools.FieldRef<TooltipProjectionHighlighter, ElementProjectionFactory> Factory =
+        AccessTools.FieldRefAccess<TooltipProjectionHighlighter, ElementProjectionFactory>("elementProjectionFactory");
 
     /// <summary>The pulse's own members, which every user of this class reads.</summary>
     public static bool TargetsPresent() => GameTargets.AllPresent(
@@ -47,7 +51,9 @@ internal static class HintPulse
         PatchTargets.HighlighterToPeak,
         PatchTargets.HighlighterToBase,
         PatchTargets.HighlighterPeakScale,
-        PatchTargets.TooltipHighlighterCreate);
+        PatchTargets.TooltipHighlighterCreate,
+        PatchTargets.TooltipHighlighterFactory,
+        PatchTargets.ProjectionFactoryDestroySmall);
 
     /// <summary>
     /// Ghosts asked for so far, counted whether or not one was made: compared before and after running
@@ -58,6 +64,47 @@ internal static class HintPulse
     internal static void CountRequest() => Requests++;
 
     internal static List<ElementProjection> GhostsOf(ProjectionHighlighterBase highlighter) => Ghosts(highlighter);
+
+    /// <summary>
+    /// Asks for a ghost under <paramref name="parent"/>; returns it, or the one already there (the pulse
+    /// keeps one per parent), or null when the pulse just ended and made none.
+    /// </summary>
+    public static ElementProjection? Add(TooltipProjectionHighlighter highlighter, ElementProjectionData data, Transform parent)
+    {
+        var ghost = GhostUnder(highlighter, parent);
+        if (ghost)
+        {
+            // Asking again for a ghost already there still counts, as the game's own create would:
+            // a fading pulse rises again and a held R2 knows the hint showed something.
+            CountRequest();
+            RiseAgain(highlighter);
+            return ghost;
+        }
+        highlighter.CreateAndHighlightProjection(data, parent);
+        ghost = GhostUnder(highlighter, parent);
+        // A pooled ghost keeps the size another highlighter left it at.
+        if (ghost && Tidy.Value) ghost!.transform.localScale = Vector3.one;
+        // The pool is shared with the game's screw-slot markers, whose outline the hint may have muted.
+        if (ghost) ghost!.OutlinableAdapter.Outlinable.enabled = true;
+        return ghost;
+    }
+
+    private static ElementProjection? GhostUnder(ProjectionHighlighterBase highlighter, Transform parent)
+    {
+        var ghosts = Ghosts(highlighter);
+        for (var i = ghosts.Count - 1; i >= 0; i--)
+        {
+            if (ghosts[i] && ghosts[i].transform.parent == parent) return ghosts[i];
+        }
+        return null;
+    }
+
+    /// <summary>Takes one ghost out of the pulse before it ends.</summary>
+    public static void Remove(TooltipProjectionHighlighter highlighter, ElementProjection ghost)
+    {
+        if (!Ghosts(highlighter).Remove(ghost)) return;
+        Factory(highlighter).DestroySmallElementProjection(ghost);
+    }
 
     /// <summary>The pulse while it plays (or waits paused), else null.</summary>
     public static Sequence? Running(ProjectionHighlighterBase highlighter)
@@ -90,7 +137,7 @@ internal static class HintPulse
         if (peak is not null) pulse.Goto(peak.Value, andPlay: false);
         else if (elapsed < toPeak) return;
 
-        var scale = Vector3.one * PeakScale(highlighter);
+        var scale = Tidy.Value ? Vector3.one : Vector3.one * PeakScale(highlighter);
         foreach (var ghost in Ghosts(highlighter))
         {
             if (ghost) ghost.transform.localScale = scale;
@@ -135,19 +182,28 @@ internal static class HintPulseJoinPatch
     }
 }
 
+/// <summary>The hint's pulse swells only in brightness: its ghosts stay their part's size.</summary>
+[HarmonyPatch]
+internal static class HintPulseSizePatch
+{
+    private static bool Prepare() => HintPulse.TargetsPresent() && GameTargets.AllPresent(PatchTargets.HighlighterSetScale);
+
+    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.HighlighterSetScale)!;
+
+    private static void Prefix(ProjectionHighlighterBase __instance, ref Vector3 scale)
+    {
+        if (HintPulse.Tidy.Value && __instance is TooltipProjectionHighlighter) scale = Vector3.one;
+    }
+}
+
 /// <summary>A screw taken out or put in while its slot pulses takes that ghost away.</summary>
 [HarmonyPatch]
 internal static class HintPulseStaleGhostPatch
 {
-    private static readonly AccessTools.FieldRef<TooltipProjectionHighlighter, ElementProjectionFactory> Factory =
-        AccessTools.FieldRefAccess<TooltipProjectionHighlighter, ElementProjectionFactory>("elementProjectionFactory");
-
     private static bool Prepare() => HintPulse.TargetsPresent() && GameTargets.AllPresent(
         PatchTargets.TooltipServiceSmallHandler,
         PatchTargets.DropHintHighlighter,
-        PatchTargets.TooltipServiceSocketChanged,
-        PatchTargets.TooltipHighlighterFactory,
-        PatchTargets.ProjectionFactoryDestroySmall);
+        PatchTargets.TooltipServiceSocketChanged);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.TooltipServiceSocketChanged)!;
 
@@ -159,13 +215,10 @@ internal static class HintPulseStaleGhostPatch
             var highlighter = TooltipServiceParts.Highlighter(__instance);
             if (!highlighter) return;
             var ghosts = HintPulse.GhostsOf(highlighter!);
-            var factory = Factory(highlighter!);
             for (var i = ghosts.Count - 1; i >= 0; i--)
             {
                 var ghost = ghosts[i];
-                if (!ghost || ghost.transform.parent != socket.transform) continue;
-                ghosts.RemoveAt(i);
-                factory.DestroySmallElementProjection(ghost);
+                if (ghost && ghost.transform.parent == socket.transform) HintPulse.Remove(highlighter!, ghost);
             }
         }
         catch (Exception e)

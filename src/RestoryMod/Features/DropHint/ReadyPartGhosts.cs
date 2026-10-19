@@ -71,8 +71,9 @@ internal static class ReadyPartGhosts
     {
         var ghost = HintPulse.Add(highlighter, data, parent);
         if (!ghost) return;
+        var wearing = Ghosts.Find(t => t.Ghost == ghost)?.Wearing;
         Ghosts.RemoveAll(t => t.Ghost == ghost);
-        var tracked = new Tracked(highlighter, ghost!, stillReady, missing, waiting);
+        var tracked = new Tracked(highlighter, ghost!, stillReady, missing, waiting) { Wearing = wearing };
         Ghosts.Add(tracked);
         Tint(tracked);
     }

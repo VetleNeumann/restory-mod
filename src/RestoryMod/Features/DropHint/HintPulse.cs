@@ -72,7 +72,14 @@ internal static class HintPulse
     public static ElementProjection? Add(TooltipProjectionHighlighter highlighter, ElementProjectionData data, Transform parent)
     {
         var ghost = GhostUnder(highlighter, parent);
-        if (ghost) return ghost;
+        if (ghost)
+        {
+            // Asking again for a ghost already there still counts, as the game's own create would:
+            // a fading pulse rises again and a held R2 knows the hint showed something.
+            CountRequest();
+            RiseAgain(highlighter);
+            return ghost;
+        }
         highlighter.CreateAndHighlightProjection(data, parent);
         ghost = GhostUnder(highlighter, parent);
         // A pooled ghost keeps the size another highlighter left it at.

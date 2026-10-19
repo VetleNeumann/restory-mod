@@ -77,10 +77,16 @@ internal static class EveryPartHintFeature
         PatchTargets.HighlighterPreset,
         PatchTargets.HighlighterFrontOutline,
         PatchTargets.HighlighterBackOutline,
-        PatchTargets.TooltipHighlighterComplete);
+        PatchTargets.TooltipHighlighterComplete,
+        PatchTargets.SocketBlockedSockets,
+        PatchTargets.SerialSubordinates,
+        PatchTargets.SubordinateSocket,
+        PatchTargets.ElementProgress);
 
     private static readonly AccessTools.FieldRef<ElementSocket, HashSet<ElementSocket>> AdditionalBlockers =
         AccessTools.FieldRefAccess<ElementSocket, HashSet<ElementSocket>>("additionalBlockers");
+    private static readonly AccessTools.FieldRef<SerialElementSocket, List<SubordinateElementSocket>> TubePlaces =
+        AccessTools.FieldRefAccess<SerialElementSocket, List<SubordinateElementSocket>>("subordinateSockets");
     private static readonly AccessTools.FieldRef<DisassembleTooltipService, Device> TargetDevice =
         AccessTools.FieldRefAccess<DisassembleTooltipService, Device>("targetDevice");
     private static readonly AccessTools.FieldRef<DisassembleTooltipService, bool> IsDisassembling =
@@ -140,6 +146,18 @@ internal static class EveryPartHintFeature
     /// <summary>Taking apart: every unblocked part on the way to a part worth taking out.</summary>
     public static void ShowTakingApart(Device device, TooltipProjectionHighlighter highlighter)
     {
+        // A part deeper in a tube (batteries) comes out only through the tube's entry.
+        var entries = new Dictionary<ElementSocket, ElementSocket>();
+        foreach (var tube in device.ElementSockets.OfType<SerialElementSocket>())
+        {
+            foreach (var place in TubePlaces(tube))
+            {
+                if (place) entries[place] = tube;
+            }
+        }
+        IEnumerable<ElementSocket> Blockers(ElementSocket socket) =>
+            entries.TryGetValue(socket, out var entry) ? BlockersOf(socket).Append(entry) : BlockersOf(socket);
+
         var ready = ReadyParts.TakingApart(device.ElementSockets, IsTarget, Blockers,
             socket => socket.NestedElement, socket => socket.IsBlocked);
         foreach (var socket in ready)
@@ -166,7 +184,9 @@ internal static class EveryPartHintFeature
         }
         if (slots.Count > 0) return;
 
-        var sockets = ready.Where(s => s.CompatibleElementInfo.Category != ElementCategory.Small).ToList();
+        // A tube (batteries) shows once per part it still takes, so each pairs with one loose part.
+        var sockets = ready.Where(s => s.CompatibleElementInfo.Category != ElementCategory.Small)
+            .SelectMany(s => Enumerable.Repeat(s, Room(s))).ToList();
         var types = sockets.Select(s => s.CompatibleElementInfo).ToList();
         var loose = BenchState.LooseParts(device).ToList();
         foreach (var part in loose.Where(p => types.Contains(p.Info)))
@@ -194,8 +214,23 @@ internal static class EveryPartHintFeature
     private static bool ScrewsPending(Device device) =>
         device.ElementSockets.Any(s => IsReadyToFill(s) && IsScrewSlot(s));
 
-    private static bool IsReadyToFill(ElementSocket socket) =>
-        !socket.NestedElement && socket.CompatibleElementInfo && socket.IsAvailable;
+    private static bool IsReadyToFill(ElementSocket socket) => Room(socket) > 0;
+
+    /// <summary>
+    /// How many more parts a socket takes now. One for a free socket the game would fill. A tube (a
+    /// serial socket, as for batteries) takes as many as it has free places: each part pushed in moves
+    /// the one before it deeper, so its entry is taken while places behind it are still free. The
+    /// places behind take nothing directly.
+    /// </summary>
+    private static int Room(ElementSocket socket)
+    {
+        if (!socket.CompatibleElementInfo || socket is SubordinateElementSocket) return 0;
+        if (socket is not SerialElementSocket tube) return !socket.NestedElement && socket.IsAvailable ? 1 : 0;
+        var behind = TubePlaces(tube).Count(place => place && !place.NestedElement);
+        if (!tube.NestedElement) return tube.IsAvailable ? 1 + behind : 0;
+        // The rest of IsAvailable: every socket the tube closes off is filled and done.
+        return behind > 0 && tube.BlockedSockets.All(b => b && b.NestedElement && b.NestedElement.Progress <= 0f) ? behind : 0;
+    }
 
     // Screws are never targets: they hold parts, they don't get repaired.
     private static bool IsTarget(ElementSocket socket)
@@ -207,7 +242,7 @@ internal static class EveryPartHintFeature
     }
 
     // A flip group's lid blocks the part inside through the runtime set, not the serialized list.
-    private static IEnumerable<ElementSocket> Blockers(ElementSocket socket) =>
+    private static IEnumerable<ElementSocket> BlockersOf(ElementSocket socket) =>
         socket.Blockers.Concat(AdditionalBlockers(socket));
 
     // The same projections the game's detailed hint handler builds.

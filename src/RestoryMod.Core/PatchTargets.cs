@@ -264,6 +264,10 @@ public static class PatchTargets
     public static readonly PatchTarget HighlighterFrontOutline = new(Highlighter, "frontOutlineProperties");
     public static readonly PatchTarget HighlighterBackOutline = new(Highlighter, "backOutlineProperties");
     public static readonly PatchTarget TooltipHighlighterComplete = new(TooltipHighlighter, "CompleteTransitionSequence");
+    // Tubes (batteries): a serial socket's entry plus the places behind it, which take parts through it.
+    public static readonly PatchTarget SerialSubordinates = new("Restory.Gameplay.Elements.SerialElementSocket", "subordinateSockets");
+    public static readonly PatchTarget SubordinateSocket = new("Restory.Gameplay.Elements.SubordinateElementSocket");
+    public static readonly PatchTarget ElementProgress = new("Restory.Gameplay.Elements.ElementBase", "Progress");
     // Holding R2 checks again for ready parts, as the game's hint button would, without its other hints.
     public static readonly PatchTarget TooltipServiceTargetDevice = new(TooltipService, "targetDevice");
     public static readonly PatchTarget TooltipServiceIsDisassembling = new(TooltipService, "isDisassembling");
@@ -505,6 +509,9 @@ public static class PatchTargets
         HighlighterFrontOutline,
         HighlighterBackOutline,
         TooltipHighlighterComplete,
+        SerialSubordinates,
+        SubordinateSocket,
+        ElementProgress,
         HighlighterSetScale,
         TooltipServiceTargetDevice,
         TooltipServiceIsDisassembling,

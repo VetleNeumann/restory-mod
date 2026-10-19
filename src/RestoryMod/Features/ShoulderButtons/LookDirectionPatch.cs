@@ -11,7 +11,7 @@ namespace RestoryMod.Features.ShoulderButtons;
 
 /// <summary>
 /// L2/R2 step the Look direction away from the workbench. The game checks for the mouse at the
-/// screen edges in its work states' per-frame update (not the workbench's, where the triggers zoom);
+/// screen edges in its work states' per-frame update (not the workbench's, where L2 zooms and R2 hints);
 /// ours runs right after that check, under the same blockers (PC, Notepad, inventory, dialogue, payment).
 /// </summary>
 [HarmonyPatch]

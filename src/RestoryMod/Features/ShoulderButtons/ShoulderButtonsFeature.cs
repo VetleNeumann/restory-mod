@@ -25,7 +25,7 @@ internal static class ShoulderButtonsFeature
     {
         LookEnabled = config.Bind("ShoulderButtons", "TriggersLookLeftAndRight", true,
             "Away from the workbench, L2/R2 turn the view one step left or right, as the mouse does at the " +
-            "screen edges. At the workbench the triggers keep zooming.");
+            "screen edges. At the workbench L2 zooms (see TriggerZoomToggle) and R2 shows the screw hint.");
         Browser = config.Bind("ShoulderButtons", "BrowserTabsAndCategories", true,
             "In the PC's web browser, L2/R2 switch between Marketplace, Home Depot and Parts, and L1/R1 step " +
             "through the shown tab's categories.");

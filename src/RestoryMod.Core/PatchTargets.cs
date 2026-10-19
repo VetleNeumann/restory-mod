@@ -202,7 +202,7 @@ public static class PatchTargets
     public static readonly PatchTarget WorkDetectionVisitsBlock = new(DetectionWorkState, "DoesVisitsStateBlockDetection");
 
     // Drop hint: after the game's pick every screw the dropped part freed gets a ghost. The hint pulse
-    // (highlighter) members: one ghost per screw, a fading pulse rises again when screws join it, Select
+    // (highlighter) members: one ghost per screw, a fading pulse rises again when screws join it, R2
     // holds it at its peak, and a screw going in or out takes its ghost away.
     private const string DropHint = "Restory.Gameplay.Disassemble.Tooltips.SmallElementTooltipHandler";
     private const string TooltipHighlighter = "Restory.Gameplay.Elements.TooltipProjectionHighlighter";
@@ -223,7 +223,7 @@ public static class PatchTargets
     public static readonly PatchTarget SocketCompatibleElementInfo = new(Socket, "CompatibleElementInfo");
     public static readonly PatchTarget ElementProjectionData = new("Restory.Gameplay.Elements.ElementBase", "ProjectionData");
 
-    // Screw hint button: Select at the workbench runs the game's own hint (its GetTooltip action, which
+    // Screw hint button: R2 at the workbench runs the game's own hint (its GetTooltip action, which
     // has no gamepad button), reaching it and its highlighter through the game's tooltip service.
     private const string TooltipService = "Restory.Gameplay.Disassemble.Tooltips.DisassembleTooltipService";
     public static readonly PatchTarget TooltipServiceInitialize = new(TooltipService, "Initialize");
@@ -244,6 +244,14 @@ public static class PatchTargets
     public static readonly PatchTarget DeviceElementSockets = new("Restory.Gameplay.Devices.Device", "ElementSockets");
     public static readonly PatchTarget SocketIsAvailable = new(Socket, "IsAvailable");
     public static readonly PatchTarget SocketLastNestedElement = new(Socket, "LastNestedElement");
+
+    // Zoom toggle: an L2 press at the workbench becomes a full zoom input to the game's zoom update,
+    // and the triggers' own zoom input is muted there.
+    private const string ZoomController = "Restory.Gameplay.Devices.DeviceZoomController";
+    public static readonly PatchTarget ZoomUpdateTarget = new(ZoomController, "UpdateTargetZoom");
+    public static readonly PatchTarget ZoomAxisId = new(ZoomController, "zoomAxisId");
+    public static readonly PatchTarget ZoomTarget = new(ZoomController, "targetZoom");
+    public static readonly PatchTarget PlayerInputGetAxisRaw = new("Restory.Gameplay.PlayerInput.RewiredPlayerInput", "GetAxisRaw");
 
     // Outline diagnostics ([Debug] OutlineDiagnostics): every outline switch and preset change on
     // parts, screws and slots, the slot pulse, and the socket graph the drop hint reads.
@@ -407,6 +415,10 @@ public static class PatchTargets
         HighlighterToPeak,
         HighlighterToBase,
         HighlighterPeakScale,
+        ZoomUpdateTarget,
+        ZoomAxisId,
+        ZoomTarget,
+        PlayerInputGetAxisRaw,
         TooltipServiceInitialize,
         TooltipServiceDispose,
         TooltipServiceShow,

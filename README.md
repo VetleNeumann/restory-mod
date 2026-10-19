@@ -25,7 +25,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   instead of the game's step-pause-step scrolling. Holding it all the way speeds up for long lists. It
   scrolls the menu holding the selection, or the one under the cursor.
 - **Shoulder buttons**: away from the workbench, L2/R2 turn the view one step left or right, as moving the
-  cursor to the screen edge does (at the workbench they still zoom). In the PC's web browser, L2/R2 switch
+  cursor to the screen edge does (at the workbench, see the zoom toggle and screw hint button). In the PC's web browser, L2/R2 switch
   between Marketplace, Home Depot and Parts, and L1/R1 step through the shown tab's categories. L1/R1 also
   step through the inventory's categories, and through the tools in the Tool window while cleaning.
 - **Gamepad mail**: in the PC's mail app, L1/R1 step through the mail folders and D-pad up/down through
@@ -50,9 +50,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 - **Tidy screw hints**: every yellow screw pulse (on drop, and the hint button) gives each screw one
   pulse instead of several stacked, brightens again when more screws join while it fades, and drops a
   screw's pulse the moment that screw goes in or comes out.
-- **Screw hint button**: at the workbench, the gamepad's Select button (Share / Create on PlayStation,
-  View / Back on Xbox) shows the game's own hint (Space on a keyboard), which otherwise has no gamepad
-  button. Hold it to keep the pulse lit; it fades once you let go.
+- **Zoom toggle**: at the workbench, L2 toggles between zoomed in and out, instead of L2/R2 zooming
+  in and out while held. The mouse wheel zooms as before.
+- **Screw hint button**: at the workbench, R2 shows the game's own hint (Space on a keyboard), which
+  otherwise has no gamepad button. Hold it to keep the pulse lit; it fades once you let go.
 - **Every-screw hint**: the game's hint pulses every screw you can unscrew now while you take a device
   apart, and every empty screw slot you can screw into now while you put it back, not only the next
   part's. The game decides which of the two you are doing from your last change to the device. With no
@@ -70,7 +71,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | Controller | RotationSpeed | 0.4 | Gamepad speed for spinning the device at the workbench |
 | Controller | DropdownModes | true | Gamepad dropdowns |
 | Controller | DpadSendParts | true | D-pad part sends |
-| Controller | SelectShowsScrewHints | true | Screw hint button |
+| Controller | TriggerZoomToggle | true | Zoom toggle |
+| Controller | R2ShowsScrewHints | true | Screw hint button |
 | Controller | HoverGraceMs | 150 | Hover grace window in ms (0 to 500, 0 = off) |
 | Controller | EnlargeSmallHitboxes | false | Minimum hitbox size at the workbench, with a gamepad |
 | Controller | MinimumHitboxSize | 4 | Minimum hitbox size in % of screen height (0 to 15) |

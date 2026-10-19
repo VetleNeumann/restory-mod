@@ -6,6 +6,7 @@ using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
 using RestoryMod.Features.DpadSend;
 using RestoryMod.Features.DropHint;
+using RestoryMod.Features.ZoomToggle;
 using RestoryMod.Features.DropdownModes;
 using RestoryMod.Features.Hitboxes;
 using RestoryMod.Features.HoverGrace;
@@ -52,6 +53,7 @@ public class Plugin : BaseUnityPlugin
         HintPulse.Bind(Config);
         DropHintFeature.Bind(Config);
         ScrewHintButtonFeature.Bind(Config);
+        ZoomToggleFeature.Bind(Config);
         EveryScrewHintFeature.Bind(Config);
         WatchConfigFile();
 
@@ -102,6 +104,8 @@ public class Plugin : BaseUnityPlugin
             typeof(HintPulseStaleGhostPatch),
             typeof(DropHintFreedScrewsPatch),
             typeof(ScrewHintServicePatch),
+            typeof(ZoomToggleUpdatePatch),
+            typeof(ZoomToggleAxisPatch),
             typeof(ScrewHintServiceDisposePatch),
             typeof(EveryScrewDisassembleHintPatch),
             typeof(EveryScrewAssembleHintPatch),

@@ -11,7 +11,7 @@ using RestoryMod.Core;
 namespace RestoryMod.Features.DropHint;
 
 /// <summary>
-/// The game's workbench hint (Space, or Select with the mod) pulses only the next part's screws. With
+/// The game's workbench hint (Space, or R2 with the mod) pulses only the next part's screws. With
 /// this it pulses every screw that can come out now while taking the device apart, and every empty
 /// screw slot that can take its screw now while putting it back. The game still decides which of the
 /// two you are doing; when there is no screw to show, its own hint runs (some parts have special ones).
@@ -23,7 +23,7 @@ internal static class EveryScrewHintFeature
     public static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("Workbench", "HintShowsEveryScrew", true,
-            "The game's hint at the workbench (Space, or Select on a gamepad) pulses every screw you can unscrew " +
+            "The game's hint at the workbench (Space, or R2 on a gamepad) pulses every screw you can unscrew " +
             "now while taking a device apart, and every empty screw slot you can screw into now while putting it " +
             "back, instead of only the next part's.");
     }

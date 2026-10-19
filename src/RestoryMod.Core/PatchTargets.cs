@@ -266,6 +266,7 @@ public static class PatchTargets
     public static readonly PatchTarget PromptControllerIdsMap = new(InputActionElement, "rewiredControllerIdsDependencyMap");
     public static readonly PatchTarget PromptGameSettings = new(InputActionElement, "gameSettingsManager");
     public static readonly PatchTarget ControllerIdsMapLookup = new("IAmFuture.Data.Controllers.RewiredControllerIdsDependencyMap", "TryGetControllerId");
+    public static readonly PatchTarget ControllerIdsLookup = new("IAmFuture.Data.Controllers.ControllerIdsList", "TryGetControllerId");
     public static readonly PatchTarget ControllerIdsDefaultGamepad = new("IAmFuture.Data.Controllers.ControllerIdsList", "DefaultGamepadId");
     public static readonly PatchTarget GameSettingsGamepadScheme = new("Restory.Gameplay.GameSettings.GameSettingsManager", "GamepadScheme");
     // PlayStation art: the prompt image is swapped for one of the game's unused PS5 sprites after it draws.
@@ -284,6 +285,7 @@ public static class PatchTargets
         PromptControllerIdsMap,
         PromptGameSettings,
         ControllerIdsMapLookup,
+        ControllerIdsLookup,
         ControllerIdsDefaultGamepad,
         GameSettingsGamepadScheme,
         PromptImageUpdateView,

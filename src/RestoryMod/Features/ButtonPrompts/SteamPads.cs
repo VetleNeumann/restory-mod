@@ -31,7 +31,7 @@ internal static class SteamPads
     /// </summary>
     public static string? ActiveTypeName()
     {
-        if (unavailable || !ButtonPromptsFeature.UseSteamInput.Value) return null;
+        if (unavailable || !ButtonPromptsFeature.DetectThroughSteamInput.Value) return null;
         if (cachedFrame == Time.frameCount) return cachedType;
         cachedFrame = Time.frameCount;
         cachedType = null;

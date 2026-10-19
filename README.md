@@ -10,10 +10,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   the right stick spins the device on the workbench. Defaults to 0.4; 1.0 is the game's own speed.
 - **PlayStation button prompts**: the game draws A/B/X/Y for every pad, though its files hold an unused
   set of PS5 button icons. With a PlayStation pad the mod shows those instead (Cross, Circle, Square,
-  Triangle, L1/R1 and so on), in menus and in play. It asks Steam which pad is really connected, since
+  Triangle, L1/R1 and so on) on the button prompts. It asks Steam which pad is really connected, since
   with Steam Input on every pad looks like an Xbox pad to the game. A "Button prompts" dropdown under
-  "Rotation sensitivity" (Auto, Xbox, PlayStation, Steam Deck, Generic) can pin one set; Auto names the
-  pad it found, e.g. "Auto (PlayStation)". Xbox, Steam Deck and Generic all show the game's A/B/X/Y art.
+  "Rotation sensitivity" (Auto, PlayStation, Generic) can pin one set; Auto names the pad it found, e.g.
+  "Auto (PlayStation)". A few animated prompts may still show A/B/X/Y.
   If the game ignores your pad altogether (an older or unusual DirectInput pad), turn on Steam Input for
   ReStory in Steam (Properties → Controller).
 - **Parts box sections**: while a device is on the workbench, the parts box sorts in "How to reassemble"
@@ -72,7 +72,7 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 |---|---|---|---|
 | Controller | CursorSpeed | 1.0 | Gamepad cursor speed |
 | Controller | RotationSpeed | 0.4 | Gamepad speed for spinning the device at the workbench |
-| Controller | ButtonPrompts | Auto | Prompt art: Auto, Xbox, PlayStation, SteamDeck or Generic |
+| Controller | ButtonPrompts | Auto | Prompt art: Auto, PlayStation or Generic |
 | Controller | DetectThroughSteamInput | true | Ask Steam which pad is behind Steam Input |
 | Controller | DropdownModes | true | Gamepad dropdowns |
 | Controller | DpadSendParts | true | D-pad part sends |

@@ -36,7 +36,7 @@ internal static class SettingsRowsPatch
     private static readonly SliderRowSpec[] SliderRows =
     {
         new("RestoryMod_ControllerSensitivity", "Controller sensitivity", () => CursorSpeedFeature.Speed,
-            () => GameTargets.AllPresent(PatchTargets.CursorControlsTypeChanged, PatchTargets.CursorPlayerMouse)),
+            CursorSpeedFeature.TargetsPresent),
         // No row when the rotation patch skipped itself after a game update: the slider would do nothing.
         new("RestoryMod_RotationSensitivity", "Rotation sensitivity", () => RotationSpeedFeature.Speed,
             RotationSpeedFeature.TargetsPresent),
@@ -70,20 +70,14 @@ internal static class SettingsRowsPatch
             {
                 if (!spec.Available) continue;
 
-                var row = templateRow.parent.Find(spec.Name);
-                if (row) RefreshRow(row);
-                else row = CreateSliderRow(spec, templateRow, above, aboveRow);
-
+                var row = FindOrCreate(templateRow.parent, spec.Name,
+                    () => CreateSliderRow(spec, templateRow, above, aboveRow))!;
                 above = row.GetComponentInChildren<Slider>(true);
                 aboveRow = row;
             }
 
             if (ButtonPromptsDropdownAvailable())
-            {
-                var row = templateRow.parent.Find(ButtonPromptsRowName);
-                if (row) RefreshRow(row);
-                else CreateButtonPromptsRow(__instance, above, aboveRow);
-            }
+                FindOrCreate(templateRow.parent, ButtonPromptsRowName, () => CreateButtonPromptsRow(__instance, above, aboveRow));
         }
         catch (Exception e)
         {
@@ -91,10 +85,15 @@ internal static class SettingsRowsPatch
         }
     }
 
-    private static void RefreshRow(Transform row)
+    /// <summary>The row made on an earlier Show(), refreshed, or a new one.</summary>
+    private static Transform? FindOrCreate(Transform parent, string name, Func<Transform?> create)
     {
+        var row = parent.Find(name);
+        if (!row) return create();
+
         var existing = row.GetComponent<ISettingsRow>();
         if (existing is MonoBehaviour component && component) existing.Refresh();
+        return row;
     }
 
     private static Transform CreateSliderRow(SliderRowSpec spec, Transform templateRow, Selectable above, Transform aboveRow) =>
@@ -117,25 +116,26 @@ internal static class SettingsRowsPatch
             PatchTargets.MainViewMonitorDropdown,
             PatchTargets.RestoryDropdownContainer);
 
-    private static void CreateButtonPromptsRow(MonoBehaviour menu, Selectable above, Transform aboveRow)
+    private static Transform? CreateButtonPromptsRow(MonoBehaviour menu, Selectable above, Transform aboveRow)
     {
         var mainView = GameTargets.Field(PatchTargets.SettingsMenuMainView)!.GetValue(menu);
         if (GameTargets.Field(PatchTargets.MainViewMonitorDropdown)!.GetValue(mainView) is not TMP_Dropdown template || !template)
         {
             Plugin.Logger.LogWarning("Settings rows: monitor dropdown not found.");
-            return;
+            return null;
         }
         // The game's dropdown builds its list through Zenject; the clone needs the same container.
         if (GameTargets.Field(PatchTargets.RestoryDropdownContainer)!.GetValue(template) is not DiContainer container)
         {
             Plugin.Logger.LogWarning("Settings rows: monitor dropdown has no Zenject container yet.");
-            return;
+            return null;
         }
 
-        CloneRow(template.transform.parent, ButtonPromptsRowName, ButtonPromptsLabel, above, aboveRow, row =>
+        return CloneRow(template.transform.parent, ButtonPromptsRowName, ButtonPromptsLabel, above, aboveRow, row =>
         {
             var dropdown = row.GetComponentInChildren<TMP_Dropdown>(true);
             dropdown.onValueChanged = new TMP_Dropdown.DropdownEvent();
+            // A clone's components are new and uninjected; inject them as the game's prefab instantiation would.
             container.InjectGameObject(row);
 
             SpliceNavigation(above, dropdown, clearSideLinks: true);
@@ -169,7 +169,7 @@ internal static class SettingsRowsPatch
             }
 
             var labelText = row.transform.GetChild(0).GetComponent<TMP_Text>();
-            if (labelText != null) labelText.text = label;
+            if (labelText) labelText.text = label;
 
             var navigationMode = above.navigation.mode;
             bind(row);
@@ -244,7 +244,7 @@ internal sealed class SensitivityRow : MonoBehaviour, ISettingsRow
 
     private void OnEnable()
     {
-        if (slider != null) Refresh();
+        if (slider) Refresh();
     }
 
     private float Current => Sensitivity.Normalize(entry.Value);
@@ -263,7 +263,7 @@ internal sealed class SensitivityRow : MonoBehaviour, ISettingsRow
 
     private void UpdateText()
     {
-        if (valueText != null) valueText.text = Sensitivity.Format(Current);
+        if (valueText) valueText!.text = Sensitivity.Format(Current);
     }
 }
 
@@ -275,6 +275,7 @@ internal sealed class ButtonPromptsRow : MonoBehaviour, ISettingsRow
 {
     private TMP_Dropdown dropdown = null!;
     private ConfigEntry<PromptStyle> entry = null!;
+    private bool refreshWhenClosed;
 
     public void Init(TMP_Dropdown dropdown, ConfigEntry<PromptStyle> entry)
     {
@@ -293,14 +294,25 @@ internal sealed class ButtonPromptsRow : MonoBehaviour, ISettingsRow
 
     public void Refresh()
     {
-        // Rebuilding the options under an open list would leave its rows stale; the next open picks it up.
-        if (!dropdown || dropdown.IsExpanded) return;
+        if (!dropdown) return;
+        // Rebuilding the options under an open list would leave its rows stale: wait for it to close.
+        if (dropdown.IsExpanded)
+        {
+            refreshWhenClosed = true;
+            return;
+        }
+        refreshWhenClosed = false;
 
         var detected = ButtonPromptsPoller.Detected;
         dropdown.ClearOptions();
         dropdown.AddOptions(PromptStyles.InMenuOrder.Select(style => PromptStyles.Label(style, detected)).ToList());
         dropdown.SetValueWithoutNotify(PromptStyles.ToIndex(entry.Value));
         dropdown.RefreshShownValue();
+    }
+
+    private void Update()
+    {
+        if (refreshWhenClosed && dropdown && !dropdown.IsExpanded) Refresh();
     }
 
     private void OnDropdownChanged(int index) => entry.Value = PromptStyles.FromIndex(index);

@@ -14,32 +14,31 @@ namespace RestoryMod.Features.ButtonPrompts;
 /// <summary>
 /// The game's unused PS5 button sprites, loaded from its own image bundle. Its glyph lists draw
 /// PlayStation pads with the generic A/B art; <see cref="PlayStationArtPatch"/> swaps these in.
+/// <see cref="ButtonPromptsPoller"/> loads them once a PlayStation pad shows up, so drawing a prompt
+/// only reads the cache.
 /// </summary>
 internal static class PlayStationArt
 {
-    private const float RetrySeconds = 1f;
-
     private static readonly Dictionary<string, Sprite> Loaded = new();
-    private static float nextAttempt;
-    private static bool complete;
+    private static bool loaded;
 
-    /// <summary>The game's PlayStation ControllerId, taken from its dependency map by <see cref="ButtonPromptsPatch"/>.</summary>
-    public static ControllerId? SonyId { get; set; }
+    /// <summary>The game's ControllerId for PlayStation pads; prompts drawn for it get the PS5 sprites.</summary>
+    public static ControllerId? PlayStationId { get; private set; }
 
-    public static Sprite? For(int templateElementId)
+    /// <summary>
+    /// Loads the sprites and the PlayStation ControllerId if not loaded yet. True when this call loaded
+    /// them, so prompts already drawn with the generic art need redrawing.
+    /// </summary>
+    public static bool Load()
     {
-        var name = PlayStationGlyphs.SpriteFor(templateElementId);
-        if (name is null) return null;
-        EnsureLoaded();
-        return Loaded.TryGetValue(name, out var sprite) && sprite ? sprite : null;
-    }
+        if (loaded) return false;
 
-    private static void EnsureLoaded()
-    {
-        // A sprite goes missing if the game unloads the bundle; look again then.
-        if (complete && Loaded.Values.All(s => s)) return;
-        if (Time.unscaledTime < nextAttempt) return;
-        nextAttempt = Time.unscaledTime + RetrySeconds;
+        if (!PlayStationId)
+        {
+            var map = Resources.FindObjectsOfTypeAll<RewiredControllerIdsDependencyMap>().FirstOrDefault();
+            if (!map || !map!.TryGetControllerId(PadKinds.DualSense, out var id)) return false;
+            PlayStationId = id;
+        }
 
         // Loaded bundles carry hashed names, so find the sprites by asset path ("assets/.../ps5cross.png").
         var wanted = new HashSet<string>(PlayStationGlyphs.AllSprites, StringComparer.OrdinalIgnoreCase);
@@ -53,7 +52,7 @@ internal static class PlayStationArt
                 if (wanted.Contains(name)) paths[name] = (bundle, path);
             }
         }
-        if (paths.Count == 0) return;
+        if (paths.Count == 0) return false;
 
         Loaded.Clear();
         var missing = new List<string>();
@@ -63,12 +62,23 @@ internal static class PlayStationArt
             if (sprite) Loaded[name] = sprite!;
             else missing.Add(name);
         }
-        complete = true;
-        // Prompts drawn while the sprites weren't loaded yet still show the generic art.
-        if (Loaded.Count > 0 && ButtonPromptsPoller.Running) ButtonPromptsPoller.RefreshPrompts();
+        loaded = true;
         Plugin.Logger.LogInfo(missing.Count == 0
             ? $"PlayStation prompts: {Loaded.Count} sprites loaded."
             : $"PlayStation prompts: {Loaded.Count} sprites loaded; missing [{string.Join(", ", missing)}] keep the game's art.");
+        return Loaded.Count > 0;
+    }
+
+    /// <summary>The PS5 sprite for a template element, or null to keep the game's art.</summary>
+    public static Sprite? For(int templateElementId)
+    {
+        var name = PlayStationGlyphs.SpriteFor(templateElementId);
+        if (name is null || !Loaded.TryGetValue(name, out var sprite)) return null;
+        if (sprite) return sprite;
+
+        // The game unloaded the bundle; the poller loads the sprites again.
+        loaded = false;
+        return null;
     }
 }
 
@@ -88,8 +98,8 @@ internal static class PlayStationArtPatch
     {
         try
         {
-            if (!___targetImage || !___controllerId || !PlayStationArt.SonyId) return;
-            if (___controllerId.ID != PlayStationArt.SonyId!.ID || !___targetImage.overrideSprite) return;
+            if (!___targetImage || !___targetImage.overrideSprite || !___controllerId) return;
+            if (!PlayStationArt.PlayStationId || ___controllerId != PlayStationArt.PlayStationId) return;
 
             var sprite = PlayStationArt.For(___elementId);
             if (sprite) ___targetImage.overrideSprite = sprite;

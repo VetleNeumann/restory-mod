@@ -13,13 +13,14 @@ public enum PadKind
     Generic,
 }
 
-/// <summary>The "Button prompts" setting: follow the pad, or always draw one family's art.</summary>
+/// <summary>
+/// The "Button prompts" setting: follow the pad, or always draw one family's art. The game draws every
+/// pad but PlayStation with the same generic A/B/X/Y art, so there is no Xbox or Steam Deck choice.
+/// </summary>
 public enum PromptStyle
 {
     Auto,
-    Xbox,
     PlayStation,
-    SteamDeck,
     Generic,
 }
 
@@ -28,14 +29,14 @@ public static class PromptStyles
 {
     public static readonly PromptStyle[] InMenuOrder =
     {
-        PromptStyle.Auto, PromptStyle.Xbox, PromptStyle.PlayStation, PromptStyle.SteamDeck, PromptStyle.Generic,
+        PromptStyle.Auto, PromptStyle.PlayStation, PromptStyle.Generic,
     };
 
     public static PromptStyle FromIndex(int index) => InMenuOrder[Math.Max(0, Math.Min(index, InMenuOrder.Length - 1))];
 
     public static int ToIndex(PromptStyle style) => Math.Max(0, Array.IndexOf(InMenuOrder, style));
 
-    public static string Label(PromptStyle style) => style == PromptStyle.SteamDeck ? "Steam Deck" : style.ToString();
+    public static string Label(PromptStyle style) => style.ToString();
 
     /// <summary>The menu entry for a style; Auto names the pad it detected, e.g. "Auto (PlayStation)".</summary>
     public static string Label(PromptStyle style, PadKind detected)
@@ -112,9 +113,7 @@ public static class PadKinds
     /// </summary>
     public static PadKind ArtToShow(PromptStyle setting, PadKind detected) => setting switch
     {
-        PromptStyle.Xbox => PadKind.Xbox,
         PromptStyle.PlayStation => PadKind.PlayStation,
-        PromptStyle.SteamDeck => PadKind.SteamDeck,
         PromptStyle.Generic => PadKind.Generic,
         _ => detected == PadKind.Nintendo ? PadKind.Generic : detected,
     };

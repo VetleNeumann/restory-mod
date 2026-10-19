@@ -192,3 +192,7 @@ _Avoid_: tab, inbox, category
 **Selected mail**:
 The mail shown in the Mail app's reading pane; at most one. Once the player selects any mail, the Mail app keeps one selected until it closes: opening another mail folder selects its top mail, and when the selected mail leaves its folder (an order taken) the mail that takes its place is selected, or the one above it if it was last. A mail folder with no mail has none selected, until mail arrives in it. Selecting by D-pad or by a click starts this alike. The view always scrolls to keep the selected mail in sight.
 _Avoid_: open mail (Open is a Notepad state), current mail, highlighted mail
+
+**Button prompts**:
+The small button icons the game shows next to an action (Select, Back, and the like). With a PlayStation pad the mod draws them with the game's unused PS5 icons; every other pad gets the game's own A/B/X/Y icons. The "Button prompts" setting picks Auto (follow the pad), PlayStation or Generic.
+_Avoid_: glyphs (in player-facing text), hints, button hints

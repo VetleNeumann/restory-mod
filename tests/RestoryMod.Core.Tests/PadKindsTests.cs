@@ -55,8 +55,7 @@ public class PadKindsTests
     // No Nintendo art in the game yet: its positional A/B/X/Y would mislabel, so draw generic.
     [InlineData(PromptStyle.Auto, PadKind.Nintendo, PadKind.Generic)]
     [InlineData(PromptStyle.PlayStation, PadKind.Xbox, PadKind.PlayStation)]
-    [InlineData(PromptStyle.Xbox, PadKind.Unknown, PadKind.Xbox)]
-    [InlineData(PromptStyle.SteamDeck, PadKind.PlayStation, PadKind.SteamDeck)]
+    [InlineData(PromptStyle.PlayStation, PadKind.Unknown, PadKind.PlayStation)]
     [InlineData(PromptStyle.Generic, PadKind.PlayStation, PadKind.Generic)]
     public void Setting_overrides_detection(PromptStyle setting, PadKind detected, PadKind expected)
     {
@@ -80,13 +79,13 @@ public class PadKindsTests
     {
         Assert.Equal(Enum.GetValues<PromptStyle>().OrderBy(s => s), PromptStyles.InMenuOrder.OrderBy(s => s));
         Assert.Equal(PromptStyle.Auto, PromptStyles.InMenuOrder[0]);
-        Assert.Equal("Steam Deck", PromptStyles.Label(PromptStyle.SteamDeck));
+        Assert.Equal(new[] { PromptStyle.Auto, PromptStyle.PlayStation, PromptStyle.Generic }, PromptStyles.InMenuOrder);
         Assert.All(PromptStyles.InMenuOrder, s => Assert.False(string.IsNullOrEmpty(PromptStyles.Label(s))));
     }
 
     [Theory]
     [InlineData(-3, PromptStyle.Auto)]
-    [InlineData(2, PromptStyle.PlayStation)]
+    [InlineData(1, PromptStyle.PlayStation)]
     [InlineData(99, PromptStyle.Generic)]
     public void Menu_indexes_clamp_to_a_style(int index, PromptStyle expected)
     {
@@ -101,8 +100,8 @@ public class PadKindsTests
     [InlineData(PromptStyle.Auto, PadKind.Nintendo, "Auto (Switch)")]
     [InlineData(PromptStyle.Auto, PadKind.Generic, "Auto (Generic)")]
     [InlineData(PromptStyle.Auto, PadKind.Unknown, "Auto")]
-    [InlineData(PromptStyle.Xbox, PadKind.PlayStation, "Xbox")]
-    [InlineData(PromptStyle.SteamDeck, PadKind.Unknown, "Steam Deck")]
+    [InlineData(PromptStyle.PlayStation, PadKind.Xbox, "PlayStation")]
+    [InlineData(PromptStyle.Generic, PadKind.PlayStation, "Generic")]
     public void Auto_names_the_detected_pad(PromptStyle style, PadKind detected, string expected)
     {
         Assert.Equal(expected, PromptStyles.Label(style, detected));

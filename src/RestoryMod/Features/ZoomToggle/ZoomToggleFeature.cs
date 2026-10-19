@@ -3,6 +3,7 @@ using System.Reflection;
 using BepInEx.Configuration;
 using HarmonyLib;
 using Restory.Gameplay.Devices;
+using Restory.Gameplay.PlayerInput;
 using RestoryMod.Core;
 
 namespace RestoryMod.Features.ZoomToggle;
@@ -11,7 +12,8 @@ namespace RestoryMod.Features.ZoomToggle;
 /// At the workbench, L2 toggles the zoom (in when out, out when in) instead of the triggers zooming
 /// in and out while held; R2 is free for the screw hint. The toggle goes through the game's own zoom
 /// update as a full-strength zoom input, so wherever the game ignores zoom (over the Notepad or the
-/// parts box, the PC, cleaning transitions) it ignores the toggle too. The mouse wheel is untouched.
+/// parts box, the PC, cleaning transitions) it ignores the toggle too. The mouse wheel is untouched
+/// unless a trigger is held at the same time.
 /// </summary>
 internal static class ZoomToggleFeature
 {
@@ -30,11 +32,19 @@ internal static class ZoomToggleFeature
         PatchTargets.ZoomTarget,
         PatchTargets.PlayerInputGetAxisRaw);
 
+    /// <summary>
+    /// Zoom input for one frame large enough that the game, after clamping it to its per-frame limit,
+    /// still zooms a long way; <see cref="ZoomToggleUpdatePatch"/> then finishes the trip.
+    /// </summary>
+    private const float FullZoomInput = 1000f;
+
     /// <summary>True while the zoom controller reads its axis, so the axis patch touches nothing else.</summary>
     internal static bool InZoomUpdate;
     internal static int ZoomAxisId;
-    /// <summary>The toggle's zoom input for this update, or null to only mute the triggers.</summary>
-    internal static float? Forced;
+    /// <summary>The toggle's zoom direction for this update (+1 in, -1 out), or 0 to only mute the triggers.</summary>
+    internal static int ToggleDirection;
+
+    internal static float ForcedZoomInput => ToggleDirection * FullZoomInput;
 
     private static bool errorLogged;
 
@@ -47,30 +57,34 @@ internal static class ZoomToggleFeature
     }
 }
 
-/// <summary>Around the zoom controller's per-frame update: an L2 press becomes a full zoom in or out.</summary>
+/// <summary>
+/// Around the zoom controller's per-frame update: an L2 press becomes a zoom input in the toggle's
+/// direction, and when the game took it, the zoom goes all the way (the game's keyboard step is small).
+/// </summary>
 [HarmonyPatch]
 internal static class ZoomToggleUpdatePatch
 {
     private static readonly AccessTools.FieldRef<DeviceZoomController, float> Target =
-        AccessTools.FieldRefAccess<DeviceZoomController, float>("targetZoom");
+        AccessTools.FieldRefAccess<DeviceZoomController, float>(PatchTargets.ZoomTarget.MemberName);
     private static readonly AccessTools.FieldRef<DeviceZoomController, int> AxisId =
-        AccessTools.FieldRefAccess<DeviceZoomController, int>("zoomAxisId");
+        AccessTools.FieldRefAccess<DeviceZoomController, int>(PatchTargets.ZoomAxisId.MemberName);
 
     private static bool Prepare() => ZoomToggleFeature.TargetsPresent();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.ZoomUpdateTarget)!;
 
-    private static void Prefix(DeviceZoomController __instance)
+    private static void Prefix(DeviceZoomController __instance, out float __state)
     {
+        __state = 0f;
         ZoomToggleFeature.InZoomUpdate = false;
+        ZoomToggleFeature.ToggleDirection = 0;
         if (!ZoomToggleFeature.Enabled.Value) return;
         try
         {
+            __state = Target(__instance);
             ZoomToggleFeature.ZoomAxisId = AxisId(__instance);
-            // The game clamps a frame's input to its notch limit, which still zooms all the way.
-            ZoomToggleFeature.Forced = GamepadTriggers.LeftPressed()
-                ? TriggerButton.ToggleDirection(Target(__instance)) * 1000f
-                : null;
+            GamepadTriggers.Left(out var pressed, out _);
+            if (pressed) ZoomToggleFeature.ToggleDirection = Core.ZoomToggle.Direction(__state);
             ZoomToggleFeature.InZoomUpdate = true;
         }
         catch (Exception e)
@@ -79,30 +93,51 @@ internal static class ZoomToggleUpdatePatch
         }
     }
 
-    private static void Postfix() => ZoomToggleFeature.InZoomUpdate = false;
+    private static void Postfix(DeviceZoomController __instance, float __state)
+    {
+        var direction = ZoomToggleFeature.ToggleDirection;
+        ZoomToggleFeature.InZoomUpdate = false;
+        ZoomToggleFeature.ToggleDirection = 0;
+        // Moved at all means the game took the input (nothing was blocking zoom): finish the trip.
+        if (direction != 0 && Target(__instance) != __state) Target(__instance) = Core.ZoomToggle.End(direction);
+    }
 }
 
-/// <summary>The zoom axis as the zoom controller reads it: the toggle's input, or nothing while a trigger is held.</summary>
+/// <summary>The zoom axis as the zoom controller reads it: the toggle's input, or nothing while a trigger is off its rest.</summary>
 [HarmonyPatch]
 internal static class ZoomToggleAxisPatch
 {
-    private static bool Prepare() => ZoomToggleFeature.TargetsPresent();
+    private static MethodBase? target;
 
     // GetAxisRaw has an int and a string overload; the zoom controller uses the int one.
-    private static MethodBase TargetMethod() => AccessTools.Method(
-        AccessTools.TypeByName(PatchTargets.PlayerInputGetAxisRaw.TypeName),
-        PatchTargets.PlayerInputGetAxisRaw.MemberName, new[] { typeof(int) });
+    private static bool Prepare()
+    {
+        if (!ZoomToggleFeature.TargetsPresent()) return false;
+        target ??= AccessTools.Method(typeof(RewiredPlayerInput), PatchTargets.PlayerInputGetAxisRaw.MemberName, [typeof(int)]);
+        if (target is null) Plugin.Logger.LogWarning($"Patch target missing: {PatchTargets.PlayerInputGetAxisRaw} (int overload)");
+        return target is not null;
+    }
+
+    private static MethodBase TargetMethod() => target!;
 
     private static bool Prefix(int actionId, ref float __result)
     {
         if (!ZoomToggleFeature.InZoomUpdate || actionId != ZoomToggleFeature.ZoomAxisId) return true;
-        if (ZoomToggleFeature.Forced is { } forced)
+        try
         {
-            __result = forced;
+            if (ZoomToggleFeature.ToggleDirection != 0)
+            {
+                __result = ZoomToggleFeature.ForcedZoomInput;
+                return false;
+            }
+            if (!GamepadTriggers.AnyMoved()) return true;
+            __result = 0f;
             return false;
         }
-        if (!GamepadTriggers.AnyHeld()) return true;
-        __result = 0f;
-        return false;
+        catch (Exception e)
+        {
+            ZoomToggleFeature.LogOnce(e);
+            return true;
+        }
     }
 }

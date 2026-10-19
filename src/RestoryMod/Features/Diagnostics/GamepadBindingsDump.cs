@@ -20,9 +20,6 @@ namespace RestoryMod.Features.Diagnostics;
 [HarmonyPatch]
 internal static class GamepadBindingsDump
 {
-    /// <summary>The game reads gamepad input as this Rewired player.</summary>
-    private const int GamePlayerId = 0;
-
     public static ConfigEntry<bool> Enabled = null!;
     private static bool dumped;
 
@@ -85,7 +82,7 @@ internal static class GamepadBindingsDump
     /// </summary>
     private static void AppendKeyboardOnly(StringBuilder log)
     {
-        var joystick = ReInput.players.GetPlayer(GamePlayerId)?.controllers.Joysticks.FirstOrDefault();
+        var joystick = ReInput.players.GetPlayer(GamePlayer.Id)?.controllers.Joysticks.FirstOrDefault();
         log.Append($"\n  Keyboard/mouse only (gamepad: {joystick?.name ?? "none connected"}):");
         foreach (var category in ReInput.mapping.MapCategories)
         {

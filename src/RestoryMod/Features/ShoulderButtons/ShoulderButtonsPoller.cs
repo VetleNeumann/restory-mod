@@ -25,15 +25,12 @@ namespace RestoryMod.Features.ShoulderButtons;
 /// </summary>
 internal sealed class ShoulderButtonsPoller : MonoBehaviour
 {
-    /// <summary>The game reads gamepad input as this Rewired player.</summary>
-    private const int GamePlayerId = 0;
-
     private void Update()
     {
         try
         {
             if (!ReInput.isReady) return;
-            var player = ReInput.players.GetPlayer(GamePlayerId);
+            var player = ReInput.players.GetPlayer(GamePlayer.Id);
             if (player is null) return;
 
             var bumperStep = Step(player, ShoulderButtonsFeature.PreviousActionId, ShoulderButtonsFeature.NextActionId);

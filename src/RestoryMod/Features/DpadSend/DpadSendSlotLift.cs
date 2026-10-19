@@ -73,15 +73,12 @@ internal static class DpadSendSlotPressPatch
 /// <summary>Polls the D-pad each frame for a held slot.</summary>
 internal sealed class DpadSendPoller : MonoBehaviour
 {
-    /// <summary>The game reads gamepad input as this Rewired player.</summary>
-    private const int GamePlayerId = 0;
-
     private void Update()
     {
         try
         {
             if (!DpadSendFeature.Enabled.Value || !ReInput.isReady) return;
-            var player = ReInput.players.GetPlayer(GamePlayerId);
+            var player = ReInput.players.GetPlayer(GamePlayer.Id);
             if (player is null) return;
             DpadSendSlotLift.Poll(player);
         }

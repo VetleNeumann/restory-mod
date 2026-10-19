@@ -6,7 +6,6 @@ using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
 using RestoryMod.Features.DpadSend;
 using RestoryMod.Features.DropHint;
-using RestoryMod.Features.ZoomToggle;
 using RestoryMod.Features.DropdownModes;
 using RestoryMod.Features.Hitboxes;
 using RestoryMod.Features.HoverGrace;
@@ -17,6 +16,7 @@ using RestoryMod.Features.RotationSpeed;
 using RestoryMod.Features.Settings;
 using RestoryMod.Features.ShoulderButtons;
 using RestoryMod.Features.StickScroll;
+using RestoryMod.Features.ZoomToggle;
 
 namespace RestoryMod;
 
@@ -104,9 +104,9 @@ public class Plugin : BaseUnityPlugin
             typeof(HintPulseStaleGhostPatch),
             typeof(DropHintFreedScrewsPatch),
             typeof(ScrewHintServicePatch),
+            typeof(ScrewHintServiceDisposePatch),
             typeof(ZoomToggleUpdatePatch),
             typeof(ZoomToggleAxisPatch),
-            typeof(ScrewHintServiceDisposePatch),
             typeof(EveryScrewDisassembleHintPatch),
             typeof(EveryScrewAssembleHintPatch),
             typeof(SettingsMenuDumpPatch),

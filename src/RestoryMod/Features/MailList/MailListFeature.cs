@@ -242,9 +242,6 @@ internal static class MailContentsChangedPatch
 /// </summary>
 internal sealed class MailListPoller : MonoBehaviour
 {
-    /// <summary>The game reads gamepad input as this Rewired player.</summary>
-    private const int GamePlayerId = 0;
-
     /// <summary>The game's own step-and-repeat timing for held scroll input.</summary>
     private readonly HoldRepeat repeat = new(delay: 0.3f, interval: 0.1f);
 
@@ -254,7 +251,7 @@ internal sealed class MailListPoller : MonoBehaviour
         {
             if (!MailListFeature.Enabled.Value || !MailListFeature.TargetsPresent() || !ReInput.isReady) return;
             var client = MailApp.Running();
-            var held = client ? DpadSendPatch.HeldVertical(ReInput.players.GetPlayer(GamePlayerId)) : 0;
+            var held = client ? DpadSendPatch.HeldVertical(ReInput.players.GetPlayer(GamePlayer.Id)) : 0;
             var step = repeat.Update(held, Time.unscaledDeltaTime);
             if (step == 0) return;
 

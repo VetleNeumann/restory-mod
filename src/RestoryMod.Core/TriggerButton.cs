@@ -1,8 +1,8 @@
 namespace RestoryMod.Core;
 
 /// <summary>
-/// A gamepad trigger (an axis from 0 to 1) used as a button: pressed once it is pulled past halfway,
-/// held until it is nearly let go, so a trigger resting around halfway doesn't flicker.
+/// A gamepad trigger (an axis from 0 to 1) used as a button: pressed when it is pulled past halfway,
+/// and counted as held down above a quarter, so a press held loosely around halfway stays held.
 /// </summary>
 public static class TriggerButton
 {
@@ -12,7 +12,4 @@ public static class TriggerButton
     public static bool Pressed(float value, float previous) => value >= PressAt && previous < PressAt;
 
     public static bool Down(float value) => value >= ReleaseBelow;
-
-    /// <summary>Workbench zoom toggle: +1 zooms in from the zoomed-out half, -1 zooms out from the other.</summary>
-    public static int ToggleDirection(float zoom) => zoom < 0.5f ? 1 : -1;
 }

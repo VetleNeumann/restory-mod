@@ -15,7 +15,8 @@ namespace RestoryMod.Features.Settings;
 /// <summary>
 /// Adds the "Controller sensitivity" and "Rotation sensitivity" rows to the settings menu. The menu is
 /// prefab-wired, so each row is cloned from the dialogue volume row and inserted below it (and below
-/// each other) on the first Show().
+/// each other) on the first Show(). Unloading the plugin takes the rows out and restores the
+/// navigation, so a hot reload adds fresh rows on the next Show().
 /// </summary>
 [HarmonyPatch]
 internal static class SensitivitySlidersPatch
@@ -113,7 +114,16 @@ internal static class SensitivitySlidersPatch
             var valueText = slider.GetComponentInChildren<TMP_Text>(true);
 
             var navigationMode = above.navigation.mode;
-            SpliceNavigation(above, slider);
+            var restoreNavigation = SpliceNavigation(above, slider);
+            // Registered before anything else can throw, so the links never point at a lost slider.
+            Plugin.Teardown.Add(() =>
+            {
+                restoreNavigation();
+                if (!row) return;
+                // Destroy waits for the end of the frame; renamed, the row can't be mistaken for ours by then.
+                row.name += "_Removed";
+                Object.Destroy(row);
+            });
 
             row.AddComponent<SensitivityRow>().Init(slider, valueText, spec.Entry);
             row.transform.SetParent(templateRow.parent, false);
@@ -132,12 +142,13 @@ internal static class SensitivitySlidersPatch
     /// With explicit navigation, splice the slider in between the row above and whatever was below
     /// it. Only up/down are rewired: the slider keeps the template slider's own left/right links,
     /// because Slider only uses left/right to change its value when those links are empty.
-    /// Automatic navigation needs nothing.
+    /// Automatic navigation needs nothing. Returns the step that puts the links back.
     /// </summary>
-    private static void SpliceNavigation(Selectable above, Slider inserted)
+    private static Action SpliceNavigation(Selectable above, Slider inserted)
     {
         var aboveNav = above.navigation;
-        if (aboveNav.mode != Navigation.Mode.Explicit) return;
+        if (aboveNav.mode != Navigation.Mode.Explicit) return () => { };
+        var aboveBefore = aboveNav;
 
         var below = aboveNav.selectOnDown;
 
@@ -150,12 +161,20 @@ internal static class SensitivitySlidersPatch
         aboveNav.selectOnDown = inserted;
         above.navigation = aboveNav;
 
-        if (below != null && below.navigation.mode == Navigation.Mode.Explicit && below.navigation.selectOnUp == above)
+        var belowRewired = below && below.navigation.mode == Navigation.Mode.Explicit && below.navigation.selectOnUp == above;
+        var belowBefore = belowRewired ? below!.navigation : default;
+        if (belowRewired)
         {
-            var belowNav = below.navigation;
+            var belowNav = below!.navigation;
             belowNav.selectOnUp = inserted;
             below.navigation = belowNav;
         }
+
+        return () =>
+        {
+            if (above) above.navigation = aboveBefore;
+            if (belowRewired && below) below.navigation = belowBefore;
+        };
     }
 }
 

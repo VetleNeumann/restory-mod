@@ -2,6 +2,7 @@ using System.IO;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using RestoryMod.Core;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
 using RestoryMod.Features.DpadSend;
@@ -23,6 +24,12 @@ namespace RestoryMod;
 public class Plugin : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger = null!;
+
+    /// <summary>
+    /// Undo steps for what features leave in the game, run on unload. Under ScriptEngine (scripts/dev.sh hot)
+    /// unloading is a reload, and the new plugin copy should find the game as it was before the mod.
+    /// </summary>
+    internal static readonly Teardown Teardown = new();
 
     private Harmony harmony = null!;
     private FileSystemWatcher? configWatcher;
@@ -152,5 +159,7 @@ public class Plugin : BaseUnityPlugin
     {
         configWatcher?.Dispose();
         harmony?.UnpatchSelf();
+        foreach (var failure in Teardown.Run())
+            Logger.LogWarning($"Teardown step failed: {failure}");
     }
 }

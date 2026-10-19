@@ -151,18 +151,20 @@ internal static class EveryPartHintFeature
     }
 
     /// <summary>
-    /// Putting back: screw slots and loose parts that can go in now, and red ghosts in sockets ready
-    /// for a part that isn't on the bench.
+    /// Putting back: screws first, then parts. While any screw slot can take its screw, only those show;
+    /// after that, the loose parts that can go in now and red ghosts in sockets ready for a part that
+    /// isn't on the bench. The game doesn't always know a part covers a screw hole, so offering parts
+    /// before the screws are in could let a part shut one away.
     /// </summary>
     public static void ShowPuttingBack(Device device, TooltipProjectionHighlighter highlighter)
     {
         var ready = device.ElementSockets.Where(IsReadyToFill).ToList();
-        foreach (var slot in ready.Where(s => s.CompatibleElementInfo.Category == ElementCategory.Small))
+        var slots = ready.Where(IsScrewSlot).ToList();
+        foreach (var slot in slots)
         {
-            var screw = slot.LastNestedElement;
-            if (!screw || screw.Info.Category != ElementCategory.Small) continue;
-            ReadyPartGhosts.Add(highlighter, screw.ProjectionData, slot.transform, While(false, () => IsReadyToFill(slot)));
+            ReadyPartGhosts.Add(highlighter, slot.LastNestedElement.ProjectionData, slot.transform, While(false, () => IsReadyToFill(slot)));
         }
+        if (slots.Count > 0) return;
 
         var sockets = ready.Where(s => s.CompatibleElementInfo.Category != ElementCategory.Small).ToList();
         var types = sockets.Select(s => s.CompatibleElementInfo).ToList();
@@ -170,7 +172,8 @@ internal static class EveryPartHintFeature
         foreach (var part in loose.Where(p => types.Contains(p.Info)))
         {
             ReadyPartGhosts.Add(highlighter, part.ProjectionData, part.transform, While(false, () =>
-                part.IsOnSurface && !part.IsDragging && device.ElementSockets.Any(s => s.CompatibleElementInfo == part.Info && IsReadyToFill(s))));
+                part.IsOnSurface && !part.IsDragging && !ScrewsPending(device)
+                && device.ElementSockets.Any(s => s.CompatibleElementInfo == part.Info && IsReadyToFill(s))));
         }
 
         foreach (var i in ReadyParts.MissingSockets(types, loose.Select(p => p.Info)))
@@ -178,9 +181,18 @@ internal static class EveryPartHintFeature
             var socket = sockets[i];
             var type = socket.CompatibleElementInfo;
             ReadyPartGhosts.Add(highlighter, PrefabLook(type), socket.transform,
-                While(false, () => IsReadyToFill(socket) && !BenchState.LooseParts(device).Any(p => p.Info == type)), missing: true);
+                While(false, () => IsReadyToFill(socket) && !ScrewsPending(device)
+                    && !BenchState.LooseParts(device).Any(p => p.Info == type)), missing: true);
         }
     }
+
+    // An empty screw slot whose screw can go back in now (the game keeps the removed screw paired with it).
+    private static bool IsScrewSlot(ElementSocket socket) =>
+        socket.CompatibleElementInfo.Category == ElementCategory.Small
+        && socket.LastNestedElement && socket.LastNestedElement.Info.Category == ElementCategory.Small;
+
+    private static bool ScrewsPending(Device device) =>
+        device.ElementSockets.Any(s => IsReadyToFill(s) && IsScrewSlot(s));
 
     private static bool IsReadyToFill(ElementSocket socket) =>
         !socket.NestedElement && socket.CompatibleElementInfo && socket.IsAvailable;

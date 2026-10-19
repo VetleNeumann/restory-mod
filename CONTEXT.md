@@ -55,7 +55,7 @@ The see-through copy of a removed part shown in its empty socket; a press on it 
 _Avoid_: Projection, empty slot
 
 **Ready part**:
-A part or screw the hint points out because the player can act on it right now: while taking a device apart, one that isn't a blocked part and stands in the way of a broken, dirty or unknown part (or is one); while putting it back together, a loose part whose socket can take it now. Screws count the same as larger parts.
+A part or screw the hint points out because the player can act on it right now: while taking a device apart, one that isn't a blocked part and stands in the way of a broken, dirty or unknown part (or is one); while putting it back together, a screw whose slot can take it now, or, once every such screw is in, a loose part whose socket can take it now.
 _Avoid_: Next part, available part, removable part
 
 **Unknown part**:

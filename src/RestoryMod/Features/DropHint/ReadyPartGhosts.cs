@@ -27,18 +27,26 @@ internal static class ReadyPartGhosts
 
     private sealed class Tracked
     {
-        public Tracked(TooltipProjectionHighlighter highlighter, ElementProjection ghost, Func<bool> stillReady, bool missing)
+        public Tracked(TooltipProjectionHighlighter highlighter, ElementProjection ghost, Func<bool> stillReady, bool missing,
+            Func<bool>? waiting)
         {
             Highlighter = highlighter;
             Ghost = ghost;
             StillReady = stillReady;
             Missing = missing;
+            Waiting = waiting;
         }
 
         public TooltipProjectionHighlighter Highlighter { get; }
         public ElementProjection Ghost { get; }
         public Func<bool> StillReady { get; }
         public bool Missing { get; }
+
+        /// <summary>True while something else should go first: the ghost shows faint and doesn't pulse.</summary>
+        public Func<bool>? Waiting { get; }
+
+        /// <summary>The preset the ghost wears now, or null before it gets one of ours.</summary>
+        public OutlineSettingsPreset? Wearing { get; set; }
     }
 
     private static readonly List<Tracked> Ghosts = new();
@@ -47,22 +55,25 @@ internal static class ReadyPartGhosts
     private static readonly Shader? FillShader = Shader.Find("Hidden/EPO/Fill/Basic/Color fill");
 
     /// <summary>
-    /// Copies of the pulse's outline preset for this hint's ghosts, yellow and red. They add a fill, so a
-    /// ghost shows the whole part rather than an outline that merges with its neighbours' (overlapping
-    /// fills add up and look darker).
+    /// Copies of the pulse's outline preset for this hint's ghosts: yellow, red, and a faint copy of
+    /// each for ghosts that wait their turn. They add a fill, so a ghost shows the whole part rather
+    /// than an outline that merges with its neighbours' (overlapping fills add up and look darker).
+    /// Each look needs its own copy because a preset's colors are shared by every ghost wearing it.
     /// </summary>
-    private static OutlineSettingsPreset? yellowPreset, redPreset;
+    private static readonly OutlineSettingsPreset?[] Presets = new OutlineSettingsPreset?[4];
 
-    /// <summary>Adds a ghost to the pulse that stays only while <paramref name="stillReady"/> holds.</summary>
+    /// <summary>
+    /// Adds a ghost to the pulse that stays only while <paramref name="stillReady"/> holds, and shows
+    /// faint while <paramref name="waiting"/> does.
+    /// </summary>
     public static void Add(TooltipProjectionHighlighter highlighter, ElementProjectionData data, Transform parent,
-        Func<bool> stillReady, bool missing = false)
+        Func<bool> stillReady, bool missing = false, Func<bool>? waiting = null)
     {
         var ghost = HintPulse.Add(highlighter, data, parent);
         if (!ghost) return;
         Ghosts.RemoveAll(t => t.Ghost == ghost);
-        var tracked = new Tracked(highlighter, ghost!, stillReady, missing);
+        var tracked = new Tracked(highlighter, ghost!, stillReady, missing, waiting);
         Ghosts.Add(tracked);
-        ghost!.OutlinableAdapter.OverridePreset = missing ? Copy(ref redPreset, highlighter) : Copy(ref yellowPreset, highlighter);
         Tint(tracked);
     }
 
@@ -105,15 +116,18 @@ internal static class ReadyPartGhosts
     {
         foreach (var tracked in Ghosts) Restore(tracked);
         Ghosts.Clear();
-        if (yellowPreset) UnityEngine.Object.Destroy(yellowPreset);
-        if (redPreset) UnityEngine.Object.Destroy(redPreset);
-        yellowPreset = redPreset = null;
+        for (var i = 0; i < Presets.Length; i++)
+        {
+            if (Presets[i]) UnityEngine.Object.Destroy(Presets[i]);
+            Presets[i] = null;
+        }
     }
 
-    private static OutlineSettingsPreset Copy(ref OutlineSettingsPreset? preset, ProjectionHighlighterBase highlighter)
+    private static OutlineSettingsPreset Copy(ProjectionHighlighterBase highlighter, bool missing, bool waiting)
     {
-        if (!preset) preset = UnityEngine.Object.Instantiate(Preset(highlighter));
-        return preset!;
+        var i = (missing ? 2 : 0) + (waiting ? 1 : 0);
+        if (!Presets[i]) Presets[i] = UnityEngine.Object.Instantiate(Preset(highlighter));
+        return Presets[i]!;
     }
 
     private static void Restore(Tracked tracked)
@@ -122,30 +136,42 @@ internal static class ReadyPartGhosts
             tracked.Ghost.OutlinableAdapter.OverridePreset = Preset(tracked.Highlighter);
     }
 
-    /// <summary>Gives a ghost the pulse's current brightness, in yellow or red, on its outline and fill.</summary>
+    /// <summary>
+    /// Gives a ghost the pulse's current brightness, in yellow or red, on its outline and fill; a
+    /// waiting ghost gets a faint steady look instead.
+    /// </summary>
     private static void Tint(Tracked tracked)
     {
         var front = Front(tracked.Highlighter);
         if (front is null) return;
+        var waiting = tracked.Waiting?.Invoke() ?? false;
+        var preset = Copy(tracked.Highlighter, tracked.Missing, waiting);
+        if (tracked.Wearing != preset)
+        {
+            tracked.Ghost.OutlinableAdapter.OverridePreset = preset;
+            tracked.Wearing = preset;
+        }
         var outline = tracked.Ghost.OutlinableAdapter.Outlinable;
         if (outline.RenderStyle == RenderStyle.Single)
         {
-            Paint(outline.OutlineParameters, front.Color, tracked.Missing);
+            Paint(outline.OutlineParameters, front.Color, tracked.Missing, waiting);
             return;
         }
-        Paint(outline.FrontParameters, front.Color, tracked.Missing);
-        Paint(outline.BackParameters, (Back(tracked.Highlighter) ?? front).Color, tracked.Missing);
+        Paint(outline.FrontParameters, front.Color, tracked.Missing, waiting);
+        Paint(outline.BackParameters, (Back(tracked.Highlighter) ?? front).Color, tracked.Missing, waiting);
     }
 
-    private static void Paint(Outlinable.OutlineProperties properties, Color pulse, bool missing)
+    private static void Paint(Outlinable.OutlineProperties properties, Color pulse, bool missing, bool waiting)
     {
+        // Waiting: the pulse's peak color held still, faint.
+        if (waiting) pulse = new Color(1f, 1f, 0f, pulse.a);
         var color = missing ? Red(pulse) : pulse;
-        properties.Color = color;
+        properties.Color = waiting ? new Color(color.r, color.g, color.b, color.a * 0.35f) : color;
         if (!FillShader) return;
         if (properties.FillPass.Shader != FillShader) properties.FillPass.Shader = FillShader;
         // The pulse runs white (blue 1) to yellow (blue 0): the fill thickens as it brightens.
-        var strength = 1f - pulse.b;
-        properties.FillPass.SetColor("_PublicColor", new Color(color.r, color.g, color.b, Mathf.Lerp(0.15f, 0.35f, strength)));
+        var alpha = waiting ? 0.08f : Mathf.Lerp(0.15f, 0.35f, 1f - pulse.b);
+        properties.FillPass.SetColor("_PublicColor", new Color(color.r, color.g, color.b, alpha));
     }
 
     // The pulse runs white to yellow; this keeps its brightness and turns it red.

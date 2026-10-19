@@ -65,10 +65,10 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 - **Every-part hint**: the game's hint pulses every part you can act on now, not only the next part's
   screws. Taking a device apart: every part and screw you can take out now on the way to a part you
   haven't seen yet or one known to need cleaning or replacing (it never gives away a part's condition
-  before you take it out). Putting it back: screws first, every empty screw slot that can take its screw
-  now; once those are in, every loose part on the bench that can go in now, and a red ghost in each
-  socket ready for a part that isn't on the bench. Screws go first because the game doesn't always know
-  a part covers a screw hole. Each ghost is filled in, so overlapping parts stay apart. A pulse leaves
+  before you take it out). Putting it back: every empty screw slot that can take its screw now, every
+  loose part on the bench that can go in now, and a red ghost in each socket ready for a part that isn't
+  on the bench. Screws go first: while one can go in, the parts show faint and steady, because the game
+  doesn't always know a part covers a screw hole. Each ghost is filled in, so overlapping parts stay apart. A pulse leaves
   as soon as its part is picked up, goes in, or its socket is taken. The game decides which of the two
   you are doing from your last change to the device. Renamed from `HintShowsEveryScrew`; the old setting
   carries over.

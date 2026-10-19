@@ -2,6 +2,7 @@ using System.IO;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using RestoryMod.Core;
 using RestoryMod.Features.ButtonPrompts;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
@@ -25,6 +26,12 @@ namespace RestoryMod;
 public class Plugin : BaseUnityPlugin
 {
     internal static new ManualLogSource Logger = null!;
+
+    /// <summary>
+    /// Undo steps for what features leave in the game, run on unload. Under ScriptEngine (scripts/dev.sh hot)
+    /// unloading is a reload, and the new plugin copy should find the game as it was before the mod.
+    /// </summary>
+    internal static readonly Teardown Teardown = new();
 
     private Harmony harmony = null!;
     private FileSystemWatcher? configWatcher;
@@ -130,6 +137,15 @@ public class Plugin : BaseUnityPlugin
         if (OutlineDiagnostics.Enabled) gameObject.AddComponent<OutlineWatcher>();
         // Idle unless ShowHitboxes is on and a workbench hover state recorded this frame.
         gameObject.AddComponent<HitboxOverlay>();
+
+        // After a hot reload the scene is already set up, so the hooks that run at scene load won't
+        // fire for this copy: pick up their work here. On a normal start these find nothing.
+        NotepadKeyListenPatch.Resume();
+        DropdownModesFeature.FindCursors();
+        PartsBoxSections.AttachToPanels();
+        Teardown.Add(NotepadKeyListenPatch.Unload);
+        Teardown.Add(DropdownModesFeature.Unload);
+        Teardown.Add(PartsBoxSections.Unload);
     }
 
     /// <summary>
@@ -170,5 +186,7 @@ public class Plugin : BaseUnityPlugin
     {
         configWatcher?.Dispose();
         harmony?.UnpatchSelf();
+        foreach (var failure in Teardown.Run())
+            Logger.LogWarning($"Teardown step failed: {failure}");
     }
 }

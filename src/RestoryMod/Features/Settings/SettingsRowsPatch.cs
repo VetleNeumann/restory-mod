@@ -19,7 +19,8 @@ namespace RestoryMod.Features.Settings;
 /// Adds the mod's rows to the settings menu, below "Dialogue volume": the "Controller sensitivity" and
 /// "Rotation sensitivity" sliders, then the "Button prompts" dropdown. The menu is prefab-wired, so
 /// each row is cloned on the first Show(): sliders from the dialogue volume row, the dropdown from the
-/// monitor row.
+/// monitor row. Unloading the plugin takes the rows out and restores the navigation, so a hot reload
+/// adds fresh rows on the next Show().
 /// </summary>
 [HarmonyPatch]
 internal static class SettingsRowsPatch
@@ -159,6 +160,13 @@ internal static class SettingsRowsPatch
         {
             var row = Object.Instantiate(templateRow.gameObject, holder.transform);
             row.name = name;
+            Plugin.Teardown.Add(() =>
+            {
+                if (!row) return;
+                // Destroy waits for the end of the frame; renamed, the row can't be mistaken for ours by then.
+                row.name += "_Removed";
+                Object.Destroy(row);
+            });
 
             foreach (var component in row.GetComponentsInChildren<MonoBehaviour>(true))
             {
@@ -188,12 +196,14 @@ internal static class SettingsRowsPatch
     /// <summary>
     /// With explicit navigation, splice the control in between the row above and whatever was below
     /// it. Up/down are rewired; left/right are either kept from the template or cleared, since the
-    /// template's point at its own neighbours. Automatic navigation needs nothing.
+    /// template's point at its own neighbours. Automatic navigation needs nothing. Registers the step that
+    /// puts the links back on unload as soon as they change, so they never point at a lost control.
     /// </summary>
     private static void SpliceNavigation(Selectable above, Selectable inserted, bool clearSideLinks)
     {
         var aboveNav = above.navigation;
         if (aboveNav.mode != Navigation.Mode.Explicit) return;
+        var aboveBefore = aboveNav;
 
         var below = aboveNav.selectOnDown;
 
@@ -211,12 +221,20 @@ internal static class SettingsRowsPatch
         aboveNav.selectOnDown = inserted;
         above.navigation = aboveNav;
 
-        if (below != null && below.navigation.mode == Navigation.Mode.Explicit && below.navigation.selectOnUp == above)
+        var belowRewired = below && below.navigation.mode == Navigation.Mode.Explicit && below.navigation.selectOnUp == above;
+        var belowBefore = belowRewired ? below!.navigation : default;
+        if (belowRewired)
         {
-            var belowNav = below.navigation;
+            var belowNav = below!.navigation;
             belowNav.selectOnUp = inserted;
             below.navigation = belowNav;
         }
+
+        Plugin.Teardown.Add(() =>
+        {
+            if (above) above.navigation = aboveBefore;
+            if (belowRewired && below) below.navigation = belowBefore;
+        });
     }
 }
 

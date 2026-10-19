@@ -23,6 +23,11 @@ internal static class OverlayGl
             if (!backdrop)
             {
                 backdrop = new Texture2D(1, 1) { hideFlags = HideFlags.HideAndDontSave };
+                var created = backdrop;
+                Plugin.Teardown.Add(() =>
+                {
+                    if (created) Object.Destroy(created);
+                });
                 backdrop.SetPixel(0, 0, new Color(0f, 0f, 0f, 0.72f));
                 backdrop.Apply();
             }
@@ -65,6 +70,10 @@ internal static class OverlayGl
             created.SetInt("_ZWrite", 0);
             created.SetInt("_ZTest", (int)CompareFunction.Always);
             Plugin.Logger.LogInfo($"Hitbox overlay draws with shader {name}.");
+            Plugin.Teardown.Add(() =>
+            {
+                if (created) Object.Destroy(created);
+            });
             return created;
         }
         noShader = true;

@@ -8,6 +8,11 @@ Rewired input, Zenject DI). Personal repo. Game installed on this box; `GamePath
 - `scripts/dev.sh run`: closes the game gracefully, builds, deploys to `BepInEx/plugins/RestoryMod/`,
   relaunches via Steam, prints the mod's startup lines, then brings the game window to the front
   (Windows would leave it behind Big Picture). `scripts/dev.sh focus` does only that last step. Force-close asks first (`KILL_GAME=1` to skip).
+- `scripts/dev.sh hot`: builds and hot-reloads into the running game through ScriptEngine (pinned r11.2,
+  installed on first use), with no restart. The first `hot` after a `run` restarts once to move the mod from
+  `plugins/RestoryMod/` to `BepInEx/scripts/`; `run` moves it back. A reload unpatches, runs
+  `Plugin.Teardown`, then loads the new copy, which picks up scene-load setup at the end of `Plugin.Awake`.
+  A copy hands over only what it saw itself: after the first `hot` from an older build, reload the scene once.
 - `scripts/screenshot.sh`: DPI-aware capture of the Windows screen; read the PNG to see the game.
 - Log: `$GameDir/BepInEx/LogOutput.log`. Config: `$GameDir/BepInEx/config/com.zantox.restorymod.cfg`;
   the plugin watches it, so hand edits apply live.
@@ -34,6 +39,12 @@ target that moved; that feature's patch skips itself at runtime until fixed.
    directly, so TargetCheck covers them.
 3. Pure logic (orderings, ranges, rules) goes in `RestoryMod.Core` with unit tests; CI runs only Core.
 4. Prefix/postfix only. HarmonyX here is 2.9.0: `[HarmonyOptional]` does not exist.
+5. Anything left in the game outside the plugin's own GameObject (cloned or added objects and components,
+   rewired navigation, listeners on game objects) gets an undo step in `Plugin.Teardown`, so `dev.sh hot`
+   reloads cleanly. See `SettingsRowsPatch`. Setup that runs once per scene (Zenject `Construct`,
+   `Initialize`, Awake) also needs a load-time path in `Plugin.Awake`: find live MonoBehaviours
+   (`PartsBoxSections.AttachToPanels`), or for plain Zenject classes take the old copy's references from
+   `Handoff` (`NotepadKeyListenPatch.Resume`).
 
 ## Unity gotchas learned the hard way
 

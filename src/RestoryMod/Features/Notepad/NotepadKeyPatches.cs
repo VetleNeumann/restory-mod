@@ -69,7 +69,11 @@ internal static class NotepadKeyListenPatch
         IPlayerInput ___playerInput,
         GUI_NotepadWindow ___notepadWindow,
         NotepadInteractiveWorkplaceItem ___notepadInteractiveWorkplaceItem,
-        GUI_PauseMenu ___pauseMenu)
+        GUI_PauseMenu ___pauseMenu) =>
+        Subscribe(___playerInput, ___notepadWindow, ___notepadInteractiveWorkplaceItem, ___pauseMenu);
+
+    private static void Subscribe(IPlayerInput input, GUI_NotepadWindow notepadWindow,
+        NotepadInteractiveWorkplaceItem workplaceItem, GUI_PauseMenu? menu)
     {
         try
         {
@@ -77,10 +81,10 @@ internal static class NotepadKeyListenPatch
                 GameTargets.Method(PatchTargets.NotepadWindowUpdateViewState)!);
 
             Unsubscribe();
-            playerInput = ___playerInput;
-            window = ___notepadWindow;
-            item = ___notepadInteractiveWorkplaceItem;
-            pauseMenu = ___pauseMenu;
+            playerInput = input;
+            window = notepadWindow;
+            item = workplaceItem;
+            pauseMenu = menu;
             playerInput.AddInputEventDelegate(OnNotepadKeyPressed, InputActionEventType.ButtonJustPressed,
                 NotepadKeyActionId);
         }
@@ -88,6 +92,35 @@ internal static class NotepadKeyListenPatch
         {
             NotepadKeyFeature.LogOnce(e);
         }
+    }
+
+    /// <summary>
+    /// On unload: drops the listener, lets the game redo the Notepad's view without the mod's hold on it
+    /// (the patches are gone by now), and leaves the scene's references for the next copy, which can't
+    /// see the activator's Initialize again until the scene reloads.
+    /// </summary>
+    internal static void Unload()
+    {
+        var notepadWindow = window;
+        var held = State != default;
+        var left = new object?[] { playerInput, window, item, pauseMenu };
+        Unsubscribe();
+        if (left[0] is null) return;
+
+        Handoff.Leave(nameof(NotepadKeyListenPatch), left);
+        if (held && notepadWindow && updateViewState is not null) updateViewState(notepadWindow!);
+    }
+
+    /// <summary>Picks up the listener the previous copy dropped on a hot reload; nothing on a normal start.</summary>
+    internal static void Resume()
+    {
+        if (!Prepare()) return;
+        if (Handoff.Take(nameof(NotepadKeyListenPatch)) is not [IPlayerInput input, GUI_NotepadWindow notepadWindow,
+                NotepadInteractiveWorkplaceItem workplaceItem, var menu]
+            || !notepadWindow || !workplaceItem)
+            return;
+        Subscribe(input, notepadWindow, workplaceItem, menu as GUI_PauseMenu);
+        Plugin.Logger.LogInfo("Notepad key listener taken over from the previous plugin copy.");
     }
 
     internal static void Unsubscribe()

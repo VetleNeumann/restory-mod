@@ -43,9 +43,22 @@ internal static class FeaturePatcher
 /// <summary>Runtime lookups for <see cref="PatchTarget"/> entries. Each logs a warning when missing.</summary>
 internal static class GameTargets
 {
+    // AccessTools.TypeByName scans every type in every loaded assembly when the name is not
+    // assembly-qualified, which costs about a second per patch class. Remember each type found.
+    private static readonly Dictionary<string, Type> Types = new();
+
+    private static Type? TypeByName(string name)
+    {
+        if (Types.TryGetValue(name, out var cached)) return cached;
+        var type = AccessTools.TypeByName(name);
+        if (type is not null) Types[name] = type;
+        return type;
+    }
+
     public static MethodInfo? Method(PatchTarget target)
     {
-        var method = AccessTools.Method(target.TypeName + ":" + target.MemberName);
+        var type = TypeByName(target.TypeName);
+        var method = type is null || target.MemberName is null ? null : AccessTools.Method(type, target.MemberName);
         if (method is null) Plugin.Logger.LogWarning($"Patch target missing: {target}");
         return method;
     }
@@ -59,7 +72,7 @@ internal static class GameTargets
         var all = true;
         foreach (var target in targets)
         {
-            var type = AccessTools.TypeByName(target.TypeName);
+            var type = TypeByName(target.TypeName);
             if (type is not null && (target.MemberName is null || HasMember(type, target.MemberName))) continue;
             Plugin.Logger.LogWarning($"Patch target missing: {target}");
             all = false;
@@ -84,7 +97,7 @@ internal static class GameTargets
 
     public static FieldInfo? Field(PatchTarget target)
     {
-        var type = AccessTools.TypeByName(target.TypeName);
+        var type = TypeByName(target.TypeName);
         var field = type is null ? null : AccessTools.Field(type, target.MemberName);
         if (field is null) Plugin.Logger.LogWarning($"Patch target missing: {target}");
         return field;

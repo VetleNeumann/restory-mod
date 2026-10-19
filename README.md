@@ -109,7 +109,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 ## Development
 
 `scripts/dev.sh run` builds, deploys into the game's `BepInEx/plugins`, relaunches the game through Steam
-and brings its window to the front (so a Big Picture session stays on the gamepad). `dotnet test` runs the
+and brings its window to the front (so a Big Picture session stays on the gamepad). `scripts/dev.sh hot`
+reloads the mod into the running game instead, through BepInEx ScriptEngine. `dotnet test` runs the
 unit tests and, with `GamePaths.props` set up, checks every patch target against the installed game.
 
 See [CLAUDE.md](CLAUDE.md) for the full dev loop, patch conventions and game-update checks.

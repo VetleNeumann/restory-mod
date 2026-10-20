@@ -8,6 +8,10 @@ Vocabulary for the mod and the game concepts it touches.
 The book-like panel at the right edge of the screen at the workbench, listing the steps for putting a device back together ("How to reassemble") and recipe notes. The game also calls it the Copybook.
 _Avoid_: Journal, book
 
+**Reassembly order**:
+The order a device model's parts appear in the Notepad's "How to reassemble" steps. It belongs to the model, not to one device, so it is known without a device on the workbench.
+_Avoid_: Build order, assembly order
+
 **Peeking**:
 Notepad state where only its edge shows at the right of the screen; hovering it (or holding the game's notepad key) slides it out.
 _Avoid_: Minimized, hover mode

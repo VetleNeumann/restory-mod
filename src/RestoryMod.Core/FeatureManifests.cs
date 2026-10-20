@@ -188,6 +188,23 @@ public static class FeatureManifests
         new("Restory.StorageSystem.IReadOnlyStorageSlot", "Index"),
         new("Restory.StorageSystem.IReadOnlyStorageSlot", "Count"));
 
+    public static readonly FeatureManifest PartsStore = new(nameof(PartsStore),
+        ShopFilterSortFilteredItems,
+        ShopFilterElementItems,
+        ShopFilterFilteredElementItems,
+        ShopFilterView,
+        ShopFilterDevices,
+        ShopFilterDeviceModels,
+        ShopFilterDeviceDatabase,
+        InfoCategory,
+        CategorySmall,
+        new("Restory.UI.Views.Shops.Elements.GUI_ElementsShopProductsPanelFilterView", "IsSortToggleOn"),
+        new("Restory.UI.Views.Shops.Elements.GUI_ElementsShopProductsPanelFilterView", "SelectedModelIndex"),
+        new("Restory.Data.Shops.Elements.ElementsShopItemData", "Element"),
+        new("Restory.Data.Devices.DeviceInfoDatabase", "TryGetDeviceInfo"),
+        new("Restory.Data.Devices.IDeviceInfo", "NameLocalizationKey"),
+        new("Restory.Data.Devices.IDeviceInfo", "Elements"));
+
     public static readonly FeatureManifest PartsBoxDiagnostics = new(nameof(PartsBoxDiagnostics),
         InventoryPanelShow);
 
@@ -582,6 +599,7 @@ public static class FeatureManifests
         DropdownModes,
         SettingsRows,
         PartsBox,
+        PartsStore,
         PartsBoxDiagnostics,
         NotepadKey,
         StickScroll,

@@ -87,6 +87,16 @@ public static class PatchTargets
     public static readonly PatchTarget InventoryPanelViewItems = new(InventoryPanelViewType, "Items");
     public static readonly PatchTarget InventoryItemsViewContainer = new(InventoryItemsView, "container");
 
+    // Parts store: re-sorted after the game's price sort, by model and reassembly order.
+    internal const string ShopFilter = "Restory.UI.Presenters.Shops.Elements.GUI_ElementsShopProductsPanelFilter";
+    public static readonly PatchTarget ShopFilterSortFilteredItems = new(ShopFilter, "SortFilteredItems");
+    public static readonly PatchTarget ShopFilterElementItems = new(ShopFilter, "elementItems");
+    public static readonly PatchTarget ShopFilterFilteredElementItems = new(ShopFilter, "filteredElementItems");
+    public static readonly PatchTarget ShopFilterView = new(ShopFilter, "view");
+    public static readonly PatchTarget ShopFilterDevices = new(ShopFilter, "devices");
+    public static readonly PatchTarget ShopFilterDeviceModels = new(ShopFilter, "deviceModels");
+    public static readonly PatchTarget ShopFilterDeviceDatabase = new(ShopFilter, "deviceDatabase");
+
     // Notepad key: listened for beside the game's own listener; the game's hotkeyPressed flag holds Open,
     // and pointerInside is masked after the key closes a hovered Notepad.
     public static readonly PatchTarget NotepadActivatorInitialize = new(NotepadActivator, "Initialize");

@@ -28,15 +28,16 @@ Delegate exploration of it to investigator subagents; it is ~2,700 files.
 
 ## After a game update
 
-`dev.sh` warns when the Steam buildid changes. Run `dotnet test`: a red TargetCheck case names the patch
-target that moved; that feature's patch skips itself at runtime until fixed.
+`dev.sh` warns when the Steam buildid changes. Run `dotnet test`: a red TargetCheck case names the feature
+and the target that moved; that feature's patch skips itself at runtime until fixed.
 
 ## Adding a patch
 
-1. One patch class per feature; `Prepare()` returns `GameTargets.AllPresent(...)` so a moved target skips
-   only that feature. Register it in `Plugin.cs`.
-2. List every game member the code touches in `PatchTargets` (Core), including ones compiled against
-   directly, so TargetCheck covers them.
+1. One patch class per feature; `Prepare()` returns `GameTargets.AllPresent(...)` (the feature's manifest,
+   or a subset per patch) so a moved target skips only that feature. Register it in `Plugin.cs`.
+2. List every game member the code touches in the feature's manifest in `FeatureManifests` (Core),
+   including ones compiled against directly, so TargetCheck covers them; members reached by name also get a
+   `PatchTargets` field. `PatchTargets.All` is derived from the manifests.
 3. Pure logic (orderings, ranges, rules) goes in `RestoryMod.Core` with unit tests; CI runs only Core.
 4. Prefix/postfix only. HarmonyX here is 2.9.0: `[HarmonyOptional]` does not exist.
 5. Anything left in the game outside the plugin's own GameObject (cloned or added objects and components,

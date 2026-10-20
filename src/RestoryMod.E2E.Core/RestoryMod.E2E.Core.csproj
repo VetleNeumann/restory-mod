@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- The end-to-end harness's pure logic: no Unity, Rewired, or game references, so CI can test it. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>RestoryMod.E2E</RootNamespace>
+  </PropertyGroup>
+</Project>

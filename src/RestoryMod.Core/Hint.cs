@@ -131,7 +131,19 @@ public static class Hint
         IEnumerable<BenchSocket<T>> Blockers(BenchSocket<T> socket) =>
             entries.TryGetValue(socket, out var entry) ? socket.Blockers.Append(entry) : socket.Blockers;
 
-        return ReadyParts.TakingApart(bench.Sockets, IsTarget, Blockers, s => s.Part is not null, s => s.Blocked)
+        // Every installed part that is, or stands in the way of, a target; then those that can come out now.
+        var inTheWay = new HashSet<BenchSocket<T>>();
+        var pending = new Stack<BenchSocket<T>>(bench.Sockets.Where(IsTarget));
+        while (pending.Count > 0)
+        {
+            var socket = pending.Pop();
+            if (!inTheWay.Add(socket)) continue;
+            foreach (var blocker in Blockers(socket))
+            {
+                if (blocker.Part is not null) pending.Push(blocker);
+            }
+        }
+        return bench.Sockets.Where(s => inTheWay.Contains(s) && !s.Blocked)
             .Select(s => new HintItem<T>(s.Handle, s.Part!.IsScrew ? HintKind.Screw : HintKind.Part))
             .ToList();
     }
@@ -155,11 +167,17 @@ public static class Hint
             .Where(p => p.OnSurface && !p.Dragging && types.Contains(p.Type))
             .Select(p => new HintItem<T>(p.Handle, HintKind.LoosePart, waiting)));
 
-        // A held part still fills its socket: it is on its way there.
-        items.AddRange(ReadyParts.MissingSockets(types, bench.Loose.Select(p => p.Type))
-            .OrderBy(i => i)
-            .Select(i => sockets[i]).Distinct()
-            .Select(s => new HintItem<T>(s.Handle, HintKind.Missing, waiting)));
+        // Each loose part counts toward one socket of its type (the parts box's rule, over these sockets
+        // only); a held part still counts, as it is on its way to one.
+        var missing = PartsBoxOrder.FindMissing(types, bench.Loose.Select(p => p.Type));
+        var picked = new List<BenchSocket<T>>();
+        for (var i = sockets.Count - 1; i >= 0; i--)
+        {
+            if (!missing.TryGetValue(types[i], out var left) || left == 0) continue;
+            missing[types[i]] = left - 1;
+            if (!picked.Contains(sockets[i])) picked.Insert(0, sockets[i]);
+        }
+        items.AddRange(picked.Select(s => new HintItem<T>(s.Handle, HintKind.Missing, waiting)));
         return items;
     }
 

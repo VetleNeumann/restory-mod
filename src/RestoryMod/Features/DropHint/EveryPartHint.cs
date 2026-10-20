@@ -6,7 +6,6 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using Restory.Data.Elements;
 using Restory.Gameplay.Devices;
-using Restory.Gameplay.Disassemble.StateMachine;
 using Restory.Gameplay.Disassemble.Tooltips;
 using Restory.Gameplay.Elements;
 using RestoryMod.Core;
@@ -90,31 +89,14 @@ internal static class EveryPartHintFeature
         AccessTools.FieldRefAccess<SerialElementSocket, List<SubordinateElementSocket>>("subordinateSockets");
     private static readonly AccessTools.FieldRef<ElementSocket, ElementProjection> SlotMarker =
         AccessTools.FieldRefAccess<ElementSocket, ElementProjection>("smallElementProjection");
-    private static readonly AccessTools.FieldRef<DisassembleTooltipService, Device> TargetDevice =
-        AccessTools.FieldRefAccess<DisassembleTooltipService, Device>("targetDevice");
-    private static readonly AccessTools.FieldRef<DisassembleTooltipService, bool> IsDisassembling =
-        AccessTools.FieldRefAccess<DisassembleTooltipService, bool>("isDisassembling");
-    private static readonly AccessTools.FieldRef<DisassembleTooltipService, DisassembleStateMachine> StateMachine =
-        AccessTools.FieldRefAccess<DisassembleTooltipService, DisassembleStateMachine>("disassembleStateMachine");
 
     private static bool? refreshPresent;
 
-    private static bool RefreshPresent => refreshPresent ??= TargetsPresent() && GameTargets.AllPresent(
-        PatchTargets.TooltipServiceTargetDevice,
-        PatchTargets.TooltipServiceIsDisassembling,
-        PatchTargets.TooltipServiceIsActive,
-        PatchTargets.TooltipServiceStateMachine);
+    private static bool RefreshPresent => refreshPresent ??= TargetsPresent() && WorkbenchSession.StatePresent;
 
-    /// <summary>
-    /// A ghost's check that also ends it once the game switches between taking apart and putting back
-    /// (say a screw goes back in by mistake, then out again).
-    /// </summary>
-    private static Func<bool> While(bool takingApart, Func<bool> ready) => () =>
-    {
-        var service = ScrewHintServicePatch.Service;
-        var now = service is not null && RefreshPresent ? IsDisassembling(service) : takingApart;
-        return now == takingApart && ready();
-    };
+    /// <summary>The sockets and loose parts of the last snapshot, by the spot a ghost on them sits on.</summary>
+    private static readonly Dictionary<Transform, ElementSocket> Sockets = new();
+    private static readonly Dictionary<Transform, ElementBase> Loose = new();
 
     /// <summary>
     /// Checks again for ready parts, as the game's hint button would but without its other hints, so
@@ -122,8 +104,22 @@ internal static class EveryPartHintFeature
     /// </summary>
     public static void Refresh(DisassembleTooltipService service, TooltipProjectionHighlighter highlighter)
     {
-        if (!RefreshPresent || !service.IsActive || StateMachine(service).ActiveState is not DetectionDisassembleState) return;
-        RunGameHint(TargetDevice(service), highlighter, IsDisassembling(service) ? ShowTakingApart : ShowPuttingBack);
+        if (!RefreshPresent || !WorkbenchSession.Detecting(service)) return;
+        var device = WorkbenchSession.Device(service);
+        if (!device) return;
+        RunGameHint(device!, highlighter, WorkbenchSession.TakingApart(service) ? ShowTakingApart : ShowPuttingBack);
+    }
+
+    /// <summary>
+    /// The hint as it stands now for the device on the bench, following the game's mode; null when
+    /// there's no workbench session to ask.
+    /// </summary>
+    public static List<HintItem<Transform>>? PlanNow()
+    {
+        var service = WorkbenchSession.Service;
+        if (!Enabled.Value || service is null || !RefreshPresent || !service.IsActive) return null;
+        var device = WorkbenchSession.Device(service);
+        return device ? Hint.Plan(Snapshot(device!), WorkbenchSession.TakingApart(service)) : null;
     }
 
     /// <summary>
@@ -147,108 +143,104 @@ internal static class EveryPartHintFeature
     }
 
     /// <summary>Taking apart: every unblocked part on the way to a part worth taking out.</summary>
-    public static void ShowTakingApart(Device device, TooltipProjectionHighlighter highlighter)
+    public static void ShowTakingApart(Device device, TooltipProjectionHighlighter highlighter) =>
+        Show(device, highlighter, takingApart: true);
+
+    /// <summary>Putting back: ready screw slots and loose parts, and the missing sockets.</summary>
+    public static void ShowPuttingBack(Device device, TooltipProjectionHighlighter highlighter) =>
+        Show(device, highlighter, takingApart: false);
+
+    private static void Show(Device device, TooltipProjectionHighlighter highlighter, bool takingApart)
     {
-        // A part deeper in a tube (batteries) comes out only through the tube's entry.
-        var entries = new Dictionary<ElementSocket, ElementSocket>();
-        foreach (var tube in device.ElementSockets.OfType<SerialElementSocket>())
+        var ledger = HintGhosts.For(highlighter);
+        foreach (var item in Hint.Plan(Snapshot(device), takingApart)) ledger.Show(item);
+    }
+
+    /// <summary>The device's sockets and the loose parts on the bench, as the hint's plan reads them.</summary>
+    private static Bench<Transform> Snapshot(Device device)
+    {
+        Sockets.Clear();
+        Loose.Clear();
+        var records = new Dictionary<ElementSocket, BenchSocket<Transform>>();
+        BenchSocket<Transform> Of(ElementSocket socket)
         {
-            foreach (var place in TubePlaces(tube))
+            if (records.TryGetValue(socket, out var record)) return record;
+            var takes = socket.CompatibleElementInfo;
+            record = new BenchSocket<Transform>(socket.transform, takes ? takes : null,
+                takes && takes.Category == ElementCategory.Small);
+            records[socket] = record;
+            Sockets[socket.transform] = socket;
+            return record;
+        }
+
+        var sockets = device.ElementSockets.Select(Of).ToList();
+        foreach (var socket in device.ElementSockets)
+        {
+            var record = records[socket];
+            record.Part = PartOf(socket.NestedElement, installed: true);
+            record.LastPart = PartOf(socket.LastNestedElement, installed: false);
+            record.Blocked = socket.IsBlocked;
+            record.Available = socket.IsAvailable;
+            // A flip group's lid blocks the part inside through the runtime set, not the serialized list.
+            foreach (var blocker in socket.Blockers.Concat(AdditionalBlockers(socket)))
             {
-                if (place) entries[place] = tube;
+                if (blocker) record.Blockers.Add(Of(blocker));
             }
+            record.IsTubePlace = socket is SubordinateElementSocket;
+            if (socket is not SerialElementSocket tube) continue;
+            record.TubePlaces = TubePlaces(tube).Select(p => p ? Of(p) : null).ToList();
+            record.Closes = tube.BlockedSockets.Select(b => b ? Of(b) : null).ToList();
         }
-        IEnumerable<ElementSocket> Blockers(ElementSocket socket) =>
-            entries.TryGetValue(socket, out var entry) ? BlockersOf(socket).Append(entry) : BlockersOf(socket);
 
-        var ready = ReadyParts.TakingApart(device.ElementSockets, IsTarget, Blockers,
-            socket => socket.NestedElement, socket => socket.IsBlocked);
-        foreach (var socket in ready)
+        var loose = BenchState.LooseParts(device).Where(p => p).Select(p =>
         {
-            var part = socket.NestedElement;
-            ReadyPartGhosts.Add(highlighter, InstalledLook(part), socket.transform,
-                While(true, () => socket.NestedElement == part && !socket.IsBlocked),
-                restyle: part.Info.Category != ElementCategory.Small);
-        }
+            Loose[p.transform] = p;
+            return PartOf(p, installed: false)!;
+        }).ToList();
+        return new Bench<Transform>(sockets, loose);
     }
 
-    /// <summary>
-    /// Putting back: screw slots that can take their screw now, loose parts that can go in now, and red
-    /// ghosts in sockets ready for a part that isn't on the bench. Screws go first: while one can go in,
-    /// the parts show faint. The game doesn't always know a part covers a screw hole, so a part put in
-    /// before the screws could shut one away.
-    /// </summary>
-    public static void ShowPuttingBack(Device device, TooltipProjectionHighlighter highlighter)
+    // The condition is read only for an installed part once inspected: the hint never reveals what the
+    // game knows about an unknown part, and screws are never repaired.
+    private static BenchPart<Transform>? PartOf(ElementBase? part, bool installed)
     {
-        var ready = device.ElementSockets.Where(IsReadyToFill).ToList();
-        var slots = ready.Where(IsScrewSlot).ToList();
-        foreach (var slot in slots)
+        if (!part) return null;
+        var screw = part!.Info.Category == ElementCategory.Small;
+        PartCondition? condition = null;
+        if (installed && !screw)
         {
-            var marker = SlotMarker(slot);
-            ReadyPartGhosts.Add(highlighter, slot.LastNestedElement.ProjectionData, slot.transform, While(false, () => IsReadyToFill(slot)),
-                restyle: false, covering: marker ? marker : null);
+            var data = part.ConditionHandler.ElementData;
+            condition = data.IsInspected ? BenchState.ConditionOf(data.Condition) : null;
         }
-        // A tube (batteries) shows once per part it still takes, so each pairs with one loose part.
-        var sockets = ready.Where(s => s.CompatibleElementInfo.Category != ElementCategory.Small)
-            .SelectMany(s => Enumerable.Repeat(s, Room(s))).ToList();
-        var types = sockets.Select(s => s.CompatibleElementInfo).ToList();
-        var loose = BenchState.LooseParts(device).ToList();
-        foreach (var part in loose.Where(p => types.Contains(p.Info)))
+        return new BenchPart<Transform>(part.transform, part.Info, screw)
         {
-            ReadyPartGhosts.Add(highlighter, part.ProjectionData, part.transform, While(false, () =>
-                part.IsOnSurface && !part.IsDragging
-                && device.ElementSockets.Any(s => s.CompatibleElementInfo == part.Info && IsReadyToFill(s))),
-                waiting: () => ScrewsPending(device));
-        }
-
-        foreach (var i in ReadyParts.MissingSockets(types, loose.Select(p => p.Info)))
-        {
-            var socket = sockets[i];
-            var type = socket.CompatibleElementInfo;
-            ReadyPartGhosts.Add(highlighter, PrefabLook(type), socket.transform,
-                While(false, () => IsReadyToFill(socket) && !BenchState.LooseParts(device).Any(p => p.Info == type)),
-                missing: true, waiting: () => ScrewsPending(device));
-        }
+            Condition = condition,
+            Progress = part.Progress,
+            OnSurface = part.IsOnSurface,
+            Dragging = part.IsDragging,
+        };
     }
 
-    // An empty screw slot whose screw can go back in now (the game keeps the removed screw paired with it).
-    private static bool IsScrewSlot(ElementSocket socket) =>
-        socket.CompatibleElementInfo.Category == ElementCategory.Small
-        && socket.LastNestedElement && socket.LastNestedElement.Info.Category == ElementCategory.Small;
-
-    private static bool ScrewsPending(Device device) =>
-        device.ElementSockets.Any(s => IsReadyToFill(s) && IsScrewSlot(s));
-
-    private static bool IsReadyToFill(ElementSocket socket) => Room(socket) > 0;
-
-    /// <summary>
-    /// How many more parts a socket takes now. One for a free socket the game would fill. A tube (a
-    /// serial socket, as for batteries) takes as many as it has free places: each part pushed in moves
-    /// the one before it deeper, so its entry is taken while places behind it are still free. The
-    /// places behind take nothing directly.
-    /// </summary>
-    private static int Room(ElementSocket socket)
+    /// <summary>What a ghost of this kind on this spot looks like (from the last snapshot), or null.</summary>
+    public static ElementProjectionData? Look(Transform spot, HintKind kind)
     {
-        if (!socket.CompatibleElementInfo || socket is SubordinateElementSocket) return 0;
-        if (socket is not SerialElementSocket tube) return !socket.NestedElement && socket.IsAvailable ? 1 : 0;
-        var behind = TubePlaces(tube).Count(place => place && !place.NestedElement);
-        if (!tube.NestedElement) return tube.IsAvailable ? 1 + behind : 0;
-        // The rest of IsAvailable: every socket the tube closes off is filled and done.
-        return behind > 0 && tube.BlockedSockets.All(b => b && b.NestedElement && b.NestedElement.Progress <= 0f) ? behind : 0;
+        if (kind == HintKind.LoosePart) return Loose.TryGetValue(spot, out var part) && part ? part.ProjectionData : null;
+        if (!Sockets.TryGetValue(spot, out var socket) || !socket) return null;
+        return kind switch
+        {
+            HintKind.ScrewSlot => socket.LastNestedElement ? socket.LastNestedElement.ProjectionData : null,
+            HintKind.Missing => PrefabLook(socket.CompatibleElementInfo),
+            _ => socket.NestedElement ? InstalledLook(socket.NestedElement) : null,
+        };
     }
 
-    // Screws are never targets: they hold parts, they don't get repaired.
-    private static bool IsTarget(ElementSocket socket)
+    /// <summary>The game's own marker on a screw slot, or null.</summary>
+    public static ElementProjection? Marker(Transform spot)
     {
-        var part = socket.NestedElement;
-        if (part.Info.Category == ElementCategory.Small) return false;
-        var data = part.ConditionHandler.ElementData;
-        return ReadyParts.IsTarget(data.IsInspected, () => BenchState.ConditionOf(data.Condition));
+        if (!Sockets.TryGetValue(spot, out var socket) || !socket) return null;
+        var marker = SlotMarker(socket);
+        return marker ? marker : null;
     }
-
-    // A flip group's lid blocks the part inside through the runtime set, not the serialized list.
-    private static IEnumerable<ElementSocket> BlockersOf(ElementSocket socket) =>
-        socket.Blockers.Concat(AdditionalBlockers(socket));
 
     // The same projections the game's detailed hint handler builds.
     private static ElementProjectionData InstalledLook(ElementBase part) =>

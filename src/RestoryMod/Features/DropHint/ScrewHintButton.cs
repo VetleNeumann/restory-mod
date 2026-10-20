@@ -28,12 +28,8 @@ internal static class ScrewHintButtonFeature
             "hint lit until you let go. With TriggerZoomToggle off, R2 also still zooms out.");
     }
 
-    public static bool TargetsPresent() => HintPulse.TargetsPresent() && GameTargets.AllPresent(
-        PatchTargets.TooltipServiceInitialize,
-        PatchTargets.TooltipServiceDispose,
-        PatchTargets.TooltipServiceShow,
-        PatchTargets.TooltipServiceSmallHandler,
-        PatchTargets.DropHintHighlighter);
+    public static bool TargetsPresent() => HintPulse.TargetsPresent() && WorkbenchSession.TargetsPresent()
+        && GameTargets.AllPresent(PatchTargets.TooltipServiceShow);
 
     private static bool errorLogged;
 
@@ -43,47 +39,6 @@ internal static class ScrewHintButtonFeature
         if (errorLogged) return;
         errorLogged = true;
         Plugin.Logger.LogError($"Screw hint button failed (further errors suppressed): {e}");
-    }
-}
-
-/// <summary>Keeps the game's tooltip service, which runs the hint and holds its highlighter.</summary>
-[HarmonyPatch]
-internal static class ScrewHintServicePatch
-{
-    public static DisassembleTooltipService? Service { get; set; }
-
-    private static bool Prepare() => ScrewHintButtonFeature.TargetsPresent();
-
-    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.TooltipServiceInitialize)!;
-
-    private static void Postfix(DisassembleTooltipService __instance) => Service = __instance;
-
-    /// <summary>On unload: leaves the service for the next copy, which won't see Initialize again this scene.</summary>
-    internal static void Unload()
-    {
-        if (Service is not null) Handoff.Leave(nameof(ScrewHintServicePatch), Service);
-    }
-
-    /// <summary>Picks up the service the previous copy kept on a hot reload; nothing on a normal start.</summary>
-    internal static void Resume()
-    {
-        if (!Prepare() || Handoff.Take(nameof(ScrewHintServicePatch)) is not [DisassembleTooltipService service]) return;
-        Service = service;
-        Plugin.Logger.LogInfo("Screw hint service taken over from the previous plugin copy.");
-    }
-}
-
-/// <summary>Forgets the tooltip service when its scene unloads.</summary>
-[HarmonyPatch]
-internal static class ScrewHintServiceDisposePatch
-{
-    private static bool Prepare() => ScrewHintButtonFeature.TargetsPresent();
-
-    private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.TooltipServiceDispose)!;
-
-    private static void Postfix(DisassembleTooltipService __instance)
-    {
-        if (ScrewHintServicePatch.Service == __instance) ScrewHintServicePatch.Service = null;
     }
 }
 
@@ -162,13 +117,12 @@ internal sealed class ScrewHintPoller : MonoBehaviour
 
     private static TooltipProjectionHighlighter? Pulsed(Action<DisassembleTooltipService, TooltipProjectionHighlighter> hint)
     {
-        var service = ScrewHintServicePatch.Service;
+        var service = WorkbenchSession.Service;
         if (service is null) return null;
-        var highlighter = TooltipServiceParts.Highlighter(service);
+        var highlighter = WorkbenchSession.Highlighter(service);
         if (!highlighter) return null;
 
-        var before = HintPulse.Requests;
-        hint(service, highlighter!);
-        return HintPulse.Requests != before && HintPulse.Running(highlighter!) is not null ? highlighter : null;
+        var shown = HintGhosts.For(highlighter!).ShowsAny(() => hint(service, highlighter!));
+        return shown && HintPulse.Running(highlighter!) is not null ? highlighter : null;
     }
 }

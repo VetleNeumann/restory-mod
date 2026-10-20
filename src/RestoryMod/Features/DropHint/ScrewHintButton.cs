@@ -28,12 +28,8 @@ internal static class ScrewHintButtonFeature
             "hint lit until you let go. With TriggerZoomToggle off, R2 also still zooms out.");
     }
 
-    public static bool TargetsPresent() => HintPulse.TargetsPresent() && GameTargets.AllPresent(
-        PatchTargets.TooltipServiceInitialize,
-        PatchTargets.TooltipServiceDispose,
-        PatchTargets.TooltipServiceShow,
-        PatchTargets.TooltipServiceSmallHandler,
-        PatchTargets.DropHintHighlighter);
+    public static bool TargetsPresent() => HintPulse.TargetsPresent() &&
+        GameTargets.AllPresent(FeatureManifests.ScrewHintButton);
 
     private static bool errorLogged;
 

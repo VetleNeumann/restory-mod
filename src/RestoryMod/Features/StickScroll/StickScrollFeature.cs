@@ -63,9 +63,7 @@ internal static class StickScrollFeature
         maxSpeed.Value, rampTime.Value);
 
     /// <summary>Feature is usable only while the game handler it replaces can be silenced.</summary>
-    public static bool TargetsPresent() => GameTargets.AllPresent(
-        PatchTargets.ScrollbarInputResolveScroll,
-        PatchTargets.CursorPlayerMouse);
+    public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.StickScroll);
 }
 
 /// <summary>

@@ -54,35 +54,8 @@ internal static class EveryPartHintFeature
     private static Dictionary<ConfigDefinition, string>? Orphans(ConfigFile config) =>
         AccessTools.Property(typeof(ConfigFile), "OrphanedEntries")?.GetValue(config) as Dictionary<ConfigDefinition, string>;
 
-    public static bool TargetsPresent() => HintPulse.TargetsPresent() && GameTargets.AllPresent(
-        PatchTargets.ElementProjectionData,
-        PatchTargets.SocketIsBlocked,
-        PatchTargets.SocketNestedElement,
-        PatchTargets.SocketCompatibleElementInfo,
-        PatchTargets.SocketBlockers,
-        PatchTargets.SocketAdditionalBlockers,
-        PatchTargets.HintShowDisassembling,
-        PatchTargets.HintShowAssembling,
-        PatchTargets.HintHighlighter,
-        PatchTargets.DeviceElementSockets,
-        PatchTargets.SocketIsAvailable,
-        PatchTargets.SocketLastNestedElement,
-        PatchTargets.ElementDataIsInspected,
-        PatchTargets.ElementIsDragging,
-        PatchTargets.ElementIsOnSurface,
-        PatchTargets.ElementInfoPrefab,
-        PatchTargets.FlexibleAttachedModel,
-        PatchTargets.FlexiblePlacementModel,
-        PatchTargets.BehaviorSwitcherCastCollider,
-        PatchTargets.HighlighterPreset,
-        PatchTargets.HighlighterFrontOutline,
-        PatchTargets.HighlighterBackOutline,
-        PatchTargets.TooltipHighlighterComplete,
-        PatchTargets.SocketBlockedSockets,
-        PatchTargets.SerialSubordinates,
-        PatchTargets.SubordinateSocket,
-        PatchTargets.ElementProgress,
-        PatchTargets.SocketScrewSlot);
+    public static bool TargetsPresent() => HintPulse.TargetsPresent() &&
+        GameTargets.AllPresent(FeatureManifests.EveryPartHint);
 
     private static readonly AccessTools.FieldRef<ElementSocket, HashSet<ElementSocket>> AdditionalBlockers =
         AccessTools.FieldRefAccess<ElementSocket, HashSet<ElementSocket>>("additionalBlockers");
@@ -99,11 +72,8 @@ internal static class EveryPartHintFeature
 
     private static bool? refreshPresent;
 
-    private static bool RefreshPresent => refreshPresent ??= TargetsPresent() && GameTargets.AllPresent(
-        PatchTargets.TooltipServiceTargetDevice,
-        PatchTargets.TooltipServiceIsDisassembling,
-        PatchTargets.TooltipServiceIsActive,
-        PatchTargets.TooltipServiceStateMachine);
+    /// <summary>The feature's targets, which include the tooltip service members the refresh reads; checked once.</summary>
+    private static bool RefreshPresent => refreshPresent ??= TargetsPresent();
 
     /// <summary>
     /// A ghost's check that also ends it once the game switches between taking apart and putting back

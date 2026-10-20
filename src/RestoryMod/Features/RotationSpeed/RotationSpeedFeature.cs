@@ -32,11 +32,7 @@ internal static class RotationSpeedFeature
 
     public static float Current => Sensitivity.Normalize(Speed.Value);
 
-    public static bool TargetsPresent() => GameTargets.AllPresent(
-        PatchTargets.RotationApply,
-        PatchTargets.RotationXAxis,
-        PatchTargets.RotationYAxis,
-        PatchTargets.RotationControlsManager);
+    public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.RotationSpeed);
 }
 
 [HarmonyPatch]

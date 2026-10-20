@@ -44,13 +44,15 @@ internal static class FeaturePatcher
 internal static class GameTargets
 {
     // AccessTools.TypeByName scans every type in every loaded assembly when the name is not
-    // assembly-qualified, which costs about a second per patch class. Remember each type found.
+    // assembly-qualified, which costs about a second per patch class. Ask the game assembly first
+    // (nearly every target lives there; nested types as "Outer+Inner"), and remember each type found.
     private static readonly Dictionary<string, Type> Types = new();
+    private static readonly Assembly GameAssembly = typeof(Restory.UserInterface.VirtualCursorView).Assembly;
 
     private static Type? TypeByName(string name)
     {
         if (Types.TryGetValue(name, out var cached)) return cached;
-        var type = AccessTools.TypeByName(name);
+        var type = GameAssembly.GetType(name, throwOnError: false) ?? AccessTools.TypeByName(name);
         if (type is not null) Types[name] = type;
         return type;
     }
@@ -67,14 +69,24 @@ internal static class GameTargets
     /// True when every target resolves (type, plus member as method, field or property).
     /// Logs each missing one; meant for patch classes' Prepare().
     /// </summary>
-    public static bool AllPresent(params PatchTarget[] targets)
+    public static bool AllPresent(params PatchTarget[] targets) => AllPresent(targets, feature: null);
+
+    /// <summary>
+    /// True when every target in the feature's manifest resolves; logs each missing one with the
+    /// feature's name. Meant for a feature whose patches share one gate.
+    /// </summary>
+    public static bool AllPresent(FeatureManifest manifest) => AllPresent(manifest.Targets, manifest.Name);
+
+    private static bool AllPresent(IEnumerable<PatchTarget> targets, string? feature)
     {
         var all = true;
         foreach (var target in targets)
         {
             var type = TypeByName(target.TypeName);
             if (type is not null && (target.MemberName is null || HasMember(type, target.MemberName))) continue;
-            Plugin.Logger.LogWarning($"Patch target missing: {target}");
+            Plugin.Logger.LogWarning(feature is null
+                ? $"Patch target missing: {target}"
+                : $"Patch target missing for {feature}: {target}");
             all = false;
         }
         return all;

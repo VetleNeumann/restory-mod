@@ -86,11 +86,8 @@ internal static class PlayStationArt
 [HarmonyPatch]
 internal static class PlayStationArtPatch
 {
-    private static bool Prepare() => ButtonPromptsFeature.TargetsPresent() && GameTargets.AllPresent(
-        PatchTargets.PromptImageUpdateView,
-        PatchTargets.PromptImageTarget,
-        PatchTargets.PromptViewControllerId,
-        PatchTargets.PromptViewElementId);
+    private static bool Prepare() => ButtonPromptsFeature.TargetsPresent() &&
+        GameTargets.AllPresent(FeatureManifests.PlayStationArt);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.PromptImageUpdateView)!;
 

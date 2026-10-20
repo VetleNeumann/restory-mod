@@ -51,8 +51,8 @@ public static class PatchTargets
     public static readonly PatchTarget CursorUpdateImageSetActive = new(VirtualCursorView, "UpdateImageSetActive");
     public static readonly PatchTarget CursorImage = new(VirtualCursorView, "image");
 
-    // TextMeshPro ships with the engine, not the game assembly, so these stay out of All (TargetCheck
-    // loads only the game assembly); the patches still check them in Prepare().
+    // TextMeshPro ships with the engine, not the game assembly, so these stay out of All (in Unchecked:
+    // TargetCheck loads only the game assembly); the patches still check them in Prepare().
     private const string TmpDropdown = "TMPro.TMP_Dropdown";
     public static readonly PatchTarget DropdownShow = new(TmpDropdown, "Show");
     public static readonly PatchTarget DropdownHide = new(TmpDropdown, "Hide");
@@ -333,6 +333,17 @@ public static class PatchTargets
     public static readonly PatchTarget PromptImageTarget = new(PromptImageView, "targetImage");
     public static readonly PatchTarget PromptViewControllerId = new(PromptView, "controllerId");
     public static readonly PatchTarget PromptViewElementId = new(PromptView, "elementId");
+
+    /// <summary>Named targets TargetCheck can't resolve, each with the reason.</summary>
+    public static IReadOnlyList<PatchTarget> Unchecked { get; } = new[]
+    {
+        // TextMeshPro, not the game assembly.
+        DropdownShow,
+        DropdownHide,
+        DropdownOnSubmit,
+        DropdownOnPointerClick,
+        DropdownList,
+    };
 
     public static IReadOnlyList<PatchTarget> All { get; } = new[]
     {

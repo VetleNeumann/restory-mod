@@ -46,6 +46,20 @@ public class LookTests
         Assert.Equal(0.2f, paint.Fill.G, 3);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A_missing_socket_is_dotted_so_it_reads_as_a_gap_even_faint(bool faint)
+    {
+        var missing = Looks.Paint(Look.Missing, faint, Yellow, hidden: false);
+        var ready = Looks.Paint(Look.Ready, faint, Yellow, hidden: false);
+
+        Assert.Equal(FillPattern.Dots, missing.Pattern);
+        Assert.Equal(FillPattern.Solid, ready.Pattern);
+        // Dots cover a fraction of the ghost, so each is drawn stronger than a solid fill.
+        Assert.True(missing.Fill.A > ready.Fill.A);
+    }
+
     [Fact]
     public void A_faint_look_holds_still_and_dark()
     {

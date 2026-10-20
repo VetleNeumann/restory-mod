@@ -49,6 +49,9 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         /// <summary>The flat see-through fill the game's own part ghosts use; null if the build lacks it.</summary>
         public static readonly Shader? FillShader = Shader.Find("Hidden/EPO/Fill/Basic/Color fill");
 
+        /// <summary>EPO's drifting dot grid, for the missing look; null if the build lacks it (then a flat fill).</summary>
+        public static readonly Shader? DotsShader = Shader.Find("Hidden/EPO/Fill/Basic/Dots");
+
         public static readonly AccessTools.FieldRef<OutlineSettingsPreset, RenderStyle> Style =
             AccessTools.FieldRefAccess<OutlineSettingsPreset, RenderStyle>("renderStyle");
         public static readonly AccessTools.FieldRef<OutlineSettingsPreset, Outlinable.OutlineProperties> Common =
@@ -185,11 +188,26 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         properties.Enabled = true;
         properties.Color = ToColor(paint.Outline);
         properties.DilateShift = width * paint.Width;
-        var fill = Outline.FillShader;
+        var dotted = paint.Pattern == FillPattern.Dots && Outline.DotsShader;
+        var fill = dotted ? Outline.DotsShader : Outline.FillShader;
         if (!fill) return;
-        if (properties.FillPass.Shader != fill) properties.FillPass.Shader = fill;
-        properties.FillPass.SetColor("_PublicColor", ToColor(paint.Fill));
+        var pass = properties.FillPass;
+        if (pass.Shader != fill)
+        {
+            pass.Shader = fill;
+            // Empty gaps between the dots, drifting slowly so the gap reads as alive but calm.
+            if (dotted)
+            {
+                pass.SetFloat("_PublicSecondaryAlpha", 0f);
+                pass.SetFloat("_PublicHorizontalSpeed", DotSpeed);
+                pass.SetFloat("_PublicVerticalSpeed", DotSpeed);
+            }
+        }
+        pass.SetColor("_PublicColor", ToColor(paint.Fill));
     }
+
+    // The dots' drift; the shader's own default (1) runs busily.
+    private const float DotSpeed = 0.25f;
 
     private static Rgba ToRgba(Color c) => new(c.r, c.g, c.b, c.a);
 

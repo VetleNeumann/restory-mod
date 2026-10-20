@@ -24,14 +24,65 @@ namespace RestoryMod.Features.Diagnostics;
 internal static class OutlineDiagnostics
 {
     private static ConfigEntry<bool> entry = null!;
+    private static ConfigEntry<bool> dump = null!;
 
     public static bool Enabled => entry.Value;
+
+    /// <summary>Set by [Debug] DumpOutlines; the watcher logs every outline once and clears it.</summary>
+    public static bool DumpRequested;
 
     public static void Bind(ConfigFile config)
     {
         entry = config.Bind("Debug", "OutlineDiagnostics", false,
             "Log every outline change on device parts, screws and their slots: what switched it, the preset, " +
             "and colour changes frame by frame. Needs a game restart to switch on or off.");
+        dump = config.Bind("Debug", "DumpOutlines", false,
+            "Set to true to log every outline on screen once, with its object path (needs OutlineDiagnostics on). " +
+            "Turns itself off again.");
+        dump.SettingChanged += (_, _) => DumpRequested |= dump.Value;
+    }
+
+    /// <summary>Logs every outline drawn now, whatever it belongs to, then clears the request.</summary>
+    public static void Dump()
+    {
+        DumpRequested = false;
+        dump.Value = false;
+        var all = Object.FindObjectsByType<Outlinable>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        Log($"dump: {all.Count(o => o.enabled)} outlines on");
+        foreach (var outline in all)
+        {
+            if (!outline.enabled) continue;
+            var adapter = outline.GetComponent<OutlinableAdapter>();
+            var preset = adapter ? PresetName(adapter.OverridePreset) : "(no adapter)";
+            Log($"dump: {PathOf(outline.transform)} preset={preset}: {Look(outline)}");
+        }
+        foreach (var name in FillShaders) LogProperties(name);
+    }
+
+    // EPO's patterned fills in the build, for picking the hint's looks.
+    private static readonly string[] FillShaders = { "Hidden/EPO/Fill/Basic/Dots", "Hidden/EPO/Fill/Basic/Interlaced" };
+
+    private static void LogProperties(string name)
+    {
+        var shader = Shader.Find(name);
+        if (!shader)
+        {
+            Log($"dump: shader {name} not in the build");
+            return;
+        }
+        var props = Enumerable.Range(0, shader.GetPropertyCount())
+            .Select(i => $"{shader.GetPropertyName(i)}:{shader.GetPropertyType(i)}" +
+                         (shader.GetPropertyType(i) is UnityEngine.Rendering.ShaderPropertyType.Float or UnityEngine.Rendering.ShaderPropertyType.Range
+                             ? $"={shader.GetPropertyDefaultFloatValue(i)}" : ""));
+        Log($"dump: shader {name}: {string.Join(", ", props)}");
+    }
+
+    private static string PathOf(Transform t)
+    {
+        var parts = new List<string>();
+        for (var at = t; at; at = at.parent) parts.Add(at.name);
+        parts.Reverse();
+        return string.Join("/", parts);
     }
 
     public static void Log(string message) =>
@@ -155,6 +206,7 @@ internal sealed class OutlineWatcher : MonoBehaviour
 
     private void LateUpdate()
     {
+        if (OutlineDiagnostics.DumpRequested) OutlineDiagnostics.Dump();
         seen.Clear();
         foreach (var outline in FindObjectsByType<Outlinable>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
         {

@@ -18,11 +18,21 @@ public enum Look
 /// <summary>A color, 0..1 per channel, kept apart from the engine's so the looks can be tested.</summary>
 public readonly record struct Rgba(float R, float G, float B, float A);
 
+/// <summary>How a look's fill covers the ghost.</summary>
+public enum FillPattern
+{
+    /// <summary>Evenly, see-through.</summary>
+    Solid,
+
+    /// <summary>A slowly drifting grid of dots with empty gaps between them: half there, so a gap.</summary>
+    Dots,
+}
+
 /// <summary>
 /// How one half of a look is drawn: in plain view, or in the hidden style where something stands in
 /// front. <see cref="Width"/> scales the pulse's own outline width.
 /// </summary>
-public readonly record struct LookPaint(Rgba Outline, Rgba Fill, float Width);
+public readonly record struct LookPaint(Rgba Outline, Rgba Fill, float Width, FillPattern Pattern = FillPattern.Solid);
 
 public static class Looks
 {
@@ -33,6 +43,9 @@ public static class Looks
     // The pulse runs white (blue 1) to yellow (blue 0): the fill thickens as it brightens.
     private const float DimFill = 0.15f;
     private const float BrightFill = 0.35f;
+
+    // Dots cover a fraction of the ghost, so each dot is drawn this much stronger than a solid fill.
+    private const float DotStrength = 2.5f;
 
     // The hidden style: half as wide, a third as bright, and no fill, so only a faint outline shows
     // through (0.5 bright was too strong in play).
@@ -51,9 +64,11 @@ public static class Looks
     public static LookPaint Paint(Look look, bool faint, Rgba pulse, bool hidden)
     {
         var tone = faint ? Faint with { A = pulse.A } : pulse;
-        var color = look == Look.Missing ? Red(tone) : tone;
+        var missing = look == Look.Missing;
+        var color = missing ? Red(tone) : tone;
         var alpha = faint ? FaintFill : Lerp(DimFill, BrightFill, 1f - tone.B);
-        var paint = new LookPaint(color, color with { A = alpha }, 1f);
+        if (missing) alpha *= DotStrength;
+        var paint = new LookPaint(color, color with { A = alpha }, 1f, missing ? FillPattern.Dots : FillPattern.Solid);
         if (!hidden) return paint;
         return new LookPaint(
             Scale(paint.Outline, HiddenBrightness),

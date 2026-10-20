@@ -14,6 +14,7 @@ using RestoryMod.Features.HoverGrace;
 using RestoryMod.Features.MailList;
 using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;
+using RestoryMod.Features.PartsStore;
 using RestoryMod.Features.RotationSpeed;
 using RestoryMod.Features.Settings;
 using RestoryMod.Features.Fade;
@@ -50,6 +51,7 @@ public class Plugin : BaseUnityPlugin
         SettingsMenuDumpPatch.Bind(Config);
         PartsBoxFeature.Bind(Config);
         PartsBoxDiagnostics.Bind(Config);
+        PartsStoreFeature.Bind(Config);
         NotepadKeyFeature.Bind(Config);
         ShoulderButtonsFeature.Bind(Config);
         DpadSendFeature.Bind(Config);
@@ -85,6 +87,7 @@ public class Plugin : BaseUnityPlugin
             typeof(PartsBoxHeadersPatch),
             typeof(PartsBoxShowTimingPatch),
             typeof(PartsBoxPrewarmPatch),
+            typeof(PartsStoreSortPatch),
             typeof(NotepadKeyListenPatch),
             typeof(NotepadKeyUnlistenPatch),
             typeof(NotepadKeyHoldOpenPatch),
@@ -158,9 +161,11 @@ public class Plugin : BaseUnityPlugin
         HintGhosts.Resume();
         DropdownModesFeature.FindCursors();
         PartsBoxSections.AttachToPanels();
+        PartsStoreSortPatch.Resume();
         Teardown.Add(NotepadKeyListenPatch.Unload);
         Teardown.Add(DropdownModesFeature.Unload);
         Teardown.Add(PartsBoxSections.Unload);
+        Teardown.Add(PartsStoreSortPatch.Unload);
         Teardown.Add(WorkbenchSession.Unload);
         Teardown.Add(HintGhosts.Unload);
         Teardown.Add(ButtonPromptsFeature.Unload);

@@ -107,11 +107,11 @@ public enum HintKind
 
 /// <summary>
 /// One thing the hint points out. <see cref="Target"/> is the socket, or the loose part for
-/// <see cref="HintKind.LoosePart"/>. Waiting items show faint until the screws are in.
+/// <see cref="HintKind.LoosePart"/>.
 /// </summary>
-public readonly record struct HintItem<T>(T Target, HintKind Kind, bool Waiting = false);
+public readonly record struct HintItem<T>(T Target, HintKind Kind);
 
-/// <summary>What the workbench hint points out: every ready part, missing socket and waiting part.</summary>
+/// <summary>What the workbench hint points out: every ready part and missing socket.</summary>
 public static class Hint
 {
     /// <summary>
@@ -154,22 +154,18 @@ public static class Hint
 
     /// <summary>
     /// Screw slots that can take their screw now, loose parts that can go in now, and missing sockets.
-    /// Screws go first: while one can go in, the parts wait. The game doesn't always know a part covers
-    /// a screw hole, so a part put in before the screws could shut one away.
     /// </summary>
     private static List<HintItem<T>> PuttingBack<T>(Bench<T> bench)
     {
         var ready = bench.Sockets.Where(s => Room(s) > 0).ToList();
-        var slots = ready.Where(IsScrewSlot).ToList();
-        var waiting = slots.Count > 0;
-        var items = slots.Select(s => new HintItem<T>(s.Handle, HintKind.ScrewSlot)).ToList();
+        var items = ready.Where(IsScrewSlot).Select(s => new HintItem<T>(s.Handle, HintKind.ScrewSlot)).ToList();
 
         // A tube (batteries) counts once per part it still takes, so each pairs with one loose part.
         var sockets = ready.Where(s => !s.TakesScrew).SelectMany(s => Enumerable.Repeat(s, Room(s))).ToList();
         var types = sockets.Select(s => s.Takes!).ToList();
         items.AddRange(bench.Loose
             .Where(p => p.OnSurface && !p.Dragging && types.Contains(p.Type))
-            .Select(p => new HintItem<T>(p.Handle, HintKind.LoosePart, waiting)));
+            .Select(p => new HintItem<T>(p.Handle, HintKind.LoosePart)));
 
         // Each loose part counts toward one socket of its type (the parts box's rule, over these sockets
         // only); a held part still counts, as it is on its way to one.
@@ -181,7 +177,7 @@ public static class Hint
             missing[types[i]] = left - 1;
             if (!picked.Contains(sockets[i])) picked.Insert(0, sockets[i]);
         }
-        items.AddRange(picked.Select(s => new HintItem<T>(s.Handle, HintKind.Missing, waiting)));
+        items.AddRange(picked.Select(s => new HintItem<T>(s.Handle, HintKind.Missing)));
         return items;
     }
 

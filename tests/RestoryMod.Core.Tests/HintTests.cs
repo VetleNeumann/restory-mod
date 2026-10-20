@@ -19,7 +19,7 @@ public class HintTests
 
     private static List<string> PuttingBack(BenchSocket<string>[] sockets, params BenchPart<string>[] loose) =>
         Hint.Plan(new Bench<string>(sockets, loose), takingApart: false)
-            .Select(i => $"{i.Kind} {i.Target}{(i.Waiting ? " waiting" : "")}").ToList();
+            .Select(i => $"{i.Kind} {i.Target}").ToList();
 
     // A part is blocked while any of its blockers still holds a part, as in the game.
     private static void Block(BenchSocket<string> socket, params BenchSocket<string>[] blockers)
@@ -220,9 +220,9 @@ public class HintTests
     }
 
     [Fact]
-    public void Putting_back_parts_wait_while_a_screw_can_go_in()
+    public void Putting_back_parts_show_alongside_screws_that_can_go_in()
     {
-        Assert.Equal(new[] { "ScrewSlot slot", "LoosePart loose lid waiting", "Missing board waiting" },
+        Assert.Equal(new[] { "ScrewSlot slot", "LoosePart loose lid", "Missing board" },
             PuttingBack(new[] { Slot("slot"), Socket("lid", Lid), Socket("board", Board) }, Part("loose lid", Lid)));
     }
 

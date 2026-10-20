@@ -10,7 +10,6 @@ public class GhostLedgerTests
         public string Under { get; }
         public bool Painted { get; set; }
         public Look Look { get; set; }
-        public bool Faint { get; set; }
         public bool Claimed { get; set; }
         public override string ToString() => Under;
     }
@@ -47,11 +46,10 @@ public class GhostLedgerTests
 
         public void Unmute(Ghost marker) => Muted.Remove(marker.Under);
 
-        public void Paint(Ghost ghost, Look look, bool faint)
+        public void Paint(Ghost ghost, Look look)
         {
             ghost.Painted = true;
             ghost.Look = look;
-            ghost.Faint = faint;
         }
 
         public void Unpaint(Ghost ghost) => ghost.Painted = false;
@@ -65,7 +63,7 @@ public class GhostLedgerTests
 
     public GhostLedgerTests() => ledger = new GhostLedger<string, Ghost>(pulse, () => tidy);
 
-    private static HintItem<string> Item(string spot, HintKind kind, bool waiting = false) => new(spot, kind, waiting);
+    private static HintItem<string> Item(string spot, HintKind kind) => new(spot, kind);
 
     [Fact]
     public void Showing_a_spot_twice_keeps_one_ghost()
@@ -155,16 +153,10 @@ public class GhostLedgerTests
     }
 
     [Fact]
-    public void Missing_sockets_wear_the_missing_look_and_waiting_parts_show_faint()
+    public void Missing_sockets_wear_the_missing_look()
     {
-        ledger.Show(Item("board", HintKind.Missing, waiting: true));
-        var ghost = pulse.Ghosts.Single();
-        Assert.Equal(Look.Missing, ghost.Look);
-        Assert.True(ghost.Faint);
-
-        ledger.Reconcile(new[] { Item("board", HintKind.Missing) });
-        ledger.Tick();
-        Assert.False(ghost.Faint);
+        ledger.Show(Item("board", HintKind.Missing));
+        Assert.Equal(Look.Missing, pulse.Ghosts.Single().Look);
     }
 
     [Theory]
@@ -325,7 +317,7 @@ public class GhostLedgerTests
         public void RiseAgain() => inner.RiseAgain();
         public Ghost? MuteMarker(string spot) => inner.MuteMarker(spot);
         public void Unmute(Ghost marker) => inner.Unmute(marker);
-        public void Paint(Ghost ghost, Look look, bool faint) => inner.Paint(ghost, look, faint);
+        public void Paint(Ghost ghost, Look look) => inner.Paint(ghost, look);
         public void Unpaint(Ghost ghost) => inner.Unpaint(ghost);
         public void Claim(Ghost ghost) => inner.Claim(ghost);
         public void Release(Ghost ghost) => inner.Release(ghost);

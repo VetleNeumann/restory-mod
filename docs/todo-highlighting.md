@@ -10,6 +10,9 @@
 - (Out of scope for the rework; later.) Highlight shape doesn't match the part on the workbench. R2 highlighting seems to draw the
   hitbox / what you'll hold once picked up, which doesn't always line up with the part in place
   (wires especially). Screws too: it highlights where the screw ends up, not where you press.
+  Also seen: GameDuck front case, putting back: the missing-socket ghosts (D-pad and A/B
+  membranes) sit shifted from their holes. Maybe the prefab path that builds missing-socket
+  ghosts drops a nested mesh offset; test by putting the part on the bench and comparing.
 - Red highlight fix: on SOME items, hovering a part that is blocked for now (can be picked up later)
   highlights it RED. Usually blocked parts don't light up at all. Remove the red case so these
   items behave like the rest: no highlight unless the part can be picked up.

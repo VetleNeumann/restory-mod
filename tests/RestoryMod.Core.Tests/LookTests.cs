@@ -25,34 +25,32 @@ public class LookTests
     }
 
     [Fact]
-    public void A_ready_ghost_takes_the_pulse_color_and_its_fill_thickens_as_it_brightens()
+    public void A_ready_ghost_takes_the_pulse_color_and_its_light_fill_thickens_as_it_brightens()
     {
-        var dim = Looks.Paint(Look.Ready, faint: false, White, hidden: false);
-        var bright = Looks.Paint(Look.Ready, faint: false, Yellow, hidden: false);
+        var dim = Looks.Paint(Look.Ready, White, hidden: false);
+        var bright = Looks.Paint(Look.Ready, Yellow, hidden: false);
 
         Assert.Equal(White, dim.Outline);
         Assert.Equal(Yellow, bright.Outline);
-        Assert.Equal(0.15f, dim.Fill.A, 3);
-        Assert.Equal(0.35f, bright.Fill.A, 3);
+        Assert.Equal(0.10f, dim.Fill.A, 3);
+        Assert.Equal(0.22f, bright.Fill.A, 3);
         Assert.Equal(1f, bright.Width);
     }
 
     [Fact]
     public void A_missing_socket_keeps_the_pulse_brightness_in_red()
     {
-        var paint = Looks.Paint(Look.Missing, faint: false, Yellow, hidden: false);
+        var paint = Looks.Paint(Look.Missing, Yellow, hidden: false);
         Assert.Equal(new Rgba(1f, 0.2f, 0f, 1f), paint.Outline);
         Assert.Equal(1f, paint.Fill.R);
         Assert.Equal(0.2f, paint.Fill.G, 3);
     }
 
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void A_missing_socket_is_dotted_so_it_reads_as_a_gap_even_faint(bool faint)
+    [Fact]
+    public void A_missing_socket_is_dotted_so_it_reads_as_a_gap()
     {
-        var missing = Looks.Paint(Look.Missing, faint, Yellow, hidden: false);
-        var ready = Looks.Paint(Look.Ready, faint, Yellow, hidden: false);
+        var missing = Looks.Paint(Look.Missing, Yellow, hidden: false);
+        var ready = Looks.Paint(Look.Ready, Yellow, hidden: false);
 
         Assert.Equal(FillPattern.Dots, missing.Pattern);
         Assert.Equal(FillPattern.Solid, ready.Pattern);
@@ -60,25 +58,13 @@ public class LookTests
         Assert.True(missing.Fill.A > ready.Fill.A);
     }
 
-    [Fact]
-    public void A_faint_look_holds_still_and_dark()
-    {
-        var dim = Looks.Paint(Look.Ready, faint: true, White, hidden: false);
-        var bright = Looks.Paint(Look.Ready, faint: true, Yellow, hidden: false);
-
-        Assert.Equal(dim, bright);
-        Assert.Equal(new Rgba(0.45f, 0.45f, 0f, 1f), dim.Outline);
-        Assert.Equal(0.08f, dim.Fill.A, 3);
-    }
-
     [Theory]
-    [InlineData(Look.Ready, false)]
-    [InlineData(Look.Ready, true)]
-    [InlineData(Look.Missing, false)]
-    public void The_hidden_style_is_a_thinner_dimmer_outline_with_no_fill(Look look, bool faint)
+    [InlineData(Look.Ready)]
+    [InlineData(Look.Missing)]
+    public void The_hidden_style_is_a_thinner_dimmer_outline_with_no_fill(Look look)
     {
-        var inView = Looks.Paint(look, faint, Yellow, hidden: false);
-        var hidden = Looks.Paint(look, faint, Yellow, hidden: true);
+        var inView = Looks.Paint(look, Yellow, hidden: false);
+        var hidden = Looks.Paint(look, Yellow, hidden: true);
 
         Assert.True(hidden.Width < inView.Width);
         Assert.True(hidden.Outline.R + hidden.Outline.G + hidden.Outline.B < inView.Outline.R + inView.Outline.G + inView.Outline.B);

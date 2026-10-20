@@ -18,12 +18,12 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         AccessTools.FieldRefAccess<TooltipProjectionHighlighter, ElementProjectionFactory>("elementProjectionFactory");
 
     /// <summary>
-    /// Copies of the pulse's outline preset for the hint's looks, plain and faint. They add a fill, so
+    /// Copies of the pulse's outline preset, one per hint look. They add a fill, so
     /// a ghost shows the whole part (overlapping fills add up and look darker), and draw front and
     /// back apart, so the part of a ghost behind something takes the hidden style. Each look needs its
     /// own copy because a preset's colors are shared by every ghost wearing it.
     /// </summary>
-    private static readonly OutlineSettingsPreset?[] Presets = new OutlineSettingsPreset?[4];
+    private static readonly OutlineSettingsPreset?[] Presets = new OutlineSettingsPreset?[2];
 
     private readonly TooltipProjectionHighlighter highlighter;
 
@@ -115,11 +115,11 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
     /// Gives a ghost its look at the pulse's current brightness, on its outline and fill: in view on
     /// the front, in the hidden style on the back (where something stands in front of it).
     /// </summary>
-    public void Paint(ElementProjection ghost, Look look, bool faint)
+    public void Paint(ElementProjection ghost, Look look)
     {
         var front = Outline.Front(highlighter);
         if (front is null) return;
-        var preset = Copy(look, faint);
+        var preset = Copy(look);
         if (!wearing.TryGetValue(ghost, out var worn) || worn != preset)
         {
             ghost.OutlinableAdapter.OverridePreset = preset;
@@ -127,8 +127,8 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         }
         var outline = ghost.OutlinableAdapter.Outlinable;
         var pulse = ToRgba(front.Color);
-        Paint(outline.FrontParameters, Looks.Paint(look, faint, pulse, hidden: false), front.DilateShift);
-        Paint(outline.BackParameters, Looks.Paint(look, faint, pulse, hidden: true), front.DilateShift);
+        Paint(outline.FrontParameters, Looks.Paint(look, pulse, hidden: false), front.DilateShift);
+        Paint(outline.BackParameters, Looks.Paint(look, pulse, hidden: true), front.DilateShift);
     }
 
     public void Unpaint(ElementProjection ghost)
@@ -162,9 +162,9 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         }
     }
 
-    private OutlineSettingsPreset Copy(Look look, bool faint)
+    private OutlineSettingsPreset Copy(Look look)
     {
-        var i = (int)look * 2 + (faint ? 1 : 0);
+        var i = (int)look;
         if (!Presets[i]) Presets[i] = FrontBack(Outline.Preset(highlighter));
         return Presets[i]!;
     }

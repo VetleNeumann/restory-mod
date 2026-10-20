@@ -3,8 +3,7 @@ using System;
 namespace RestoryMod.Core;
 
 /// <summary>
-/// The fixed ways the hint marks a thing (glossary: Look). A waiting part's ghost is the same look
-/// shown faint; screws keep the game's own pulse look.
+/// The fixed ways the hint marks a thing (glossary: Look); screws keep the game's own pulse look.
 /// </summary>
 public enum Look
 {
@@ -36,16 +35,13 @@ public readonly record struct LookPaint(Rgba Outline, Rgba Fill, float Width, Fi
 
 public static class Looks
 {
-    // Waiting: the pulse's peak color held still and darkened (the outline ignores alpha).
-    private static readonly Rgba Faint = new(0.45f, 0.45f, 0f, 1f);
-    private const float FaintFill = 0.08f;
-
-    // The pulse runs white (blue 1) to yellow (blue 0): the fill thickens as it brightens.
-    private const float DimFill = 0.15f;
-    private const float BrightFill = 0.35f;
+    // The pulse runs white (blue 1) to yellow (blue 0): the fill thickens as it brightens. Kept light
+    // (0.15 to 0.35 hid too much of the part in play).
+    private const float DimFill = 0.10f;
+    private const float BrightFill = 0.22f;
 
     // Dots cover a fraction of the ghost, so each dot is drawn this much stronger than a solid fill.
-    private const float DotStrength = 2.5f;
+    private const float DotStrength = 3.5f;
 
     // The hidden style: half as wide, a third as bright, and no fill, so only a faint outline shows
     // through (0.5 bright was too strong in play).
@@ -60,13 +56,12 @@ public static class Looks
         _ => Look.Ready,
     };
 
-    /// <summary>A look at the pulse's current color; faint for a waiting part, hidden behind something.</summary>
-    public static LookPaint Paint(Look look, bool faint, Rgba pulse, bool hidden)
+    /// <summary>A look at the pulse's current color, in plain view or hidden behind something.</summary>
+    public static LookPaint Paint(Look look, Rgba pulse, bool hidden)
     {
-        var tone = faint ? Faint with { A = pulse.A } : pulse;
         var missing = look == Look.Missing;
-        var color = missing ? Red(tone) : tone;
-        var alpha = faint ? FaintFill : Lerp(DimFill, BrightFill, 1f - tone.B);
+        var color = missing ? Red(pulse) : pulse;
+        var alpha = Lerp(DimFill, BrightFill, 1f - pulse.B);
         if (missing) alpha *= DotStrength;
         var paint = new LookPaint(color, color with { A = alpha }, 1f, missing ? FillPattern.Dots : FillPattern.Solid);
         if (!hidden) return paint;

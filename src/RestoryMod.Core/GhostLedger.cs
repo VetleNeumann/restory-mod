@@ -32,8 +32,8 @@ public interface IGhostPulse<TSpot, TGhost> where TGhost : class
 
     void Unmute(TGhost marker);
 
-    /// <summary>Gives a ghost the hint's own look at the pulse's current brightness; faint for a waiting part.</summary>
-    void Paint(TGhost ghost, Look look, bool faint);
+    /// <summary>Gives a ghost the hint's own look at the pulse's current brightness.</summary>
+    void Paint(TGhost ghost, Look look);
 
     /// <summary>Gives a ghost the pulse's plain look back.</summary>
     void Unpaint(TGhost ghost);
@@ -58,16 +58,14 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
 {
     private sealed class Entry
     {
-        public Entry(TGhost ghost, HintKind kind, bool waiting)
+        public Entry(TGhost ghost, HintKind kind)
         {
             Ghost = ghost;
             Kind = kind;
-            Waiting = waiting;
         }
 
         public TGhost Ghost { get; }
         public HintKind Kind { get; set; }
-        public bool Waiting { get; set; }
         public TGhost? Muted { get; set; }
     }
 
@@ -122,11 +120,11 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
         }
         if (entry is null)
         {
-            entry = new Entry(ghost, item.Kind, item.Waiting);
+            entry = new Entry(ghost, item.Kind);
             entries[item.Target] = entry;
             pulse.Claim(ghost);
         }
-        Restyle(item.Target, entry, item.Kind, item.Waiting);
+        Restyle(item.Target, entry, item.Kind);
     }
 
     /// <summary>
@@ -150,8 +148,8 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
     }
 
     /// <summary>
-    /// Brings the hint's ghosts in line with a fresh plan: ghosts it no longer wants leave, the rest
-    /// show waiting or not as it now says. Adds none: new ghosts come only when the hint is asked for.
+    /// Brings the hint's ghosts in line with a fresh plan: ghosts it no longer wants leave. Adds none:
+    /// new ghosts come only when the hint is asked for.
     /// </summary>
     public void Reconcile(IEnumerable<HintItem<TSpot>> plan)
     {
@@ -159,11 +157,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
         foreach (var item in plan) wanted[item.Target] = item;
         foreach (var (spot, entry) in entries.ToList())
         {
-            if (wanted.TryGetValue(spot, out var item) && item.Kind == entry.Kind)
-            {
-                entry.Waiting = item.Waiting;
-                continue;
-            }
+            if (wanted.TryGetValue(spot, out var item) && item.Kind == entry.Kind) continue;
             entries.Remove(spot);
             Forget(entry);
             pulse.Destroy(entry.Ghost);
@@ -179,7 +173,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
             try
             {
                 alive = pulse.Alive(entry.Ghost);
-                if (alive && Looks.OfHint(entry.Kind) is { } look) pulse.Paint(entry.Ghost, look, entry.Waiting);
+                if (alive && Looks.OfHint(entry.Kind) is { } look) pulse.Paint(entry.Ghost, look);
             }
             catch (Exception)
             {
@@ -217,20 +211,19 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
         foreach (var item in plan)
         {
             if (entries.ContainsKey(item.Target) || pulse.GhostUnder(item.Target) is not { } ghost) continue;
-            var entry = new Entry(ghost, item.Kind, item.Waiting);
+            var entry = new Entry(ghost, item.Kind);
             entries[item.Target] = entry;
             pulse.Claim(ghost);
-            Restyle(item.Target, entry, item.Kind, item.Waiting);
+            Restyle(item.Target, entry, item.Kind);
         }
     }
 
-    private void Restyle(TSpot spot, Entry entry, HintKind kind, bool waiting)
+    private void Restyle(TSpot spot, Entry entry, HintKind kind)
     {
         if (WearsHintLook(entry.Kind) && !WearsHintLook(kind)) pulse.Unpaint(entry.Ghost);
         entry.Kind = kind;
-        entry.Waiting = waiting;
         if (kind == HintKind.ScrewSlot && entry.Muted is null) entry.Muted = pulse.MuteMarker(spot);
-        if (Looks.OfHint(kind) is { } look) pulse.Paint(entry.Ghost, look, waiting);
+        if (Looks.OfHint(kind) is { } look) pulse.Paint(entry.Ghost, look);
     }
 
     private void ForgetAll()

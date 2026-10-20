@@ -34,10 +34,9 @@ public static class Looks
     private const float DimFill = 0.15f;
     private const float BrightFill = 0.35f;
 
-    // The hidden style: half as wide, half as bright, with a thinner fill.
+    // The hidden style: half as wide, half as bright, and no fill, so only the outline shows through.
     private const float HiddenWidth = 0.5f;
     private const float HiddenBrightness = 0.5f;
-    private const float HiddenFill = 0.4f;
 
     /// <summary>The look a hint item wears, or null where the game's own pulse look stays.</summary>
     public static Look? OfHint(HintKind kind) => kind switch
@@ -57,7 +56,7 @@ public static class Looks
         if (!hidden) return paint;
         return new LookPaint(
             Scale(paint.Outline, HiddenBrightness),
-            paint.Fill with { A = paint.Fill.A * HiddenFill },
+            paint.Fill with { A = 0f },
             HiddenWidth);
     }
 

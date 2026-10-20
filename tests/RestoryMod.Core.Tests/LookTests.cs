@@ -61,13 +61,14 @@ public class LookTests
     [InlineData(Look.Ready, false)]
     [InlineData(Look.Ready, true)]
     [InlineData(Look.Missing, false)]
-    public void The_hidden_style_is_thinner_and_dimmer_than_the_same_look_in_view(Look look, bool faint)
+    public void The_hidden_style_is_a_thinner_dimmer_outline_with_no_fill(Look look, bool faint)
     {
         var inView = Looks.Paint(look, faint, Yellow, hidden: false);
         var hidden = Looks.Paint(look, faint, Yellow, hidden: true);
 
         Assert.True(hidden.Width < inView.Width);
         Assert.True(hidden.Outline.R + hidden.Outline.G + hidden.Outline.B < inView.Outline.R + inView.Outline.G + inView.Outline.B);
-        Assert.True(hidden.Fill.A < inView.Fill.A);
+        Assert.True(inView.Fill.A > 0f);
+        Assert.Equal(0f, hidden.Fill.A);
     }
 }

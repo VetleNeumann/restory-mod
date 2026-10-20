@@ -87,7 +87,7 @@ The look of a missing socket: a patterned, unmistakable mark that reads as "a pa
 _Avoid_: Red ghost
 
 **Hidden style**:
-How any look is drawn where something stands in front of the thing it marks, whether the device or another marked thing: thinner and dimmer than the same look in plain view.
+How any look is drawn where something stands in front of the thing it marks, whether the device or another marked thing: only its outline shows through, thinner and dimmer than in plain view; the fill never does.
 _Avoid_: X-ray, see-through highlight
 
 **Faded**:

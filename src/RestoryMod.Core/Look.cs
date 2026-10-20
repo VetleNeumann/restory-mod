@@ -34,9 +34,10 @@ public static class Looks
     private const float DimFill = 0.15f;
     private const float BrightFill = 0.35f;
 
-    // The hidden style: half as wide, half as bright, and no fill, so only the outline shows through.
+    // The hidden style: half as wide, a third as bright, and no fill, so only a faint outline shows
+    // through (0.5 bright was too strong in play).
     private const float HiddenWidth = 0.5f;
-    private const float HiddenBrightness = 0.5f;
+    private const float HiddenBrightness = 0.3f;
 
     /// <summary>The look a hint item wears, or null where the game's own pulse look stays.</summary>
     public static Look? OfHint(HintKind kind) => kind switch

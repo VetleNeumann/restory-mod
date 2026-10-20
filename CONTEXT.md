@@ -66,6 +66,14 @@ _Avoid_: Uninspected part, hidden part
 A socket that could take a part right now but that no loose part on the bench is left to fill, each loose part counting toward one socket of its kind; the parts box lists the parts that could fill it under "Missing parts". The hint shows its part ghost in red.
 _Avoid_: Empty slot, missing part
 
+**Hint**:
+The workbench aid that points out every ready part (a pulse on an attached part or screw, a part ghost in each socket a loose part or screw can fill), shows missing sockets in red and waiting parts faint, and follows whether the player is taking the device apart or putting it back together. Holding R2 shows it again.
+_Avoid_: Highlight, drop hint, screw hint (that was its first, screws-only form)
+
+**Waiting part**:
+A loose part whose socket could take it, but only after the screws that go in first; the hint shows its part ghost faint until they are in.
+_Avoid_: Pending part, blocked part (that is an attached part that can't come off)
+
 ### Hitboxes
 
 **Hitbox**:

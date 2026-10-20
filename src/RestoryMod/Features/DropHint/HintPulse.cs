@@ -41,8 +41,6 @@ internal static class HintPulse
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, float>("toBaseDuration");
     private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, float> PeakScale =
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, float>("peakScale");
-    private static readonly AccessTools.FieldRef<TooltipProjectionHighlighter, ElementProjectionFactory> Factory =
-        AccessTools.FieldRefAccess<TooltipProjectionHighlighter, ElementProjectionFactory>("elementProjectionFactory");
 
     /// <summary>The pulse's own members, which every user of this class reads.</summary>
     public static bool TargetsPresent() => GameTargets.AllPresent(
@@ -54,57 +52,6 @@ internal static class HintPulse
         PatchTargets.TooltipHighlighterCreate,
         PatchTargets.TooltipHighlighterFactory,
         PatchTargets.ProjectionFactoryDestroySmall);
-
-    /// <summary>
-    /// Ghosts asked for so far, counted whether or not one was made: compared before and after running
-    /// something, it tells whether that something hinted any screw.
-    /// </summary>
-    public static int Requests { get; private set; }
-
-    internal static void CountRequest() => Requests++;
-
-    internal static List<ElementProjection> GhostsOf(ProjectionHighlighterBase highlighter) => Ghosts(highlighter);
-
-    /// <summary>
-    /// Asks for a ghost under <paramref name="parent"/>; returns it, or the one already there (the pulse
-    /// keeps one per parent), or null when the pulse just ended and made none.
-    /// </summary>
-    public static ElementProjection? Add(TooltipProjectionHighlighter highlighter, ElementProjectionData data, Transform parent)
-    {
-        var ghost = GhostUnder(highlighter, parent);
-        if (ghost)
-        {
-            // Asking again for a ghost already there still counts, as the game's own create would:
-            // a fading pulse rises again and a held R2 knows the hint showed something.
-            CountRequest();
-            RiseAgain(highlighter);
-            return ghost;
-        }
-        highlighter.CreateAndHighlightProjection(data, parent);
-        ghost = GhostUnder(highlighter, parent);
-        // A pooled ghost keeps the size another highlighter left it at.
-        if (ghost && Tidy.Value) ghost!.transform.localScale = Vector3.one;
-        // The pool is shared with the game's screw-slot markers, whose outline the hint may have muted.
-        if (ghost) ghost!.OutlinableAdapter.Outlinable.enabled = true;
-        return ghost;
-    }
-
-    private static ElementProjection? GhostUnder(ProjectionHighlighterBase highlighter, Transform parent)
-    {
-        var ghosts = Ghosts(highlighter);
-        for (var i = ghosts.Count - 1; i >= 0; i--)
-        {
-            if (ghosts[i] && ghosts[i].transform.parent == parent) return ghosts[i];
-        }
-        return null;
-    }
-
-    /// <summary>Takes one ghost out of the pulse before it ends.</summary>
-    public static void Remove(TooltipProjectionHighlighter highlighter, ElementProjection ghost)
-    {
-        if (!Ghosts(highlighter).Remove(ghost)) return;
-        Factory(highlighter).DestroySmallElementProjection(ghost);
-    }
 
     /// <summary>The pulse while it plays (or waits paused), else null.</summary>
     public static Sequence? Running(ProjectionHighlighterBase highlighter)
@@ -169,17 +116,8 @@ internal static class HintPulseJoinPatch
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.TooltipHighlighterCreate)!;
 
-    private static bool Prefix(TooltipProjectionHighlighter __instance, Transform parent)
-    {
-        HintPulse.CountRequest();
-        if (!HintPulse.Tidy.Value) return true;
-        HintPulse.RiseAgain(__instance);
-        foreach (var ghost in HintPulse.GhostsOf(__instance))
-        {
-            if (ghost && ghost.transform.parent == parent) return false;
-        }
-        return true;
-    }
+    private static bool Prefix(TooltipProjectionHighlighter __instance, Transform parent) =>
+        HintGhosts.For(__instance).GameCreating(parent);
 }
 
 /// <summary>The hint's pulse swells only in brightness: its ghosts stay their part's size.</summary>
@@ -196,7 +134,7 @@ internal static class HintPulseSizePatch
     }
 }
 
-/// <summary>A screw taken out or put in while its slot pulses takes that ghost away.</summary>
+/// <summary>A part taken out or put in while its socket pulses takes that ghost away.</summary>
 [HarmonyPatch]
 internal static class HintPulseStaleGhostPatch
 {
@@ -209,37 +147,15 @@ internal static class HintPulseStaleGhostPatch
 
     private static void Postfix(DisassembleTooltipService __instance, ElementSocket socket)
     {
-        if (!HintPulse.Tidy.Value || !socket) return;
+        if (!socket) return;
         try
         {
-            var highlighter = TooltipServiceParts.Highlighter(__instance);
-            if (!highlighter) return;
-            var ghosts = HintPulse.GhostsOf(highlighter!);
-            for (var i = ghosts.Count - 1; i >= 0; i--)
-            {
-                var ghost = ghosts[i];
-                if (ghost && ghost.transform.parent == socket.transform) HintPulse.Remove(highlighter!, ghost);
-            }
+            var highlighter = WorkbenchSession.Highlighter(__instance);
+            if (highlighter) HintGhosts.SocketChanged(highlighter!, socket.transform);
         }
         catch (Exception e)
         {
             HintPulse.LogOnce(e);
         }
-    }
-}
-
-/// <summary>The game's tooltip service's way to the pulse. Needs TooltipServiceSmallHandler and DropHintHighlighter.</summary>
-internal static class TooltipServiceParts
-{
-    private static readonly AccessTools.FieldRef<DisassembleTooltipService, SmallElementTooltipHandler> SmallHandler =
-        AccessTools.FieldRefAccess<DisassembleTooltipService, SmallElementTooltipHandler>("smallElementTooltipHandler");
-    private static readonly AccessTools.FieldRef<SmallElementTooltipHandler, TooltipProjectionHighlighter> HandlerHighlighter =
-        AccessTools.FieldRefAccess<SmallElementTooltipHandler, TooltipProjectionHighlighter>("tooltipProjectionHighlighter");
-
-    /// <summary>The highlighter the game's hints pulse with, or null.</summary>
-    public static TooltipProjectionHighlighter? Highlighter(DisassembleTooltipService service)
-    {
-        var handler = SmallHandler(service);
-        return handler is null ? null : HandlerHighlighter(handler);
     }
 }

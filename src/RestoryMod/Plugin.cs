@@ -113,13 +113,13 @@ public class Plugin : BaseUnityPlugin
             typeof(HintPulseStaleGhostPatch),
             typeof(HintPulseSizePatch),
             typeof(DropHintFreedScrewsPatch),
-            typeof(ScrewHintServicePatch),
-            typeof(ScrewHintServiceDisposePatch),
+            typeof(WorkbenchSessionStartPatch),
+            typeof(WorkbenchSessionEndPatch),
             typeof(ZoomToggleUpdatePatch),
             typeof(ZoomToggleAxisPatch),
             typeof(EveryPartDisassembleHintPatch),
             typeof(EveryPartAssembleHintPatch),
-            typeof(ReadyPartPulseEndPatch),
+            typeof(HintGhostsPulseEndPatch),
             typeof(SettingsMenuDumpPatch),
             typeof(GamepadBindingsDump),
             typeof(OutlineAdapterActivePatch),
@@ -136,7 +136,7 @@ public class Plugin : BaseUnityPlugin
         // Idle unless the mail list targets resolve and MailLaunchPatch has captured the Mail app.
         gameObject.AddComponent<MailListPoller>();
         if (ScrewHintButtonFeature.TargetsPresent()) gameObject.AddComponent<ScrewHintPoller>();
-        if (EveryPartHintFeature.TargetsPresent()) gameObject.AddComponent<ReadyPartGhostWatcher>();
+        if (EveryPartHintFeature.TargetsPresent()) gameObject.AddComponent<HintGhostWatcher>();
         if (OutlineDiagnostics.Enabled) gameObject.AddComponent<OutlineWatcher>();
         // Idle unless ShowHitboxes is on and a workbench hover state recorded this frame.
         gameObject.AddComponent<HitboxOverlay>();
@@ -144,14 +144,15 @@ public class Plugin : BaseUnityPlugin
         // After a hot reload the scene is already set up, so the hooks that run at scene load won't
         // fire for this copy: pick up their work here. On a normal start these find nothing.
         NotepadKeyListenPatch.Resume();
-        ScrewHintServicePatch.Resume();
+        WorkbenchSession.Resume();
+        HintGhosts.Resume();
         DropdownModesFeature.FindCursors();
         PartsBoxSections.AttachToPanels();
         Teardown.Add(NotepadKeyListenPatch.Unload);
         Teardown.Add(DropdownModesFeature.Unload);
         Teardown.Add(PartsBoxSections.Unload);
-        Teardown.Add(ScrewHintServicePatch.Unload);
-        Teardown.Add(ReadyPartGhosts.Unload);
+        Teardown.Add(WorkbenchSession.Unload);
+        Teardown.Add(HintGhosts.Unload);
         Teardown.Add(ButtonPromptsFeature.Unload);
     }
 

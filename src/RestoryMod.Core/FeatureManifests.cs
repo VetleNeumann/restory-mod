@@ -458,12 +458,23 @@ public static class FeatureManifests
         InfoCategory,
         CategorySmall);
 
-    public static readonly FeatureManifest ScrewHintButton = new(nameof(ScrewHintButton),
+    /// <summary>
+    /// The game's tooltip service, kept for the hint and the R2 button. Shared, so it checks its own
+    /// subsets: keeping the service, and reading the session's state.
+    /// </summary>
+    public static readonly FeatureManifest WorkbenchSession = new(nameof(WorkbenchSession),
         TooltipServiceInitialize,
         TooltipServiceDispose,
-        TooltipServiceShow,
         TooltipServiceSmallHandler,
-        DropHintHighlighter);
+        DropHintHighlighter,
+        TooltipServiceTargetDevice,
+        TooltipServiceIsDisassembling,
+        TooltipServiceIsActive,
+        TooltipServiceStateMachine,
+        new(DisassembleDetection));
+
+    public static readonly FeatureManifest ScrewHintButton = new(nameof(ScrewHintButton),
+        TooltipServiceShow);
 
     public static readonly FeatureManifest EveryPartHint = new(nameof(EveryPartHint),
         HintShowDisassembling,
@@ -494,10 +505,6 @@ public static class FeatureManifests
         HighlighterFrontOutline,
         HighlighterBackOutline,
         TooltipHighlighterComplete,
-        TooltipServiceTargetDevice,
-        TooltipServiceIsDisassembling,
-        TooltipServiceIsActive,
-        TooltipServiceStateMachine,
         ElementInfo,
         ElementConditionHandler,
         ConditionHandlerData,
@@ -562,6 +569,7 @@ public static class FeatureManifests
         HitboxEnlarging,
         HintPulse,
         DropHint,
+        WorkbenchSession,
         ScrewHintButton,
         EveryPartHint,
         ZoomToggle,

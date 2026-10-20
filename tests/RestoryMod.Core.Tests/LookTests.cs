@@ -19,9 +19,18 @@ public class LookTests
     [Theory]
     [InlineData(HintKind.Screw)]
     [InlineData(HintKind.ScrewSlot)]
-    public void Screws_keep_the_pulse_look(HintKind kind)
+    public void Screws_wear_the_screw_look(HintKind kind)
     {
-        Assert.Null(Looks.OfHint(kind));
+        Assert.Equal(Look.Screw, Looks.OfHint(kind));
+    }
+
+    [Fact]
+    public void A_screw_in_view_is_the_pulse_itself_with_its_own_fill()
+    {
+        var paint = Looks.Paint(Look.Screw, Yellow, hidden: false);
+        Assert.Equal(Yellow, paint.Outline);
+        Assert.Equal(FillPattern.Pulse, paint.Pattern);
+        Assert.Equal(1f, paint.Width);
     }
 
     [Fact]
@@ -61,6 +70,7 @@ public class LookTests
     [Theory]
     [InlineData(Look.Ready)]
     [InlineData(Look.Missing)]
+    [InlineData(Look.Screw)]
     public void The_hidden_style_is_a_thinner_dimmer_outline_with_no_fill(Look look)
     {
         var inView = Looks.Paint(look, Yellow, hidden: false);
@@ -68,7 +78,7 @@ public class LookTests
 
         Assert.True(hidden.Width < inView.Width);
         Assert.True(hidden.Outline.R + hidden.Outline.G + hidden.Outline.B < inView.Outline.R + inView.Outline.G + inView.Outline.B);
-        Assert.True(inView.Fill.A > 0f);
+        Assert.Equal(FillPattern.Solid, hidden.Pattern);
         Assert.Equal(0f, hidden.Fill.A);
     }
 }

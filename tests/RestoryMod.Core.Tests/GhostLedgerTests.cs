@@ -141,15 +141,17 @@ public class GhostLedgerTests
     }
 
     [Theory]
-    [InlineData(HintKind.Part, true)]
-    [InlineData(HintKind.LoosePart, true)]
-    [InlineData(HintKind.Missing, true)]
-    [InlineData(HintKind.Screw, false)]
-    [InlineData(HintKind.ScrewSlot, false)]
-    public void Parts_wear_the_hint_look_and_screws_keep_the_pulse_look(HintKind kind, bool painted)
+    [InlineData(HintKind.Part, Look.Ready)]
+    [InlineData(HintKind.LoosePart, Look.Ready)]
+    [InlineData(HintKind.Missing, Look.Missing)]
+    [InlineData(HintKind.Screw, Look.Screw)]
+    [InlineData(HintKind.ScrewSlot, Look.Screw)]
+    public void Every_ghost_the_hint_shows_wears_its_look(HintKind kind, Look look)
     {
         ledger.Show(Item("spot", kind));
-        Assert.Equal(painted, pulse.Ghosts.Single().Painted);
+        var ghost = pulse.Ghosts.Single();
+        Assert.True(ghost.Painted);
+        Assert.Equal(look, ghost.Look);
     }
 
     [Fact]

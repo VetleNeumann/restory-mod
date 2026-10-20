@@ -23,7 +23,8 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
     /// back apart, so the part of a ghost behind something takes the hidden style. Each look needs its
     /// own copy because a preset's colors are shared by every ghost wearing it.
     /// </summary>
-    private static readonly OutlineSettingsPreset?[] Presets = new OutlineSettingsPreset?[2];
+    private static readonly OutlineSettingsPreset?[] Presets =
+        new OutlineSettingsPreset?[System.Enum.GetValues(typeof(Look)).Length];
 
     private readonly TooltipProjectionHighlighter highlighter;
 
@@ -127,8 +128,31 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         }
         var outline = ghost.OutlinableAdapter.Outlinable;
         var pulse = ToRgba(front.Color);
-        Paint(outline.FrontParameters, Looks.Paint(look, pulse, hidden: false), front.DilateShift);
-        Paint(outline.BackParameters, Looks.Paint(look, pulse, hidden: true), front.DilateShift);
+        if (look == Look.Screw)
+        {
+            // A screw slot's ghost sits down in its hole, so EPO's per-pixel test would call it hidden
+            // whenever the rim is in the way; a screw is too small to be half hidden, so one ray decides.
+            var screw = Looks.Paint(look, pulse, hidden: Occluded(ghost.transform.position));
+            Paint(outline.FrontParameters, screw, front);
+            Paint(outline.BackParameters, screw, front);
+            return;
+        }
+        Paint(outline.FrontParameters, Looks.Paint(look, pulse, hidden: false), front);
+        Paint(outline.BackParameters, Looks.Paint(look, pulse, hidden: true), front);
+    }
+
+    /// <summary>How far before a screw a hit still counts as its own hole, in metres.</summary>
+    private const float OwnHoleDepth = 0.015f;
+
+    /// <summary>Something other than the screw's own hole stands between the camera and this point.</summary>
+    private static bool Occluded(Vector3 point)
+    {
+        var camera = Camera.main;
+        if (!camera) return false;
+        var from = camera.transform.position;
+        var toPoint = point - from;
+        var reach = toPoint.magnitude - OwnHoleDepth;
+        return reach > 0f && Physics.Raycast(from, toPoint, reach, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
     }
 
     public void Unpaint(ElementProjection ghost)
@@ -182,12 +206,21 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         return copy;
     }
 
-    private static void Paint(Outlinable.OutlineProperties properties, LookPaint paint, float width)
+    /// <param name="pulse">The pulse's own outline now: its width, and its fill for the screw look.</param>
+    private static void Paint(Outlinable.OutlineProperties properties, LookPaint paint, Outlinable.OutlineProperties pulse)
     {
         // A front/back preset of the game's may leave its back half off.
         properties.Enabled = true;
         properties.Color = ToColor(paint.Outline);
-        properties.DilateShift = width * paint.Width;
+        properties.DilateShift = pulse.DilateShift * paint.Width;
+        if (paint.Pattern == FillPattern.Pulse)
+        {
+            // The pulse's fill as the game animates it (a fresnel glow on screws).
+            var own = pulse.FillPass;
+            if (properties.FillPass.Shader != own.Shader) properties.FillPass.Shader = own.Shader;
+            if (own.HasProperty("_PublicColor")) properties.FillPass.SetColor("_PublicColor", own.GetColor("_PublicColor"));
+            return;
+        }
         var dotted = paint.Pattern == FillPattern.Dots && Outline.DotsShader;
         var fill = dotted ? Outline.DotsShader : Outline.FillShader;
         if (!fill) return;

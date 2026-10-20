@@ -3,7 +3,7 @@ using System;
 namespace RestoryMod.Core;
 
 /// <summary>
-/// The fixed ways the hint marks a thing (glossary: Look); screws keep the game's own pulse look.
+/// The fixed ways the hint marks a thing (glossary: Look).
 /// </summary>
 public enum Look
 {
@@ -12,6 +12,9 @@ public enum Look
 
     /// <summary>A missing socket: the pulse's brightness in red.</summary>
     Missing,
+
+    /// <summary>A screw or screw slot: the game's own pulse look, given the hidden style behind things.</summary>
+    Screw,
 }
 
 /// <summary>A color, 0..1 per channel, kept apart from the engine's so the looks can be tested.</summary>
@@ -25,6 +28,9 @@ public enum FillPattern
 
     /// <summary>A slowly drifting grid of dots with empty gaps between them: half there, so a gap.</summary>
     Dots,
+
+    /// <summary>The pulse's own fill, as the game draws it; <see cref="LookPaint.Fill"/> is unused.</summary>
+    Pulse,
 }
 
 /// <summary>
@@ -48,10 +54,10 @@ public static class Looks
     private const float HiddenWidth = 0.5f;
     private const float HiddenBrightness = 0.3f;
 
-    /// <summary>The look a hint item wears, or null where the game's own pulse look stays.</summary>
-    public static Look? OfHint(HintKind kind) => kind switch
+    /// <summary>The look a hint item wears.</summary>
+    public static Look OfHint(HintKind kind) => kind switch
     {
-        HintKind.Screw or HintKind.ScrewSlot => null,
+        HintKind.Screw or HintKind.ScrewSlot => Look.Screw,
         HintKind.Missing => Look.Missing,
         _ => Look.Ready,
     };
@@ -63,7 +69,13 @@ public static class Looks
         var color = missing ? Red(pulse) : pulse;
         var alpha = Lerp(DimFill, BrightFill, 1f - pulse.B);
         if (missing) alpha *= DotStrength;
-        var paint = new LookPaint(color, color with { A = alpha }, 1f, missing ? FillPattern.Dots : FillPattern.Solid);
+        var pattern = look switch
+        {
+            Look.Missing => FillPattern.Dots,
+            Look.Screw => FillPattern.Pulse,
+            _ => FillPattern.Solid,
+        };
+        var paint = new LookPaint(color, color with { A = alpha }, 1f, pattern);
         if (!hidden) return paint;
         return new LookPaint(
             Scale(paint.Outline, HiddenBrightness),

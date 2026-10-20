@@ -89,7 +89,9 @@ internal sealed class ScrewHintPoller : MonoBehaviour
                 HintPulse.HoldAtPeak(holding!);
                 return;
             }
-            HintPulse.Release(holding!);
+            // A toggled hint goes out on the press that turns it off; a held one fades as the game's would.
+            if (ScrewHintButtonFeature.Mode.Value == HintButtonMode.Toggle) HintPulse.End(holding!);
+            else HintPulse.Release(holding!);
             holding = null;
         }
         catch (Exception e)

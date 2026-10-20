@@ -173,7 +173,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
             try
             {
                 alive = pulse.Alive(entry.Ghost);
-                if (alive && Looks.OfHint(entry.Kind) is { } look) pulse.Paint(entry.Ghost, look);
+                if (alive) pulse.Paint(entry.Ghost, Looks.OfHint(entry.Kind));
             }
             catch (Exception)
             {
@@ -220,10 +220,9 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
 
     private void Restyle(TSpot spot, Entry entry, HintKind kind)
     {
-        if (WearsHintLook(entry.Kind) && !WearsHintLook(kind)) pulse.Unpaint(entry.Ghost);
         entry.Kind = kind;
         if (kind == HintKind.ScrewSlot && entry.Muted is null) entry.Muted = pulse.MuteMarker(spot);
-        if (Looks.OfHint(kind) is { } look) pulse.Paint(entry.Ghost, look);
+        pulse.Paint(entry.Ghost, Looks.OfHint(kind));
     }
 
     private void ForgetAll()
@@ -235,13 +234,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
     private void Forget(Entry entry)
     {
         if (entry.Muted is not null) pulse.Unmute(entry.Muted);
-        if (WearsHintLook(entry.Kind)) pulse.Unpaint(entry.Ghost);
+        pulse.Unpaint(entry.Ghost);
         pulse.Release(entry.Ghost);
     }
-
-    /// <summary>
-    /// Screws keep the pulse's own look: on a screw slot the game draws its marker over a restyled
-    /// ghost, and screws still in match them.
-    /// </summary>
-    private static bool WearsHintLook(HintKind kind) => Looks.OfHint(kind) is not null;
 }

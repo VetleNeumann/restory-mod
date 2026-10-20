@@ -94,6 +94,9 @@ internal static class HintPulse
     /// <summary>Lets a held pulse fade as usual.</summary>
     public static void Release(ProjectionHighlighterBase highlighter) => Running(highlighter)?.Play();
 
+    /// <summary>Ends a pulse at once, skipping the fade, as the game does when a ghost goes away.</summary>
+    public static void End(ProjectionHighlighterBase highlighter) => Running(highlighter)?.Complete();
+
     private static bool errorLogged;
 
     /// <summary>Logs the first failure only, so a broken target after a game update can't spam the log.</summary>

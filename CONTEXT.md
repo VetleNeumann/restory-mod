@@ -63,16 +63,32 @@ A part or screw the hint points out because the player can act on it right now: 
 _Avoid_: Next part, available part, removable part
 
 **Unknown part**:
-A part whose condition the player hasn't seen yet because it has never been taken out; the notepad lists it as unknown. The hint never reveals what the game knows about it.
+A part whose condition the player hasn't seen yet: it has never been taken out and has not yet been a ready part; the notepad lists it as unknown. A part counts as seen once it is ready, so its condition shows right before the player would pick it up. Nothing reveals the condition of a part still out of reach.
 _Avoid_: Uninspected part, hidden part
 
 **Missing socket**:
-A socket that could take a part right now but that no loose part on the bench is left to fill, each loose part counting toward one socket of its kind; the parts box lists the parts that could fill it under "Missing parts". The hint shows its part ghost in red.
+A socket that could take a part right now but that no loose part on the bench is left to fill, each loose part counting toward one socket of its kind; the parts box lists the parts that could fill it under "Missing parts". The hint shows its part ghost with the missing look.
 _Avoid_: Empty slot, missing part
 
 **Hint**:
-The workbench aid that points out every ready part (a pulse on an attached part or screw, a part ghost in each socket a loose part or screw can fill), shows missing sockets in red and waiting parts faint, and follows whether the player is taking the device apart or putting it back together; once no part left on the device needs work or is unknown, it shows putting back even before the first part goes in. R2 shows it again: while held, or until pressed again, as the "R2 hint" setting picks (Hold, Toggle or Off).
+The workbench aid that points out every ready part (a pulse on an attached part or screw, a part ghost in each socket a loose part or screw can fill), shows missing sockets with the missing look and waiting parts faint, and follows whether the player is taking the device apart or putting it back together; once no part left on the device needs work or is unknown, it shows putting back even before the first part goes in. R2 shows it again: while held, or until pressed again, as the "R2 hint" setting picks (Hold, Toggle or Off).
 _Avoid_: Highlight, drop hint, screw hint (that was its first, screws-only form)
+
+**Hover highlight**:
+The game's outline on the one thing under the cursor at the workbench, coloured by what a press would do and, on a part, by its condition. It never shows on a blocked part.
+_Avoid_: Highlight (on its own it could mean the hint too), selection outline
+
+**Look**:
+One of a fixed set of ways the hint and the hover highlight mark a thing: the pulse on a ready part, the ghost where something goes back, the faint ghost of a waiting part, the missing look, and the condition outline (burnt, damaged, dirty). Each thing gets its own outline, never merged with its neighbours, so overlapping things all stay visible.
+_Avoid_: Style, highlight colour, preset
+
+**Missing look**:
+The look of a missing socket: a patterned, unmistakable mark that reads as "a part belongs here" without relying on colour.
+_Avoid_: Red ghost
+
+**Hidden style**:
+How any look is drawn where something stands in front of the thing it marks, whether the device or another marked thing: thinner and dimmer than the same look in plain view.
+_Avoid_: X-ray, see-through highlight
 
 **Faded**:
 Workbench state where the device on the bench shows only as a flat gray see-through silhouette and nothing on it takes a press: the cursor falls through to whatever lies behind it, such as a loose part dropped out of reach, and a held part dropped on it lands on the bench. It can still be rotated. L1 fades the device and brings it back, unless a screen that uses L1 (the Tool window, the inventory) claims it first; leaving the workbench or changing device brings it back too.

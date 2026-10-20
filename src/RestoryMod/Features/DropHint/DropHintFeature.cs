@@ -22,16 +22,7 @@ internal static class DropHintFeature
             "not only screws that are the last thing holding another part.");
     }
 
-    public static bool TargetsPresent() => GameTargets.AllPresent(
-        PatchTargets.DropHintHandleBlocked,
-        PatchTargets.DropHintDetachedSocket,
-        PatchTargets.DropHintHighlighter,
-        PatchTargets.TooltipHighlighterCreate,
-        PatchTargets.ElementProjectionData,
-        PatchTargets.SocketBlockedSockets,
-        PatchTargets.SocketIsBlocked,
-        PatchTargets.SocketNestedElement,
-        PatchTargets.SocketCompatibleElementInfo);
+    public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.DropHint);
 }
 
 /// <summary>After the game's pick, ghosts every screw the dropped part freed.</summary>

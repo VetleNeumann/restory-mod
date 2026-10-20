@@ -41,12 +41,7 @@ internal static class MailListFeature
 
     private static bool? targetsPresent;
 
-    public static bool TargetsPresent() => targetsPresent ??= MailApp.TargetsPresent() && GameTargets.AllPresent(
-        PatchTargets.MailClientList,
-        PatchTargets.MailListEntries,
-        PatchTargets.MailListClick,
-        PatchTargets.MailListPairButton,
-        PatchTargets.MailListPairLetter);
+    public static bool TargetsPresent() => targetsPresent ??= GameTargets.AllPresent(FeatureManifests.MailList);
 
     /// <summary>Set by the player's first selection in this run of the Mail app.</summary>
     public static bool KeepSelected { get; private set; }
@@ -165,7 +160,7 @@ internal static class MailSelectedPatch
 [HarmonyPatch]
 internal static class MailFolderChangedPatch
 {
-    private static bool Prepare() => MailListFeature.TargetsPresent() && GameTargets.AllPresent(PatchTargets.MailFolderChanged);
+    private static bool Prepare() => MailListFeature.TargetsPresent();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.MailFolderChanged)!;
 
@@ -193,7 +188,7 @@ internal static class MailFolderChangedPatch
 [HarmonyPatch]
 internal static class MailContentsChangedPatch
 {
-    private static bool Prepare() => MailListFeature.TargetsPresent() && GameTargets.AllPresent(PatchTargets.MailContentsChanged);
+    private static bool Prepare() => MailListFeature.TargetsPresent();
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.MailContentsChanged)!;
 

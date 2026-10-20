@@ -88,7 +88,7 @@ internal static class PartsBoxPerf
 internal static class PartsBoxShowTimingPatch
 {
     private static bool Prepare() =>
-        PartsBoxDiagnostics.Enabled && GameTargets.AllPresent(PatchTargets.InventoryPanelShow);
+        PartsBoxDiagnostics.Enabled && GameTargets.AllPresent(FeatureManifests.PartsBoxDiagnostics);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.InventoryPanelShow)!;
 

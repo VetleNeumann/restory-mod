@@ -42,16 +42,7 @@ internal static class ButtonPromptsFeature
         DetectThroughSteamInput.SettingChanged += (_, _) => RefreshPrompts();
     }
 
-    public static bool TargetsPresent() => GameTargets.AllPresent(
-        PatchTargets.PromptGetControllerId,
-        PatchTargets.PromptUpdateData,
-        PatchTargets.PromptControllerIdsList,
-        PatchTargets.PromptControllerIdsMap,
-        PatchTargets.PromptGameSettings,
-        PatchTargets.ControllerIdsMapLookup,
-        PatchTargets.ControllerIdsLookup,
-        PatchTargets.ControllerIdsDefaultGamepad,
-        PatchTargets.GameSettingsGamepadScheme);
+    public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.ButtonPrompts);
 
     /// <summary>
     /// What kind of pad this joystick is, preferring Steam's report over Rewired's. Steam's report is for

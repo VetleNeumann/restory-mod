@@ -195,6 +195,16 @@ The sliding panel of Cleaning tools shown during Cleaning. It lists only tools t
 The tool picked in the Tool window, used when Cleaning. L1/R1 step through the Tool window's slots in on-screen order, wrapping at the ends, even mid-action.
 _Avoid_: equipment, selected item
 
+### PC
+
+**PC app**:
+One program on the PC's taskbar, such as the web browser or the Mail app. The taskbar shows every installed PC app, and at most one is open at a time: opening another closes the one that was open, which starts fresh next time.
+_Avoid_: program, window, application (in player-facing text)
+
+**App switch**:
+Closing the open PC app and opening its neighbour on the taskbar with one D-pad left/right press, in on-screen order and wrapping at the ends. From the bare desktop or the start menu, right opens the first PC app and left the last. It does nothing while a dropdown is open, while a PC app is being installed, while typing in a text or number field, or while a hack runs, its popups included (every gamepad button then feeds the hack). The taskbar's own highlight is the only cue.
+_Avoid_: alt-tab, tab switch (that steps browser tabs)
+
 ### Mail
 
 **Mail app**:

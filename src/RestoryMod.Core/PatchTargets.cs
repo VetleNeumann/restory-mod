@@ -154,6 +154,17 @@ public static class PatchTargets
     public static readonly PatchTarget MailFolderButtons = new("Restory.UI.Presenters.GUI_MailClientFoldersPanel", "folderButtons");
     public static readonly PatchTarget MailFolderButtonButton = new("Restory.UI.Presenters.GUI_MailClientFolderButton", "button");
 
+    // App switch: the D-pad opens the neighbouring taskbar button's PC app through the app manager,
+    // as a click on that button would. The hacking app's private state says whether a hack runs.
+    internal const string HackingApp = "Restory.UI.Presenters.PC.Apps.Hacking.GUI_DeviceHackingApp";
+    public static readonly PatchTarget PcToolbarAppButtons = new("Restory.UI.Presenters.GUI_PcWindowsXpToolbar", "appButtons");
+    public static readonly PatchTarget HackingAppState = new(HackingApp, "state");
+
+    // PC click sound: a D-pad or shoulder-button step on the PC replays the screen's own mouse-click sound.
+    internal const string PcScreenClickSfx = "Restory.UI.SFX.GUI_PcScreenClickSFX";
+    public static readonly PatchTarget PcClickSound = new(PcScreenClickSfx, "mouseClickSound");
+    public static readonly PatchTarget PcClickAudioPlayer = new(PcScreenClickSfx, "audioPlayer");
+
     // D-pad part send: after the drag state's per-frame update, the chosen destination's hover state is
     // set and the game's private release handler runs. Trash can and shredder hover via pointer events.
     internal const string DraggingState = "Restory.Gameplay.Disassemble.StateMachine.DraggingDisassembleState";

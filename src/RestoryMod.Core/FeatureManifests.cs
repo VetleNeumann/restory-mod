@@ -294,6 +294,28 @@ public static class FeatureManifests
         new(PatchTargets.MailList, "CurrentlySelectedLetter"),
         new("Restory.UI.Presenters.GUI_EmailMessageButton"));
 
+    public static readonly FeatureManifest AppSwitch = new(nameof(AppSwitch),
+        PcToolbarAppButtons,
+        HackingAppState,
+        PauseMenuIsShown,
+        new(HackingApp + "+State", "Hacking"),
+        new(HackingApp + "+State", "Delay"),
+        new(HackingApp + "+State", "Decision"),
+        new("Restory.UI.Presenters.GUI_PcWindowsXpScreen", "IsVisible"),
+        new("Restory.UI.Presenters.GUI_PcWindowsXpScreen", "Toolbar"),
+        new("Restory.UI.Presenters.GUI_PcWindowsXpScreen", "CurrentState"),
+        new("Restory.UI.Presenters.PcScreenStates", "Desktop"),
+        new("Restory.UI.Presenters.PcScreenStates", "InStartMenu"),
+        new("Restory.UI.Presenters.GUI_PcAppToolbarButton", "AppInfo"),
+        new("Restory.UI.Presenters.PC.Apps.GUI_PcAppBase", "AppInfo"),
+        new("Restory.Gameplay.PC.PcAppManager", "LaunchedApp"),
+        new("Restory.Gameplay.PC.PcAppManager", "LaunchPcApp"));
+
+    public static readonly FeatureManifest PcClickSound = new(nameof(PcClickSound),
+        PatchTargets.PcClickSound,
+        PcClickAudioPlayer,
+        new("Restory.Audio.IAudioPlayerService", "PlaySoundEventOneShot"));
+
     public static readonly FeatureManifest DpadSend = new(nameof(DpadSend),
         DraggingOnUpdate,
         DraggingRelease,
@@ -615,6 +637,8 @@ public static class FeatureManifests
         StickScroll,
         ShoulderButtons,
         MailList,
+        AppSwitch,
+        PcClickSound,
         DpadSend,
         HoverGrace,
         HitboxOverlay,

@@ -132,7 +132,11 @@ internal sealed class ShoulderButtonsPoller : MonoBehaviour
                 tab => tab == switcher.CurrentTab,
                 tab => tab.gameObject.activeInHierarchy,
                 triggerStep,
-                switcher.ResolveTabClick);
+                tab =>
+                {
+                    switcher.ResolveTabClick(tab);
+                    PcClickSound.Play();
+                });
         }
         else if (switcher.CurrentTab)
         {
@@ -168,17 +172,22 @@ internal sealed class ShoulderButtonsPoller : MonoBehaviour
             step,
             button => button.onClick.Invoke());
 
+    /// <summary>The entries that still exist, in on-screen order; the game's lists don't always run that way.</summary>
+    internal static List<T> OnScreen<T>(IEnumerable<T> entries) where T : Component
+    {
+        var live = entries.Where(e => e).ToList();
+        var order = ShoulderStep.ScreenOrder(live.Select(e => (e.transform.position.x, e.transform.position.y)).ToList());
+        return order.Select(i => live[i]).ToList();
+    }
+
     /// <summary>
     /// Moves <paramref name="step"/> places from the current entry in on-screen order, wrapping, and
-    /// selects that entry. The game's lists don't always run in screen order.
+    /// selects that entry.
     /// </summary>
     private static void StepOnScreen<T>(IReadOnlyList<T> entries, Func<T, bool> isCurrent,
         Func<T, bool> isSelectable, int step, Action<T> select) where T : Component
     {
-        var live = entries.Where(e => e).ToList();
-        var order = ShoulderStep.ScreenOrder(live.Select(e => (e.transform.position.x, e.transform.position.y)).ToList());
-        var onScreen = order.Select(i => live[i]).ToList();
-
+        var onScreen = OnScreen(entries);
         var current = onScreen.FindIndex(e => isCurrent(e));
         var next = ShoulderStep.Cycle(onScreen.Select(isSelectable).ToList(), current, step);
         if (next >= 0 && next != current) select(onScreen[next]);

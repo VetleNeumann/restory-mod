@@ -66,6 +66,23 @@ internal static class HintGhosts
         if (ledger is not null && owner == highlighter) ledger.PulseEnded();
     }
 
+    /// <summary>
+    /// After a hot reload, while a pulse still runs: takes over the ghosts the old copy handed back
+    /// plain, so they get the hint's look again and still leave once their part stops being ready.
+    /// Needs the workbench session resumed first; nothing on a normal start.
+    /// </summary>
+    internal static void Resume()
+    {
+        var service = WorkbenchSession.Service;
+        if (service is null || !EveryPartHintFeature.TargetsPresent()) return;
+        var highlighter = WorkbenchSession.Highlighter(service);
+        if (!highlighter || HintPulse.Running(highlighter!) is null) return;
+        var plan = EveryPartHintFeature.PlanNow();
+        if (plan is null) return;
+        For(highlighter!).Adopt(plan);
+        Plugin.Logger.LogInfo("Hint ghosts taken over from the previous plugin copy.");
+    }
+
     /// <summary>On unload: hands every ghost back to the plain pulse and drops the copied presets.</summary>
     internal static void Unload()
     {

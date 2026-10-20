@@ -145,6 +145,7 @@ public class Plugin : BaseUnityPlugin
         // fire for this copy: pick up their work here. On a normal start these find nothing.
         NotepadKeyListenPatch.Resume();
         WorkbenchSession.Resume();
+        HintGhosts.Resume();
         DropdownModesFeature.FindCursors();
         PartsBoxSections.AttachToPanels();
         Teardown.Add(NotepadKeyListenPatch.Unload);

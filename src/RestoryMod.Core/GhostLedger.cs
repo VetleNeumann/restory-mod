@@ -7,6 +7,8 @@ namespace RestoryMod.Core;
 /// <summary>
 /// The game's hint pulse as the ghost ledger drives it. A spot is what a ghost sits on (a socket, or a
 /// loose part); the pulse keeps the ghosts, and the marker is the game's own screw-slot marker there.
+/// Where it returns "null", it must be a real null, never a destroyed engine object: the ledger
+/// compares references.
 /// </summary>
 public interface IGhostPulse<TSpot, TGhost> where TGhost : class
 {

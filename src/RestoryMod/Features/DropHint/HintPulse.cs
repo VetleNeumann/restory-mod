@@ -147,7 +147,7 @@ internal static class HintPulseStaleGhostPatch
 
     private static void Postfix(DisassembleTooltipService __instance, ElementSocket socket)
     {
-        if (!HintPulse.Tidy.Value || !socket) return;
+        if (!socket) return;
         try
         {
             var highlighter = WorkbenchSession.Highlighter(__instance);

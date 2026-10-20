@@ -153,7 +153,9 @@ internal static class EveryPartHintFeature
     private static void Show(Device device, TooltipProjectionHighlighter highlighter, bool takingApart)
     {
         var ledger = HintGhosts.For(highlighter);
-        foreach (var item in Hint.Plan(Snapshot(device), takingApart)) ledger.Show(item);
+        var plan = Hint.Plan(Snapshot(device), takingApart);
+        foreach (var item in plan) ledger.Show(item);
+        ledger.Reconcile(plan);
     }
 
     /// <summary>The device's sockets and the loose parts on the bench, as the hint's plan reads them.</summary>
@@ -162,6 +164,7 @@ internal static class EveryPartHintFeature
         Sockets.Clear();
         Loose.Clear();
         var records = new Dictionary<ElementSocket, BenchSocket<Transform>>();
+        var unfilled = new Queue<ElementSocket>();
         BenchSocket<Transform> Of(ElementSocket socket)
         {
             if (records.TryGetValue(socket, out var record)) return record;
@@ -169,13 +172,16 @@ internal static class EveryPartHintFeature
             record = new BenchSocket<Transform>(socket.transform, takes ? takes : null,
                 takes && takes.Category == ElementCategory.Small);
             records[socket] = record;
+            unfilled.Enqueue(socket);
             Sockets[socket.transform] = socket;
             return record;
         }
 
         var sockets = device.ElementSockets.Select(Of).ToList();
-        foreach (var socket in device.ElementSockets)
+        // Fill in every socket reached, including blockers and tube places the device doesn't list.
+        while (unfilled.Count > 0)
         {
+            var socket = unfilled.Dequeue();
             var record = records[socket];
             record.Part = PartOf(socket.NestedElement, installed: true);
             record.LastPart = PartOf(socket.LastNestedElement, installed: false);
@@ -234,6 +240,13 @@ internal static class EveryPartHintFeature
         };
     }
 
+    /// <summary>On unload: lets go of the last snapshot's scene objects.</summary>
+    internal static void Unload()
+    {
+        Sockets.Clear();
+        Loose.Clear();
+    }
+
     /// <summary>The game's own marker on a screw slot, or null.</summary>
     public static ElementProjection? Marker(Transform spot)
     {
@@ -258,7 +271,7 @@ internal static class EveryPartHintFeature
     private static bool errorLogged;
 
     /// <summary>Logs the first failure only, then lets the game's own hint run.</summary>
-    private static void LogOnce(Exception e)
+    internal static void LogOnce(Exception e)
     {
         if (errorLogged) return;
         errorLogged = true;

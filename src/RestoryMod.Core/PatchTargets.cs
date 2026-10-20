@@ -284,6 +284,12 @@ public static class PatchTargets
     public static readonly PatchTarget ZoomTarget = new(ZoomController, "targetZoom");
     public static readonly PatchTarget PlayerInputGetAxisRaw = new("Restory.Gameplay.PlayerInput.RewiredPlayerInput", "GetAxisRaw");
 
+    // Workbench advice: the controls sign at the workbench, set up when the game first shows it. Its zoom
+    // prompts are found by action and axis range; our rows are clones of its rotation row.
+    internal const string WorkSurface = "Restory.Gameplay.Workplace.WorkSurface";
+    public static readonly PatchTarget WorkSurfaceToggleAdvices = new(WorkSurface, "ToggleDisassembleControlsAdvices");
+    public static readonly PatchTarget WorkSurfaceAdviceSign = new(WorkSurface, "disassembleControlsAdviceSign");
+
     // R2 works the tool while Cleaning or painting, as Cross does: R2's press and release go to each
     // state's own handlers for Cross, a Cross release waits while R2 is held, and painting's per-frame
     // read of Cross sees it held.

@@ -12,8 +12,10 @@ public static class PlayStationGlyphs
 {
     private static readonly Dictionary<int, string> Sprites = new()
     {
-        [0] = "PS5_LeftStick", [1] = "PS5_LeftStick", [23] = "PS5_LeftStick",
-        [2] = "PS5_RightStick", [3] = "PS5_RightStick", [24] = "PS5_RightStick",
+        // Stick movement: the PS5 stick sprites read "L3"/"R3", which means pressing the stick, and the
+        // game's own PlayStation art is "?". The Xbox "L"/"R" badges match the PS5 set's look.
+        [0] = "XBOX_LS", [1] = "XBOX_LS", [23] = "XBOX_LS",
+        [2] = "XBOX_RS", [3] = "XBOX_RS", [24] = "XBOX_RS",
         [4] = "PS5Cross",
         // The game's own template draws ids 5/6 and 8/9 alike.
         [5] = "PS5_Circle", [6] = "PS5_Circle",

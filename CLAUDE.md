@@ -71,6 +71,7 @@ fails when the code reaches it instead.
 - Rotation sensitivity (right-stick spin at the workbench): row directly under "Controller sensitivity", same
   range and format; default 0.4 (1.0 = game speed, far too fast).
 - "R2 hint" dropdown (Hold / Toggle / Off, default Hold): row directly under "Rotation sensitivity".
+- Triangle opens the Notepad, Square the inventory (swapped from the game; `SwapNotepadInventoryButtons`).
 - L1 at the workbench fades the device (gray see-through, cursor falls through); screens that use L1 come first.
 - Parts box: "Missing parts" / "Other parts" headers as they are now (label + thin rule). Missing is per
   socket, matching the game's notepad. Sort: section, then "How to reassemble" order (only this flips with

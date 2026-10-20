@@ -6,6 +6,8 @@ using Restory.Gameplay.Disassemble.StateMachine;
 using Restory.Gameplay.Elements;
 using RestoryMod.Core;
 using RestoryMod.Features.DropHint;
+using RestoryMod.Features.ShoulderButtons;
+using Rewired;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
@@ -15,9 +17,9 @@ namespace RestoryMod.Features.Fade;
 /// <summary>
 /// Fades the device on the bench: every part of it is drawn as one flat, see-through gray, and its
 /// colliders are switched off, so the cursor falls through to whatever lies behind it (a loose part
-/// dropped out of reach) and a part dropped on it lands on the bench. L1 fades it and brings it back
-/// (see <see cref="ShoulderButtons.ShoulderButtonsPoller"/>, where screens that use L1 come first), as
-/// does H on a keyboard. Leaving the workbench or changing device brings it back.
+/// dropped out of reach) and a part dropped on it lands on the bench. It stays faded while L1 is held
+/// (see <see cref="ShoulderButtons.ShoulderButtonsPoller"/>, where screens that use L1 come first), or H
+/// on a keyboard. Letting go, leaving the workbench or changing device brings it back.
 /// </summary>
 internal static class DeviceFadeFeature
 {
@@ -26,9 +28,9 @@ internal static class DeviceFadeFeature
     public static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("Workbench", "L1FadesDevice", true,
-            "At the workbench, L1 (H on a keyboard) fades the device to a gray see-through shape that the cursor " +
-            "passes through, so parts behind it can be picked up. Press again to bring it back. Screens that use " +
-            "L1 (the inventory, the Tool window) take it first.");
+            "At the workbench, holding L1 (H on a keyboard) fades the device to a gray see-through shape that the " +
+            "cursor passes through, so parts behind it can be picked up. Letting go brings it back. Screens that " +
+            "use L1 (the inventory, the Tool window) take it first.");
     }
 
     public static bool TargetsPresent() => WorkbenchSession.StatePresent && GameTargets.AllPresent(FeatureManifests.DeviceFade);
@@ -81,13 +83,10 @@ internal static class DeviceFade
         return device ? device : null;
     }
 
-    public static void Toggle()
+    /// <summary>Fades the fadeable device; <see cref="DeviceFadePoller"/> brings it back once the button is let go.</summary>
+    public static void Fade()
     {
-        if (faded)
-        {
-            Restore();
-            return;
-        }
+        if (faded) return;
         var device = Fadeable();
         if (!device) return;
         faded = device;
@@ -195,19 +194,27 @@ internal static class DeviceFade
     }
 }
 
-/// <summary>Keeps the faded device faded, and takes H on a keyboard.</summary>
+/// <summary>Keeps the faded device faded while L1 or H is held, and takes H on a keyboard.</summary>
 internal sealed class DeviceFadePoller : MonoBehaviour
 {
     private void Update()
     {
         try
         {
-            if (Input.GetKeyDown(KeyCode.H) && (DeviceFade.IsFaded || DeviceFade.Fadeable())) DeviceFade.Toggle();
+            if (Input.GetKeyDown(KeyCode.H) && DeviceFade.Fadeable()) DeviceFade.Fade();
+            if (DeviceFade.IsFaded && !Held()) DeviceFade.Restore();
             DeviceFade.Update();
         }
         catch (Exception e)
         {
             DeviceFadeFeature.LogOnce(e);
         }
+    }
+
+    private static bool Held()
+    {
+        if (Input.GetKey(KeyCode.H)) return true;
+        var player = ReInput.isReady ? ReInput.players.GetPlayer(GamePlayer.Id) : null;
+        return player is not null && player.GetButton(ShoulderButtonsFeature.PreviousActionId);
     }
 }

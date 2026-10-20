@@ -6,6 +6,7 @@ using HarmonyLib;
 using RestoryMod.Core;
 using RestoryMod.Features.ButtonPrompts;
 using RestoryMod.Features.CursorSpeed;
+using RestoryMod.Features.DropHint;
 using RestoryMod.Features.RotationSpeed;
 using TMPro;
 using UnityEngine;
@@ -17,9 +18,9 @@ namespace RestoryMod.Features.Settings;
 
 /// <summary>
 /// Adds the mod's rows to the settings menu, below "Dialogue volume": the "Controller sensitivity" and
-/// "Rotation sensitivity" sliders, then the "Button prompts" dropdown. The menu is prefab-wired, so
-/// each row is cloned on the first Show(): sliders from the dialogue volume row, the dropdown from the
-/// monitor row. Unloading the plugin takes the rows out and restores the navigation, so a hot reload
+/// "Rotation sensitivity" sliders, then the "R2 hint" and "Button prompts" dropdowns. The menu is
+/// prefab-wired, so each row is cloned on the first Show(): sliders from the dialogue volume row,
+/// dropdowns from the monitor row. Unloading the plugin takes the rows out and restores the navigation, so a hot reload
 /// adds fresh rows on the next Show().
 /// </summary>
 [HarmonyPatch]
@@ -43,6 +44,8 @@ internal static class SettingsRowsPatch
             RotationSpeedFeature.TargetsPresent),
     };
 
+    private const string HintButtonRowName = "RestoryMod_R2Hint";
+    private const string HintButtonLabel = "R2 hint";
     private const string ButtonPromptsRowName = "RestoryMod_ButtonPrompts";
     private const string ButtonPromptsLabel = "Button prompts";
 
@@ -77,8 +80,22 @@ internal static class SettingsRowsPatch
                 aboveRow = row;
             }
 
-            if (ButtonPromptsDropdownAvailable())
-                FindOrCreate(templateRow.parent, ButtonPromptsRowName, () => CreateButtonPromptsRow(__instance, above, aboveRow));
+            if (!DropdownTargetsPresent()) return;
+            if (ScrewHintButtonFeature.TargetsPresent())
+            {
+                var hintRow = FindOrCreate(templateRow.parent, HintButtonRowName, () => CreateDropdownRow(__instance,
+                    HintButtonRowName, HintButtonLabel, above, aboveRow,
+                    (dropdown, row) => row.AddComponent<HintButtonRow>().Init(dropdown, ScrewHintButtonFeature.Mode)));
+                if (hintRow)
+                {
+                    above = hintRow!.GetComponentInChildren<TMP_Dropdown>(true);
+                    aboveRow = hintRow;
+                }
+            }
+            if (ButtonPromptsFeature.TargetsPresent())
+                FindOrCreate(templateRow.parent, ButtonPromptsRowName, () => CreateDropdownRow(__instance,
+                    ButtonPromptsRowName, ButtonPromptsLabel, above, aboveRow,
+                    (dropdown, row) => row.AddComponent<ButtonPromptsRow>().Init(dropdown, ButtonPromptsFeature.Style)));
         }
         catch (Exception e)
         {
@@ -111,13 +128,14 @@ internal static class SettingsRowsPatch
             row.AddComponent<SensitivityRow>().Init(slider, slider.GetComponentInChildren<TMP_Text>(true), spec.Entry);
         });
 
-    private static bool ButtonPromptsDropdownAvailable() =>
-        ButtonPromptsFeature.TargetsPresent() && GameTargets.AllPresent(
-            PatchTargets.SettingsMenuMainView,
-            PatchTargets.MainViewMonitorDropdown,
-            PatchTargets.RestoryDropdownContainer);
+    private static bool DropdownTargetsPresent() => GameTargets.AllPresent(
+        PatchTargets.SettingsMenuMainView,
+        PatchTargets.MainViewMonitorDropdown,
+        PatchTargets.RestoryDropdownContainer);
 
-    private static Transform? CreateButtonPromptsRow(MonoBehaviour menu, Selectable above, Transform aboveRow)
+    /// <summary>A dropdown row cloned from the monitor row; <paramref name="bind"/> wires it to its setting.</summary>
+    private static Transform? CreateDropdownRow(MonoBehaviour menu, string name, string label, Selectable above,
+        Transform aboveRow, Action<TMP_Dropdown, GameObject> bind)
     {
         var mainView = GameTargets.Field(PatchTargets.SettingsMenuMainView)!.GetValue(menu);
         if (GameTargets.Field(PatchTargets.MainViewMonitorDropdown)!.GetValue(mainView) is not TMP_Dropdown template || !template)
@@ -132,7 +150,7 @@ internal static class SettingsRowsPatch
             return null;
         }
 
-        return CloneRow(template.transform.parent, ButtonPromptsRowName, ButtonPromptsLabel, above, aboveRow, row =>
+        return CloneRow(template.transform.parent, name, label, above, aboveRow, row =>
         {
             var dropdown = row.GetComponentInChildren<TMP_Dropdown>(true);
             dropdown.onValueChanged = new TMP_Dropdown.DropdownEvent();
@@ -140,7 +158,7 @@ internal static class SettingsRowsPatch
             container.InjectGameObject(row);
 
             SpliceNavigation(above, dropdown, clearSideLinks: true);
-            row.AddComponent<ButtonPromptsRow>().Init(dropdown, ButtonPromptsFeature.Style);
+            bind(dropdown, row);
         });
     }
 
@@ -334,4 +352,34 @@ internal sealed class ButtonPromptsRow : MonoBehaviour, ISettingsRow
     }
 
     private void OnDropdownChanged(int index) => entry.Value = PromptStyles.FromIndex(index);
+}
+
+/// <summary>Binds a cloned dropdown to the "R2 hint" setting: Hold, Toggle or Off.</summary>
+internal sealed class HintButtonRow : MonoBehaviour, ISettingsRow
+{
+    private static readonly HintButtonMode[] InMenuOrder = { HintButtonMode.Hold, HintButtonMode.Toggle, HintButtonMode.Off };
+
+    private TMP_Dropdown dropdown = null!;
+    private ConfigEntry<HintButtonMode> entry = null!;
+
+    public void Init(TMP_Dropdown dropdown, ConfigEntry<HintButtonMode> entry)
+    {
+        this.dropdown = dropdown;
+        this.entry = entry;
+        dropdown.ClearOptions();
+        dropdown.AddOptions(InMenuOrder.Select(mode => mode.ToString()).ToList());
+        dropdown.onValueChanged.AddListener(index => this.entry.Value = InMenuOrder[index]);
+    }
+
+    private void OnEnable()
+    {
+        if (dropdown) Refresh();
+    }
+
+    public void Refresh()
+    {
+        if (!dropdown || dropdown.IsExpanded) return;
+        dropdown.SetValueWithoutNotify(Math.Max(0, Array.IndexOf(InMenuOrder, entry.Value)));
+        dropdown.RefreshShownValue();
+    }
 }

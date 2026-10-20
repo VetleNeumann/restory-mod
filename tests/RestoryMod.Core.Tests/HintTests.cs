@@ -124,6 +124,29 @@ public class HintTests
         new(name, Screw, takesScrew: true) { LastPart = Part(name + " screw", Screw) };
 
     [Fact]
+    public void Taking_apart_with_nothing_left_needing_work_shows_putting_back_instead()
+    {
+        // Every installed part is known and perfect: the next step is putting the board back.
+        var screw = Socket("screw", Screw, Part("s", Screw));
+        var lid = Socket("lid", Lid, Part("l", Lid));
+        var board = Socket("board", Board);
+        Block(lid, screw);
+        var plan = Hint.Plan(new Bench<string>(new[] { screw, lid, board }, new[] { Part("loose board", Board) }),
+            takingApart: true);
+        Assert.Equal(new[] { "LoosePart loose board" }, plan.Select(i => $"{i.Kind} {i.Target}"));
+    }
+
+    [Fact]
+    public void Taking_apart_with_an_unknown_part_left_still_shows_taking_apart()
+    {
+        var lid = Socket("lid", Lid, Part("l", Lid, condition: null));
+        var board = Socket("board", Board);
+        var plan = Hint.Plan(new Bench<string>(new[] { lid, board }, new[] { Part("loose board", Board) }),
+            takingApart: true);
+        Assert.Equal(new[] { "Part lid" }, plan.Select(i => $"{i.Kind} {i.Target}"));
+    }
+
+    [Fact]
     public void Putting_back_an_empty_screw_slot_is_ready()
     {
         Assert.Equal(new[] { "ScrewSlot slot" }, PuttingBack(new[] { Slot("slot") }));

@@ -284,6 +284,19 @@ public static class PatchTargets
     public static readonly PatchTarget ZoomTarget = new(ZoomController, "targetZoom");
     public static readonly PatchTarget PlayerInputGetAxisRaw = new("Restory.Gameplay.PlayerInput.RewiredPlayerInput", "GetAxisRaw");
 
+    // R2 works the tool while Cleaning or painting, as Cross does: R2's press and release go to each
+    // state's own handlers for Cross, a Cross release waits while R2 is held, and painting's per-frame
+    // read of Cross sees it held.
+    internal const string CleaningState = "Restory.Gameplay.Disassemble.StateMachine.CleaningDisassembleState";
+    internal const string PaintingState = "Restory.Gameplay.Disassemble.StateMachine.PaintingDisassembleState";
+    public static readonly PatchTarget CleaningExecutePressed = new(CleaningState, "ResolveButtonJustPressed");
+    public static readonly PatchTarget CleaningExecuteReleased = new(CleaningState, "ResolveButtonJustReleased");
+    public static readonly PatchTarget PaintingExecutePressed = new(PaintingState, "ResolveButtonJustPressed");
+    public static readonly PatchTarget PaintingExecuteReleased = new(PaintingState, "ResolveButtonJustReleased");
+    public static readonly PatchTarget PaintingOnUpdate = new(PaintingState, "OnUpdate");
+    public static readonly PatchTarget StateMachineActiveState = new("Restory.Infrastructure.StateMachines.StateMachineMonoBase", "ActiveState");
+    public static readonly PatchTarget PlayerInputGetButtonRaw = new("Restory.Gameplay.PlayerInput.RewiredPlayerInput", "GetButton");
+
     // Outline diagnostics ([Debug] OutlineDiagnostics): every outline switch and preset change on
     // parts, screws and slots, the slot pulse, and the socket graph the drop hint reads.
     internal const string OutlinableAdapter = "Restory.Gameplay.Common.OutlinableAdapter";

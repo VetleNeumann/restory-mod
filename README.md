@@ -61,7 +61,14 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 - **Zoom toggle**: at the workbench, L2 toggles between zoomed in and out, instead of L2/R2 zooming
   in and out while held. The mouse wheel zooms as before.
 - **Screw hint button**: at the workbench, R2 shows the game's own hint (Space on a keyboard), which
-  otherwise has no gamepad button. Hold it to keep the pulse lit; it fades once you let go.
+  otherwise has no gamepad button. The "R2 hint" row in the settings menu picks Hold (lit while held),
+  Toggle (lit until R2 is pressed again or you leave the workbench) or Off.
+- **R2 works the tool**: while cleaning, soldering or painting a part, R2 does exactly what Cross (A on
+  Xbox) does; holding either keeps the tool going. Only while the zoom toggle is on, as otherwise R2 zooms.
+- **Device fade**: at the workbench, L1 (H on a keyboard) fades the device to a gray see-through shape
+  the cursor passes through, so loose parts behind or under it can be picked up; press again to bring it
+  back. The inventory and the Tool window take L1 first. Leaving the workbench or changing device brings
+  it back.
 - **Every-part hint**: the game's hint pulses every part you can act on now, not only the next part's
   screws. Taking a device apart: every part and screw you can take out now on the way to a part you
   haven't seen yet or one known to need cleaning or replacing (it never gives away a part's condition
@@ -70,7 +77,8 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
   on the bench. Screws go first: while one can go in, the parts show faint and steady, because the game
   doesn't always know a part covers a screw hole. Each ghost is filled in, so overlapping parts stay apart. A pulse leaves
   as soon as its part is picked up, goes in, or its socket is taken. The game decides which of the two
-  you are doing from your last change to the device. Renamed from `HintShowsEveryScrew`; the old setting
+  you are doing from your last change to the device; once no part left in it needs work or is unknown,
+  the hint shows putting back even before the first part goes in. Renamed from `HintShowsEveryScrew`; the old setting
   carries over.
 - **Hitbox overlay** (debug, off by default): at the workbench, draws each thing's hitbox over the game,
   its enlarged hitbox, what the cursor hovers, and a readout of everything under the cursor.
@@ -88,7 +96,9 @@ A BepInEx 5 mod for *ReStory: Chill Electronics Repairs*, mostly about playing c
 | Controller | DropdownModes | true | Gamepad dropdowns |
 | Controller | DpadSendParts | true | D-pad part sends |
 | Controller | TriggerZoomToggle | true | Zoom toggle |
-| Controller | R2ShowsScrewHints | true | Screw hint button |
+| Controller | R2Hint | Hold | Screw hint button: Hold, Toggle or Off (also in the settings menu) |
+| Controller | R2Cleans | true | R2 works the tool while cleaning or painting |
+| Workbench | L1FadesDevice | true | Device fade |
 | Controller | HoverGraceMs | 150 | Hover grace window in ms (0 to 500, 0 = off) |
 | Controller | EnlargeSmallHitboxes | false | Minimum hitbox size at the workbench, with a gamepad |
 | Controller | MinimumHitboxSize | 4 | Minimum hitbox size in % of screen height (0 to 15) |

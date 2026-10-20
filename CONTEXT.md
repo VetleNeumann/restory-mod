@@ -67,8 +67,12 @@ A socket that could take a part right now but that no loose part on the bench is
 _Avoid_: Empty slot, missing part
 
 **Hint**:
-The workbench aid that points out every ready part (a pulse on an attached part or screw, a part ghost in each socket a loose part or screw can fill), shows missing sockets in red and waiting parts faint, and follows whether the player is taking the device apart or putting it back together. Holding R2 shows it again.
+The workbench aid that points out every ready part (a pulse on an attached part or screw, a part ghost in each socket a loose part or screw can fill), shows missing sockets in red and waiting parts faint, and follows whether the player is taking the device apart or putting it back together; once no part left on the device needs work or is unknown, it shows putting back even before the first part goes in. R2 shows it again: while held, or until pressed again, as the "R2 hint" setting picks (Hold, Toggle or Off).
 _Avoid_: Highlight, drop hint, screw hint (that was its first, screws-only form)
+
+**Faded**:
+Workbench state where the device on the bench shows only as a flat gray see-through silhouette and nothing on it takes a press: the cursor falls through to whatever lies behind it, such as a loose part dropped out of reach, and a held part dropped on it lands on the bench. It can still be rotated. L1 fades the device and brings it back, unless a screen that uses L1 (the Tool window, the inventory) claims it first; leaving the workbench or changing device brings it back too.
+_Avoid_: Ghost (a part ghost is something else), hidden (a Notepad state), x-ray
 
 **Waiting part**:
 A loose part whose socket could take it, but only after the screws that go in first; the hint shows its part ghost faint until they are in.
@@ -177,7 +181,7 @@ The row of category toggles that filters a list: on each browser tab (Marketplac
 _Avoid_: filter, tabs, sub-tabs
 
 **Cleaning**:
-The workbench state where one part sits on the cleaner to be brushed, blown or soldered. Soldering is part of Cleaning, not a separate mode.
+The workbench state where one part sits on the cleaner to be brushed, blown or soldered. Soldering is part of Cleaning, not a separate mode. R2 works the tool exactly as the grab input does (A on Xbox, Cross on PlayStation), as it does when painting, unless the triggers zoom.
 _Avoid_: repair mode, repairing
 
 **Tool window**:

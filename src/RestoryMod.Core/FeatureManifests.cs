@@ -523,6 +523,30 @@ public static class FeatureManifests
         ZoomTarget,
         PlayerInputGetAxisRaw);
 
+    public static readonly FeatureManifest R2Tool = new(nameof(R2Tool),
+        CleaningExecutePressed,
+        CleaningExecuteReleased,
+        PaintingExecutePressed,
+        PaintingExecuteReleased,
+        PaintingOnUpdate,
+        PlayerInputGetButtonRaw,
+        ActivateAction,
+        TooltipServiceIsActive,
+        TooltipServiceStateMachine,
+        StateMachineActiveState,
+        new(CleaningState),
+        new(PaintingState));
+
+    public static readonly FeatureManifest DeviceFade = new(nameof(DeviceFade),
+        TooltipServiceTargetDevice,
+        TooltipServiceIsActive,
+        TooltipServiceStateMachine,
+        StateMachineActiveState,
+        ProjectionType,
+        new(DisassembleDetection),
+        new(DraggingState),
+        new("Restory.Gameplay.Devices.Device"));
+
     public static readonly FeatureManifest SettingsMenuDump = new(nameof(SettingsMenuDump),
         SettingsMenuShow);
 
@@ -573,6 +597,8 @@ public static class FeatureManifests
         ScrewHintButton,
         EveryPartHint,
         ZoomToggle,
+        R2Tool,
+        DeviceFade,
         SettingsMenuDump,
         GamepadBindingsDump,
         OutlineDiagnostics,

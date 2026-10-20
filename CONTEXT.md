@@ -82,6 +82,18 @@ _Avoid_: Ghost (a part ghost is something else), hidden (a Notepad state), x-ray
 A loose part whose socket could take it, but only after the screws that go in first; the hint shows its part ghost faint until they are in.
 _Avoid_: Pending part, blocked part (that is an attached part that can't come off)
 
+**Mark**:
+The visible treatment one thing at the workbench carries at a given moment: a pulse, a part ghost (yellow, red or faint), a hover outline, or none. Every thing carries exactly one.
+_Avoid_: Highlight, outline (when any mark is meant), glow
+
+**Pulse**:
+The hint's mark on an attached part or screw: an outline that runs white to yellow and back.
+_Avoid_: Flash, blink, highlight
+
+**Hover outline**:
+The game's own orange outline on the thing under the virtual cursor that a press would act on.
+_Avoid_: Highlight, selection, hover highlight
+
 ### Hitboxes
 
 **Hitbox**:

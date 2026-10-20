@@ -37,6 +37,13 @@ public static class ThingKinds
     public static bool Enlargeable(this ThingKind kind) =>
         kind is ThingKind.Screw or ThingKind.ScrewSlot or ThingKind.LoosePart or ThingKind.AttachedPart or ThingKind.Switch;
 
+    /// <summary>
+    /// Whether the game's hover highlight may show on a part: not on a blocked part, which a press does
+    /// nothing to. Some prefabs let the game outline a blocked part in its "can't act" red; the mod
+    /// leaves it dark, as most prefabs do.
+    /// </summary>
+    public static bool ShowsHoverHighlight(bool blocked, bool switchable) => !blocked || switchable;
+
     public static string Label(this ThingKind kind) => kind switch
     {
         ThingKind.Screw => "screw",

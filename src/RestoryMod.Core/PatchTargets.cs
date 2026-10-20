@@ -376,6 +376,13 @@ public static class PatchTargets
     public static readonly PatchTarget PromptViewControllerId = new(PromptView, "controllerId");
     public static readonly PatchTarget PromptViewElementId = new(PromptView, "elementId");
 
+    // Blocked hover: the game's hover highlight on a part is set when its selection changes; the
+    // view's part and outline are read by name.
+    internal const string ElementView = "Restory.Gameplay.Elements.ElementView";
+    public static readonly PatchTarget ElementViewResolveSelection = new(ElementView, "ResolveSelectionStateChanged");
+    public static readonly PatchTarget ElementViewElement = new(ElementView, "element");
+    public static readonly PatchTarget ElementViewOutline = new(ElementView, "outlineAdapter");
+
     /// <summary>Named targets TargetCheck can't resolve, each with the reason.</summary>
     public static IReadOnlyList<PatchTarget> Unchecked { get; } = new[]
     {

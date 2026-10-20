@@ -8,6 +8,7 @@ using RestoryMod.Features.ButtonPrompts;
 using RestoryMod.Features.ButtonSwap;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
+using RestoryMod.Features.HoverHighlight;
 using RestoryMod.Features.DpadSend;
 using RestoryMod.Features.DropHint;
 using RestoryMod.Features.DropdownModes;
@@ -142,6 +143,7 @@ public class Plugin : BaseUnityPlugin
             typeof(OutlineAdapterActivePatch),
             typeof(OutlineAdapterPresetPatch),
             typeof(ProjectionPulsePatch),
+            typeof(BlockedHoverPatch),
             typeof(DropHintGraphPatch),
             typeof(ButtonPromptsPatch),
             typeof(PlayStationArtPatch));

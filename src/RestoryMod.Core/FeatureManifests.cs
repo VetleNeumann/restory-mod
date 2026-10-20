@@ -622,6 +622,15 @@ public static class FeatureManifests
         new(ElementBase, "IsHighlighted"),
         new(OutlinableAdapter, "IsActive"));
 
+    public static readonly FeatureManifest BlockedHover = new(nameof(BlockedHover),
+        ElementViewResolveSelection,
+        ElementViewElement,
+        ElementViewOutline,
+        ElementIsBlocked,
+        SwitchableElement,
+        new(ElementBase, "IsInstalling"),
+        new(OutlinableAdapter, "IsActive"));
+
     public static IReadOnlyList<FeatureManifest> All { get; } = new[]
     {
         ButtonPrompts,
@@ -655,5 +664,6 @@ public static class FeatureManifests
         SettingsMenuDump,
         GamepadBindingsDump,
         OutlineDiagnostics,
+        BlockedHover,
     };
 }

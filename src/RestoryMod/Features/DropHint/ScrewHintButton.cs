@@ -12,20 +12,22 @@ namespace RestoryMod.Features.DropHint;
 
 /// <summary>
 /// R2 at the workbench runs the game's own hint, whose GetTooltip action (Space) has no gamepad
-/// button; see <see cref="EveryPartHintFeature"/> for what it shows. Holding it keeps the pulse at
-/// full brightness and keeps checking for ready parts, so parts that become ready join it; letting go
-/// fades it as usual. R2 otherwise zooms out, which
-/// <see cref="ZoomToggle.ZoomToggleFeature"/> takes over.
+/// button; see <see cref="EveryPartHintFeature"/> for what it shows. While R2 keeps it lit (held, or
+/// until pressed again, per the "R2 hint" setting) the pulse stays at full brightness and ready parts
+/// are checked for again, so parts that become ready join it; once let go it fades as usual. R2
+/// otherwise zooms out, which <see cref="ZoomToggle.ZoomToggleFeature"/> takes over.
 /// </summary>
 internal static class ScrewHintButtonFeature
 {
-    public static ConfigEntry<bool> Enabled = null!;
+    public static ConfigEntry<HintButtonMode> Mode = null!;
 
     public static void Bind(ConfigFile config)
     {
-        Enabled = config.Bind("Controller", "R2ShowsScrewHints", true,
-            "At the workbench, R2 shows the game's screw hint, as Space does on a keyboard. Hold it to keep the " +
-            "hint lit until you let go. With TriggerZoomToggle off, R2 also still zooms out.");
+        Mode = config.Bind("Controller", "R2Hint", HintButtonMode.Hold,
+            "At the workbench, R2 shows the hint, as Space does on a keyboard. Hold: it stays lit while R2 is " +
+            "held. Toggle: it stays lit until R2 is pressed again or you leave the workbench. Off: R2 leaves " +
+            "the hint alone. Also in the settings menu as \"R2 hint\". With TriggerZoomToggle off, R2 also still " +
+            "zooms out.");
     }
 
     public static bool TargetsPresent() => HintPulse.TargetsPresent() && WorkbenchSession.TargetsPresent()
@@ -42,17 +44,19 @@ internal static class ScrewHintButtonFeature
     }
 }
 
-/// <summary>Reads R2 each frame: a press runs the game's hint, holding keeps the pulse at its peak.</summary>
+/// <summary>Reads R2 each frame: a press runs the game's hint, and while R2 keeps it lit the pulse stays at its peak.</summary>
 internal sealed class ScrewHintPoller : MonoBehaviour
 {
     private static readonly MethodInfo? GameHintPressed = GameTargets.Method(PatchTargets.TooltipServiceShow);
     private static readonly object[] NoEvent = { default(InputActionEventData) };
 
-    /// <summary>How often a held R2 checks again for parts that became ready.</summary>
+    /// <summary>How often a lit hint checks again for parts that became ready.</summary>
     private const float RecheckSeconds = 0.2f;
 
     /// <summary>The highlighter whose pulse R2 started and still holds, null once let go.</summary>
     private TooltipProjectionHighlighter? holding;
+
+    private readonly HintButton button = new();
 
     private float nextRecheck;
 
@@ -62,12 +66,17 @@ internal sealed class ScrewHintPoller : MonoBehaviour
         {
             GamepadTriggers.Right(out var pressed, out var down);
 
-            if (pressed && ScrewHintButtonFeature.Enabled.Value)
+            // Only a press at the bench itself counts, and only there does a lit hint check again: R2
+            // works the tool while Cleaning or painting. The game drops its device on leaving the bench.
+            var service = WorkbenchSession.Service;
+            var atWorkbench = service is not null && (!WorkbenchSession.StatePresent || HasDevice(service));
+            var detecting = service is not null && (!WorkbenchSession.StatePresent || WorkbenchSession.Detecting(service));
+            if (button.Update(ScrewHintButtonFeature.Mode.Value, pressed && detecting, down, atWorkbench))
             {
                 holding = RunGameHint();
                 nextRecheck = Time.unscaledTime + RecheckSeconds;
             }
-            else if (down && ScrewHintButtonFeature.Enabled.Value && Time.unscaledTime >= nextRecheck)
+            else if (button.Lit && detecting && Time.unscaledTime >= nextRecheck)
             {
                 nextRecheck = Time.unscaledTime + RecheckSeconds;
                 var rechecked = Recheck();
@@ -75,7 +84,7 @@ internal sealed class ScrewHintPoller : MonoBehaviour
             }
             if (!holding) return;
 
-            if (down)
+            if (button.Lit)
             {
                 HintPulse.HoldAtPeak(holding!);
                 return;
@@ -103,6 +112,12 @@ internal sealed class ScrewHintPoller : MonoBehaviour
         }
     }
 
+    private static bool HasDevice(DisassembleTooltipService service)
+    {
+        var device = WorkbenchSession.Device(service);
+        return device;
+    }
+
     /// <summary>
     /// Runs the game's hint as its own button would (it checks for the workbench itself); the
     /// highlighter when the hint pulsed some screw, else null, so a pulse R2 didn't add to (a drop's)
@@ -111,7 +126,7 @@ internal sealed class ScrewHintPoller : MonoBehaviour
     private static TooltipProjectionHighlighter? RunGameHint() =>
         GameHintPressed is null ? null : Pulsed((service, _) => GameHintPressed.Invoke(service, NoEvent));
 
-    /// <summary>Checks again for ready parts while R2 is held; the highlighter if that pulsed a new one.</summary>
+    /// <summary>Checks again for ready parts while the hint is lit; the highlighter if that pulsed a new one.</summary>
     private static TooltipProjectionHighlighter? Recheck() =>
         EveryPartHintFeature.Enabled.Value ? Pulsed(EveryPartHintFeature.Refresh) : null;
 

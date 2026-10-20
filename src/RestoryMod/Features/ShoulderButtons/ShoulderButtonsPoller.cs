@@ -10,6 +10,7 @@ using Restory.UI.Views.Shops.Devices;
 using Restory.UI.Views.Shops.Elements;
 using Restory.UI.Views.Shops.HomeDepot;
 using RestoryMod.Core;
+using RestoryMod.Features.Fade;
 using RestoryMod.Features.MailList;
 using Rewired;
 using UnityEngine;
@@ -19,7 +20,7 @@ namespace RestoryMod.Features.ShoulderButtons;
 /// <summary>
 /// Reads L1/R1 and L2/R2 each frame and hands the press to whatever is on screen: the Tool window
 /// while Cleaning, else the inventory (the parts box at the workbench), else the PC's mail app, else
-/// its web browser.
+/// its web browser, else (L1 only) the device at the workbench, which it Fades or brings back.
 /// None of these screens has a per-frame update of its own to hook. The Look direction is handled
 /// in <see cref="LookDirectionPatch"/> instead, inside the game's own update for it.
 /// </summary>
@@ -38,8 +39,24 @@ internal sealed class ShoulderButtonsPoller : MonoBehaviour
             if (bumperStep == 0 && triggerStep == 0) return;
             if (ShoulderButtonsFeature.IsPaused()) return;
 
-            if (bumperStep != 0 && (TryStepCleaningTool(bumperStep) || TryStepInventory(bumperStep) ||
-                                    TryStepMailFolder(bumperStep))) return;
+            switch (bumperStep == 0 ? BumperTarget.Browser : BumperClaim.For(bumperStep, Screens()))
+            {
+                case BumperTarget.ToolWindow:
+                    StepCleaningTool(bumperStep);
+                    return;
+                case BumperTarget.Inventory:
+                    StepInventory(bumperStep);
+                    return;
+                case BumperTarget.MailFolders:
+                    StepMailFolder(bumperStep);
+                    return;
+                case BumperTarget.Fade:
+                    DeviceFade.Toggle();
+                    return;
+                case BumperTarget.None:
+                    bumperStep = 0;
+                    break;
+            }
             TryStepBrowser(bumperStep, triggerStep);
         }
         catch (Exception e)
@@ -52,49 +69,54 @@ internal sealed class ShoulderButtonsPoller : MonoBehaviour
     private static int Step(Player player, int leftActionId, int rightActionId) =>
         player.GetButtonDown(leftActionId) ? -1 : player.GetButtonDown(rightActionId) ? 1 : 0;
 
-    /// <summary>True when the Tool window is shown, so L1/R1 belong to it even if nothing changed.</summary>
-    private static bool TryStepCleaningTool(int step)
+    /// <summary>Which screens could take an L1/R1 press now: shown, with their feature switched on.</summary>
+    private static BumperScreens Screens()
     {
-        if (!ShoulderButtonsFeature.CleaningTools.Value) return false;
         var window = ShoulderButtonsCapture.ToolWindow;
-        if (!window || !ShoulderButtonsCapture.ToolWindowShown(window!)) return false;
-        var service = ShoulderButtonsCapture.ToolSelection(window!);
-        if (!service) return true;
+        var panel = ShoulderButtonsCapture.Inventory;
+        var browser = ShoulderButtonsCapture.Browser;
+        return new BumperScreens(
+            ToolWindow: ShoulderButtonsFeature.CleaningTools.Value && window && ShoulderButtonsCapture.ToolWindowShown(window!),
+            Inventory: ShoulderButtonsFeature.Inventory.Value && panel && panel!.IsVisible,
+            MailFolders: ShoulderButtonsFeature.MailFolders.Value && ShoulderButtonsCapture.MailFoldersPresent() &&
+                         MailApp.Running() is not null,
+            Browser: ShoulderButtonsFeature.Browser.Value && browser && browser!.isActiveAndEnabled && browser.IsVisible,
+            Fade: DeviceFadeFeature.TargetsPresentCached && (DeviceFade.IsFaded || DeviceFade.Fadeable()));
+    }
+
+    /// <summary>Steps the Tool window's slots; L1/R1 belong to it even if nothing changes.</summary>
+    private static void StepCleaningTool(int step)
+    {
+        var window = ShoulderButtonsCapture.ToolWindow!;
+        var service = ShoulderButtonsCapture.ToolSelection(window);
+        if (!service) return;
 
         StepOnScreen(window!.CleaningTools,
             slot => slot.ToolInfo == service!.CurrentlySelectedTool,
             slot => slot.gameObject.activeInHierarchy,
             step,
             slot => service!.TryToSelectTool(slot.ToolInfo));
-        return true;
     }
 
-    /// <summary>True when the inventory is shown, so L1/R1 belong to it.</summary>
-    private static bool TryStepInventory(int step)
+    /// <summary>Steps the inventory's category bar.</summary>
+    private static void StepInventory(int step)
     {
-        if (!ShoulderButtonsFeature.Inventory.Value) return false;
-        var panel = ShoulderButtonsCapture.Inventory;
-        if (!panel || !panel!.IsVisible) return false;
-
-        var view = panel.GetComponentInChildren<InventoryPanelFilterView>();
+        var view = ShoulderButtonsCapture.Inventory!.GetComponentInChildren<InventoryPanelFilterView>();
         if (view) StepCategoryBar(ShoulderButtonsCapture.InventoryCategoryBar(view), step);
-        return true;
     }
 
-    /// <summary>True when the Mail app runs, so L1/R1 belong to its mail folders.</summary>
-    private static bool TryStepMailFolder(int step)
+    /// <summary>Steps the Mail app's mail folders.</summary>
+    private static void StepMailFolder(int step)
     {
-        if (!ShoulderButtonsFeature.MailFolders.Value || !ShoulderButtonsCapture.MailFoldersPresent()) return false;
-        if (MailApp.Running() is not { } client) return false;
+        if (MailApp.Running() is not { } client) return;
         var folders = ShoulderButtonsCapture.MailFolders(client);
-        if (!folders) return true;
+        if (!folders) return;
 
         StepOnScreen(ShoulderButtonsCapture.MailFolderButtons(folders!),
             button => button.EmailFolder == folders!.CurrentlySelectedFolder,
             button => button.gameObject.activeInHierarchy,
             step,
             button => ShoulderButtonsCapture.MailFolderButton(button).onClick.Invoke());
-        return true;
     }
 
     private static void TryStepBrowser(int bumperStep, int triggerStep)

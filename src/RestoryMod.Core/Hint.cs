@@ -114,8 +114,12 @@ public readonly record struct HintItem<T>(T Target, HintKind Kind, bool Waiting 
 /// <summary>What the workbench hint points out: every ready part, missing socket and waiting part.</summary>
 public static class Hint
 {
+    /// <summary>
+    /// The hint for the game's mode. Taking apart with no part left that needs work or is unknown, the
+    /// device is done: the hint shows putting back, though the game only switches once a part goes in.
+    /// </summary>
     public static List<HintItem<T>> Plan<T>(Bench<T> bench, bool takingApart) =>
-        takingApart ? TakingApart(bench) : PuttingBack(bench);
+        takingApart && bench.Sockets.Any(IsTarget) ? TakingApart(bench) : PuttingBack(bench);
 
     private static List<HintItem<T>> TakingApart<T>(Bench<T> bench)
     {

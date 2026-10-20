@@ -57,6 +57,9 @@ internal static class WorkbenchSession
 
     public static bool TakingApart(DisassembleTooltipService service) => Disassembling(service);
 
+    /// <summary>What the player is doing at the workbench (taking things apart, Cleaning, painting...).</summary>
+    public static object ActiveState(DisassembleTooltipService service) => StateMachine(service).ActiveState;
+
     /// <summary>At the workbench with nothing else going on (not cleaning, not in a dialogue).</summary>
     public static bool Detecting(DisassembleTooltipService service) =>
         service.IsActive && StateMachine(service).ActiveState is DetectionDisassembleState;

@@ -16,6 +16,8 @@ using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;
 using RestoryMod.Features.RotationSpeed;
 using RestoryMod.Features.Settings;
+using RestoryMod.Features.Fade;
+using RestoryMod.Features.R2Tool;
 using RestoryMod.Features.ShoulderButtons;
 using RestoryMod.Features.StickScroll;
 using RestoryMod.Features.ZoomToggle;
@@ -62,6 +64,8 @@ public class Plugin : BaseUnityPlugin
         DropHintFeature.Bind(Config);
         ScrewHintButtonFeature.Bind(Config);
         ZoomToggleFeature.Bind(Config);
+        R2ToolFeature.Bind(Config);
+        DeviceFadeFeature.Bind(Config);
         EveryPartHintFeature.Bind(Config);
         ButtonPromptsFeature.Bind(Config);
         WatchConfigFile();
@@ -117,6 +121,10 @@ public class Plugin : BaseUnityPlugin
             typeof(WorkbenchSessionEndPatch),
             typeof(ZoomToggleUpdatePatch),
             typeof(ZoomToggleAxisPatch),
+            typeof(R2ToolCrossPressPatch),
+            typeof(R2ToolCrossReleasePatch),
+            typeof(R2ToolPaintingUpdatePatch),
+            typeof(R2ToolPaintingButtonPatch),
             typeof(EveryPartDisassembleHintPatch),
             typeof(EveryPartAssembleHintPatch),
             typeof(HintGhostsPulseEndPatch),
@@ -136,6 +144,8 @@ public class Plugin : BaseUnityPlugin
         // Idle unless the mail list targets resolve and MailLaunchPatch has captured the Mail app.
         gameObject.AddComponent<MailListPoller>();
         if (ScrewHintButtonFeature.TargetsPresent()) gameObject.AddComponent<ScrewHintPoller>();
+        if (R2ToolFeature.TargetsPresent()) gameObject.AddComponent<R2ToolPoller>();
+        if (DeviceFadeFeature.TargetsPresent()) gameObject.AddComponent<DeviceFadePoller>();
         if (EveryPartHintFeature.TargetsPresent()) gameObject.AddComponent<HintGhostWatcher>();
         if (OutlineDiagnostics.Enabled) gameObject.AddComponent<OutlineWatcher>();
         // Idle unless ShowHitboxes is on and a workbench hover state recorded this frame.
@@ -154,6 +164,7 @@ public class Plugin : BaseUnityPlugin
         Teardown.Add(WorkbenchSession.Unload);
         Teardown.Add(HintGhosts.Unload);
         Teardown.Add(ButtonPromptsFeature.Unload);
+        Teardown.Add(DeviceFade.Unload);
     }
 
     /// <summary>

@@ -557,7 +557,9 @@ public static class FeatureManifests
         ProjectionOutlinable,
         OutlinableOutlinable,
         OutlinableOverridePreset,
-        new(ElementBase, "BehaviorSwitcher"));
+        new(ElementBase, "BehaviorSwitcher"),
+        new("Restory.Constants.ProjectConstants+Layers", "DeviceMask"),
+        new("Restory.Constants.ProjectConstants+Layers", "ElementsMask"));
 
     public static readonly FeatureManifest ZoomToggle = new(nameof(ZoomToggle),
         ZoomUpdateTarget,

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using EPOOutline;
 using HarmonyLib;
+using Restory.Constants;
 using Restory.Data.Outline;
 using Restory.Gameplay.Disassemble.Tooltips;
 using Restory.Gameplay.Elements;
@@ -30,6 +31,9 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
 
     /// <summary>The preset each painted ghost wears now.</summary>
     private readonly Dictionary<ElementProjection, OutlineSettingsPreset> wearing = new();
+
+    /// <summary>The preset each painted ghost had before, to give back when it is unpainted.</summary>
+    private readonly Dictionary<ElementProjection, OutlineSettingsPreset> own = new();
 
     /// <summary>The outline layer each claimed ghost had, to give back when it is released.</summary>
     private readonly Dictionary<ElementProjection, int> claimed = new();
@@ -123,6 +127,7 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         var preset = Copy(look);
         if (!wearing.TryGetValue(ghost, out var worn) || worn != preset)
         {
+            if (!own.ContainsKey(ghost)) own[ghost] = ghost.OutlinableAdapter.OverridePreset;
             ghost.OutlinableAdapter.OverridePreset = preset;
             wearing[ghost] = preset;
         }
@@ -132,7 +137,7 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         {
             // A screw slot's ghost sits down in its hole, so EPO's per-pixel test would call it hidden
             // whenever the rim is in the way; a screw is too small to be half hidden, so one ray decides.
-            var screw = Looks.Paint(look, pulse, hidden: Occluded(ghost.transform.position));
+            var screw = Looks.Paint(look, pulse, hidden: Occluded(ghost.transform));
             Paint(outline.FrontParameters, screw, front);
             Paint(outline.BackParameters, screw, front);
             return;
@@ -144,21 +149,36 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
     /// <summary>How far before a screw a hit still counts as its own hole, in metres.</summary>
     private const float OwnHoleDepth = 0.015f;
 
-    /// <summary>Something other than the screw's own hole stands between the camera and this point.</summary>
-    private static bool Occluded(Vector3 point)
+    private static readonly RaycastHit[] Hits = new RaycastHit[16];
+
+    /// <summary>
+    /// The device or one of its parts stands between the camera and a screw's ghost, other than its own
+    /// hole. Ghosts, a held part and the bench don't count, nor the screw in the ghost's socket.
+    /// </summary>
+    private static bool Occluded(Transform ghost)
     {
         var camera = Camera.main;
         if (!camera) return false;
         var from = camera.transform.position;
-        var toPoint = point - from;
+        var toPoint = ghost.position - from;
         var reach = toPoint.magnitude - OwnHoleDepth;
-        return reach > 0f && Physics.Raycast(from, toPoint, reach, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        if (reach <= 0f) return false;
+        var mask = ProjectConstants.Layers.DeviceMask | ProjectConstants.Layers.ElementsMask;
+        var count = Physics.RaycastNonAlloc(from, toPoint, Hits, reach, mask, QueryTriggerInteraction.Ignore);
+        var socket = ghost.parent;
+        for (var i = 0; i < count; i++)
+        {
+            if (!socket || !Hits[i].transform.IsChildOf(socket)) return true;
+        }
+        return false;
     }
 
     public void Unpaint(ElementProjection ghost)
     {
         wearing.Remove(ghost);
-        if (ghost && highlighter) ghost.OutlinableAdapter.OverridePreset = Outline.Preset(highlighter);
+        if (!own.TryGetValue(ghost, out var preset)) return;
+        own.Remove(ghost);
+        if (ghost) ghost.OutlinableAdapter.OverridePreset = preset;
     }
 
     public void Claim(ElementProjection ghost)

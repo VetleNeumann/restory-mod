@@ -29,7 +29,9 @@ Delegate exploration of it to investigator subagents; it is ~2,700 files.
 ## After a game update
 
 `dev.sh` warns when the Steam buildid changes. Run `dotnet test`: a red TargetCheck case names the feature
-and the target that moved; that feature's patch skips itself at runtime until fixed.
+and the target that moved. At runtime the patch that checks that target skips itself until fixed (some
+features check per patch, so only that patch goes). A compiled-against member checked only by TargetCheck
+fails when the code reaches it instead.
 
 ## Adding a patch
 

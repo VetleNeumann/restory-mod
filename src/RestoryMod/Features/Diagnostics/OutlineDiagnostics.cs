@@ -39,7 +39,18 @@ internal static class OutlineDiagnostics
         dump = config.Bind("Debug", "DumpOutlines", false,
             "Set to true to log every outline on screen once, with its object path (needs OutlineDiagnostics on). " +
             "Turns itself off again.");
-        dump.SettingChanged += (_, _) => DumpRequested |= dump.Value;
+        // Without the watcher nothing would ever answer the request, so it clears at once.
+        if (!entry.Value) dump.Value = false;
+        dump.SettingChanged += (_, _) =>
+        {
+            if (!dump.Value) return;
+            if (entry.Value) DumpRequested = true;
+            else
+            {
+                Log("dump: needs [Debug] OutlineDiagnostics on at startup");
+                dump.Value = false;
+            }
+        };
     }
 
     /// <summary>Logs every outline drawn now, whatever it belongs to, then clears the request.</summary>
@@ -59,8 +70,8 @@ internal static class OutlineDiagnostics
         foreach (var name in FillShaders) LogProperties(name);
     }
 
-    // EPO's patterned fills in the build, for picking the hint's looks.
-    private static readonly string[] FillShaders = { "Hidden/EPO/Fill/Basic/Dots", "Hidden/EPO/Fill/Basic/Interlaced" };
+    // The patterned fill the missing look wears.
+    private static readonly string[] FillShaders = { "Hidden/EPO/Fill/Basic/Dots" };
 
     private static void LogProperties(string name)
     {

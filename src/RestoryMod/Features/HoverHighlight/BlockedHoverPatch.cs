@@ -24,7 +24,7 @@ internal static class BlockedHoverPatch
     {
         if (!___element || !___outlineAdapter || !___outlineAdapter.IsActive) return;
         if (___element.IsInstalling) return;
-        if (ThingKinds.ShowsHoverHighlight(___element.IsBlocked, ___element is ISwitchableElement)) return;
+        if (Core.HoverHighlight.Shows(___element.IsBlocked, ___element is ISwitchableElement)) return;
 
         ___outlineAdapter.IsActive = false;
     }

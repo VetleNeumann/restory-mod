@@ -75,11 +75,11 @@ The workbench aid that points out every ready part (a pulse on an attached part 
 _Avoid_: Highlight, drop hint, screw hint (that was its first, screws-only form)
 
 **Hover highlight**:
-The game's outline on the one thing under the cursor at the workbench, coloured by what a press would do and, on a part, by its condition. It never shows on a blocked part.
+The game's outline on the one thing under the cursor at the workbench, coloured by what a press would do and, on a part, by its condition. It never shows on a blocked part; a switch, or a part still going into its socket, keeps it.
 _Avoid_: Highlight (on its own it could mean the hint too), selection outline
 
 **Look**:
-One of a fixed set of ways the hint and the hover highlight mark a thing: the pulse on a ready part, the ghost where something goes back, the missing look, and the condition outline (burnt, damaged, dirty). Each thing gets its own outline, never merged with its neighbours, so overlapping things all stay visible.
+One of a fixed set of ways the hint and the hover highlight mark a thing: the ready look (the pulse on a ready part, and its ghost where it goes back), the missing look, the screw look (the game's own pulse on a screw or screw slot, hidden or not as a whole, since a screw is too small to be half hidden), and, still to come, the condition outline (burnt, damaged, dirty). Each thing gets its own outline, never merged with its neighbours, so overlapping things all stay visible.
 _Avoid_: Style, highlight colour, preset
 
 **Missing look**:

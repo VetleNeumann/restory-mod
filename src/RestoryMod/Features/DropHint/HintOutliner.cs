@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using EPOOutline;
 using UnityEngine;
 
@@ -19,6 +20,9 @@ internal static class HintOutliner
     private static Outliner? ours;
     private static Outliner? game;
 
+    /// <summary>Every renderer of the game's, kept off the hint's layer so none draws its ghosts merged.</summary>
+    private static readonly List<Outliner> games = new();
+
     /// <summary>Makes sure the hint's renderer stands beside the game's; false when the game has none.</summary>
     public static bool Ensure()
     {
@@ -27,12 +31,17 @@ internal static class HintOutliner
         foreach (var outliner in Object.FindObjectsByType<Outliner>(FindObjectsSortMode.None))
         {
             // One a copy of the mod left behind draws only the hint's layer.
-            if (outliner.OutlineLayerMask == LayerBit) Object.DestroyImmediate(outliner);
-            else if (!game || outliner.gameObject == MainCamera()) game = outliner;
+            if (outliner.OutlineLayerMask == LayerBit)
+            {
+                Object.DestroyImmediate(outliner);
+                continue;
+            }
+            games.Add(outliner);
+            if (!game || outliner.gameObject == MainCamera()) game = outliner;
         }
         if (!game) return false;
 
-        game!.OutlineLayerMask &= ~LayerBit;
+        foreach (var outliner in games) outliner.OutlineLayerMask &= ~LayerBit;
         ours = game.gameObject.AddComponent<Outliner>();
         ours.RenderStage = game.RenderStage;
         ours.RenderingMode = game.RenderingMode;
@@ -64,7 +73,11 @@ internal static class HintOutliner
         // At once, so a reloaded copy looking for the game's renderer can't find this one.
         if (ours) Object.DestroyImmediate(ours);
         ours = null;
-        if (game) game!.OutlineLayerMask |= LayerBit;
+        foreach (var outliner in games)
+        {
+            if (outliner) outliner.OutlineLayerMask |= LayerBit;
+        }
+        games.Clear();
         game = null;
     }
 }

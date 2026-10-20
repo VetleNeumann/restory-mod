@@ -18,9 +18,9 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         AccessTools.FieldRefAccess<TooltipProjectionHighlighter, ElementProjectionFactory>("elementProjectionFactory");
 
     /// <summary>
-    /// Copies of the pulse's outline preset for the hint's ghosts: yellow, red, and a faint copy of
-    /// each for waiting parts. They add a fill, so a ghost shows the whole part rather than an outline
-    /// that merges with its neighbours' (overlapping fills add up and look darker). Each look needs its
+    /// Copies of the pulse's outline preset for the hint's looks, plain and faint. They add a fill, so
+    /// a ghost shows the whole part (overlapping fills add up and look darker), and draw front and
+    /// back apart, so the part of a ghost behind something takes the hidden style. Each look needs its
     /// own copy because a preset's colors are shared by every ghost wearing it.
     /// </summary>
     private static readonly OutlineSettingsPreset?[] Presets = new OutlineSettingsPreset?[4];
@@ -29,6 +29,9 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
 
     /// <summary>The preset each painted ghost wears now.</summary>
     private readonly Dictionary<ElementProjection, OutlineSettingsPreset> wearing = new();
+
+    /// <summary>The outline layer each claimed ghost had, to give back when it is released.</summary>
+    private readonly Dictionary<ElementProjection, int> claimed = new();
 
     public GamePulse(TooltipProjectionHighlighter highlighter) => this.highlighter = highlighter;
 
@@ -42,11 +45,18 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
             AccessTools.FieldRefAccess<ProjectionHighlighterBase, OutlineSettingsPreset>("outlinePresetInstance");
         public static readonly AccessTools.FieldRef<ProjectionHighlighterBase, Outlinable.OutlineProperties?> Front =
             AccessTools.FieldRefAccess<ProjectionHighlighterBase, Outlinable.OutlineProperties?>("frontOutlineProperties");
-        public static readonly AccessTools.FieldRef<ProjectionHighlighterBase, Outlinable.OutlineProperties?> Back =
-            AccessTools.FieldRefAccess<ProjectionHighlighterBase, Outlinable.OutlineProperties?>("backOutlineProperties");
 
         /// <summary>The flat see-through fill the game's own part ghosts use; null if the build lacks it.</summary>
         public static readonly Shader? FillShader = Shader.Find("Hidden/EPO/Fill/Basic/Color fill");
+
+        public static readonly AccessTools.FieldRef<OutlineSettingsPreset, RenderStyle> Style =
+            AccessTools.FieldRefAccess<OutlineSettingsPreset, RenderStyle>("renderStyle");
+        public static readonly AccessTools.FieldRef<OutlineSettingsPreset, Outlinable.OutlineProperties> Common =
+            AccessTools.FieldRefAccess<OutlineSettingsPreset, Outlinable.OutlineProperties>("commonSettings");
+        public static readonly AccessTools.FieldRef<OutlineSettingsPreset, Outlinable.OutlineProperties> PresetFront =
+            AccessTools.FieldRefAccess<OutlineSettingsPreset, Outlinable.OutlineProperties>("frontSettings");
+        public static readonly AccessTools.FieldRef<OutlineSettingsPreset, Outlinable.OutlineProperties> PresetBack =
+            AccessTools.FieldRefAccess<OutlineSettingsPreset, Outlinable.OutlineProperties>("backSettings");
     }
 
     public ElementProjection? GhostUnder(Transform spot)
@@ -99,33 +109,45 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
     }
 
     /// <summary>
-    /// Gives a ghost the pulse's current brightness, in yellow or red, on its outline and fill; a
-    /// waiting part gets a faint steady look instead.
+    /// Gives a ghost its look at the pulse's current brightness, on its outline and fill: in view on
+    /// the front, in the hidden style on the back (where something stands in front of it).
     /// </summary>
-    public void Paint(ElementProjection ghost, bool missing, bool waiting)
+    public void Paint(ElementProjection ghost, Look look, bool faint)
     {
         var front = Outline.Front(highlighter);
         if (front is null) return;
-        var preset = Copy(missing, waiting);
+        var preset = Copy(look, faint);
         if (!wearing.TryGetValue(ghost, out var worn) || worn != preset)
         {
             ghost.OutlinableAdapter.OverridePreset = preset;
             wearing[ghost] = preset;
         }
         var outline = ghost.OutlinableAdapter.Outlinable;
-        if (outline.RenderStyle == RenderStyle.Single)
-        {
-            Paint(outline.OutlineParameters, front.Color, missing, waiting);
-            return;
-        }
-        Paint(outline.FrontParameters, front.Color, missing, waiting);
-        Paint(outline.BackParameters, (Outline.Back(highlighter) ?? front).Color, missing, waiting);
+        var pulse = ToRgba(front.Color);
+        Paint(outline.FrontParameters, Looks.Paint(look, faint, pulse, hidden: false), front.DilateShift);
+        Paint(outline.BackParameters, Looks.Paint(look, faint, pulse, hidden: true), front.DilateShift);
     }
 
     public void Unpaint(ElementProjection ghost)
     {
         wearing.Remove(ghost);
         if (ghost && highlighter) ghost.OutlinableAdapter.OverridePreset = Outline.Preset(highlighter);
+    }
+
+    public void Claim(ElementProjection ghost)
+    {
+        if (!ghost || claimed.ContainsKey(ghost) || !HintOutliner.Ensure()) return;
+        var outline = ghost.OutlinableAdapter.Outlinable;
+        claimed[ghost] = outline.OutlineLayer;
+        outline.OutlineLayer = HintOutliner.Layer;
+    }
+
+    // Even a ghost the game has put back in its pool: the next one made from it is the game's.
+    public void Release(ElementProjection ghost)
+    {
+        if (!claimed.TryGetValue(ghost, out var layer)) return;
+        claimed.Remove(ghost);
+        if (ghost) ghost.OutlinableAdapter.Outlinable.OutlineLayer = layer;
     }
 
     internal static void DestroyPresets()
@@ -137,27 +159,39 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         }
     }
 
-    private OutlineSettingsPreset Copy(bool missing, bool waiting)
+    private OutlineSettingsPreset Copy(Look look, bool faint)
     {
-        var i = (missing ? 2 : 0) + (waiting ? 1 : 0);
-        if (!Presets[i]) Presets[i] = UnityEngine.Object.Instantiate(Outline.Preset(highlighter));
+        var i = (int)look * 2 + (faint ? 1 : 0);
+        if (!Presets[i]) Presets[i] = FrontBack(Outline.Preset(highlighter));
         return Presets[i]!;
     }
 
-    private static void Paint(Outlinable.OutlineProperties properties, Color pulse, bool missing, bool waiting)
+    /// <summary>A copy of the preset that draws front and back apart, each with its own settings.</summary>
+    private static OutlineSettingsPreset FrontBack(OutlineSettingsPreset preset)
     {
-        // Waiting: the pulse's peak color held still and darkened (the outline ignores alpha).
-        if (waiting) pulse = new Color(0.45f, 0.45f, 0f, pulse.a);
-        var color = missing ? Red(pulse) : pulse;
-        properties.Color = color;
+        var copy = UnityEngine.Object.Instantiate(preset);
+        if (Outline.Style(copy) == RenderStyle.FrontBack) return copy;
+        var spare = UnityEngine.Object.Instantiate(preset);
+        Outline.PresetFront(copy) = Outline.Common(copy);
+        Outline.PresetBack(copy) = Outline.Common(spare);
+        Outline.Style(copy) = RenderStyle.FrontBack;
+        UnityEngine.Object.Destroy(spare);
+        return copy;
+    }
+
+    private static void Paint(Outlinable.OutlineProperties properties, LookPaint paint, float width)
+    {
+        // A front/back preset of the game's may leave its back half off.
+        properties.Enabled = true;
+        properties.Color = ToColor(paint.Outline);
+        properties.DilateShift = width * paint.Width;
         var fill = Outline.FillShader;
         if (!fill) return;
         if (properties.FillPass.Shader != fill) properties.FillPass.Shader = fill;
-        // The pulse runs white (blue 1) to yellow (blue 0): the fill thickens as it brightens.
-        var alpha = waiting ? 0.08f : Mathf.Lerp(0.15f, 0.35f, 1f - pulse.b);
-        properties.FillPass.SetColor("_PublicColor", new Color(color.r, color.g, color.b, alpha));
+        properties.FillPass.SetColor("_PublicColor", ToColor(paint.Fill));
     }
 
-    // The pulse runs white to yellow; this keeps its brightness and turns it red.
-    private static Color Red(Color pulse) => new(pulse.r, pulse.g * 0.2f, pulse.b * 0.2f, pulse.a);
+    private static Rgba ToRgba(Color c) => new(c.r, c.g, c.b, c.a);
+
+    private static Color ToColor(Rgba c) => new(c.R, c.G, c.B, c.A);
 }

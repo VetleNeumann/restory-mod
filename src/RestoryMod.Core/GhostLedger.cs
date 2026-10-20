@@ -32,11 +32,20 @@ public interface IGhostPulse<TSpot, TGhost> where TGhost : class
 
     void Unmute(TGhost marker);
 
-    /// <summary>Gives a ghost the hint's own look at the pulse's current brightness.</summary>
-    void Paint(TGhost ghost, bool missing, bool waiting);
+    /// <summary>Gives a ghost the hint's own look at the pulse's current brightness; faint for a waiting part.</summary>
+    void Paint(TGhost ghost, Look look, bool faint);
 
     /// <summary>Gives a ghost the pulse's plain look back.</summary>
     void Unpaint(TGhost ghost);
+
+    /// <summary>
+    /// Moves a ghost the hint tracks, a screw's too, to the hint's own outlines, drawn one by one so
+    /// overlapping ghosts stay apart.
+    /// </summary>
+    void Claim(TGhost ghost);
+
+    /// <summary>Hands a claimed ghost back to the game's outlines.</summary>
+    void Release(TGhost ghost);
 }
 
 /// <summary>
@@ -115,6 +124,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
         {
             entry = new Entry(ghost, item.Kind, item.Waiting);
             entries[item.Target] = entry;
+            pulse.Claim(ghost);
         }
         Restyle(item.Target, entry, item.Kind, item.Waiting);
     }
@@ -169,7 +179,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
             try
             {
                 alive = pulse.Alive(entry.Ghost);
-                if (alive && WearsHintLook(entry.Kind)) pulse.Paint(entry.Ghost, entry.Kind == HintKind.Missing, entry.Waiting);
+                if (alive && Looks.OfHint(entry.Kind) is { } look) pulse.Paint(entry.Ghost, look, entry.Waiting);
             }
             catch (Exception)
             {
@@ -209,6 +219,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
             if (entries.ContainsKey(item.Target) || pulse.GhostUnder(item.Target) is not { } ghost) continue;
             var entry = new Entry(ghost, item.Kind, item.Waiting);
             entries[item.Target] = entry;
+            pulse.Claim(ghost);
             Restyle(item.Target, entry, item.Kind, item.Waiting);
         }
     }
@@ -219,7 +230,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
         entry.Kind = kind;
         entry.Waiting = waiting;
         if (kind == HintKind.ScrewSlot && entry.Muted is null) entry.Muted = pulse.MuteMarker(spot);
-        if (WearsHintLook(kind)) pulse.Paint(entry.Ghost, kind == HintKind.Missing, waiting);
+        if (Looks.OfHint(kind) is { } look) pulse.Paint(entry.Ghost, look, waiting);
     }
 
     private void ForgetAll()
@@ -232,11 +243,12 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
     {
         if (entry.Muted is not null) pulse.Unmute(entry.Muted);
         if (WearsHintLook(entry.Kind)) pulse.Unpaint(entry.Ghost);
+        pulse.Release(entry.Ghost);
     }
 
     /// <summary>
     /// Screws keep the pulse's own look: on a screw slot the game draws its marker over a restyled
     /// ghost, and screws still in match them.
     /// </summary>
-    private static bool WearsHintLook(HintKind kind) => kind is not (HintKind.Screw or HintKind.ScrewSlot);
+    private static bool WearsHintLook(HintKind kind) => Looks.OfHint(kind) is not null;
 }

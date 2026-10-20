@@ -9,8 +9,9 @@ public class GhostLedgerTests
         public Ghost(string under) => Under = under;
         public string Under { get; }
         public bool Painted { get; set; }
-        public bool Missing { get; set; }
-        public bool Waiting { get; set; }
+        public Look Look { get; set; }
+        public bool Faint { get; set; }
+        public bool Claimed { get; set; }
         public override string ToString() => Under;
     }
 
@@ -46,14 +47,16 @@ public class GhostLedgerTests
 
         public void Unmute(Ghost marker) => Muted.Remove(marker.Under);
 
-        public void Paint(Ghost ghost, bool missing, bool waiting)
+        public void Paint(Ghost ghost, Look look, bool faint)
         {
             ghost.Painted = true;
-            ghost.Missing = missing;
-            ghost.Waiting = waiting;
+            ghost.Look = look;
+            ghost.Faint = faint;
         }
 
         public void Unpaint(Ghost ghost) => ghost.Painted = false;
+        public void Claim(Ghost ghost) => ghost.Claimed = true;
+        public void Release(Ghost ghost) => ghost.Claimed = false;
     }
 
     private readonly FakePulse pulse = new();
@@ -152,16 +155,48 @@ public class GhostLedgerTests
     }
 
     [Fact]
-    public void Missing_sockets_paint_red_and_waiting_parts_faint()
+    public void Missing_sockets_wear_the_missing_look_and_waiting_parts_show_faint()
     {
         ledger.Show(Item("board", HintKind.Missing, waiting: true));
         var ghost = pulse.Ghosts.Single();
-        Assert.True(ghost.Missing);
-        Assert.True(ghost.Waiting);
+        Assert.Equal(Look.Missing, ghost.Look);
+        Assert.True(ghost.Faint);
 
         ledger.Reconcile(new[] { Item("board", HintKind.Missing) });
         ledger.Tick();
-        Assert.False(ghost.Waiting);
+        Assert.False(ghost.Faint);
+    }
+
+    [Theory]
+    [InlineData(HintKind.Part)]
+    [InlineData(HintKind.Screw)]
+    [InlineData(HintKind.ScrewSlot)]
+    public void Every_ghost_the_hint_tracks_is_claimed_until_it_goes(HintKind kind)
+    {
+        ledger.Show(Item("spot", kind));
+        var ghost = pulse.Ghosts.Single();
+        Assert.True(ghost.Claimed);
+
+        ledger.Reconcile(Array.Empty<HintItem<string>>());
+        Assert.False(ghost.Claimed);
+    }
+
+    [Fact]
+    public void The_game_own_ghosts_are_never_claimed()
+    {
+        ledger.GameCreating("screw");
+        pulse.Create("screw", HintKind.Screw);
+        ledger.Tick();
+        Assert.False(pulse.Ghosts.Single().Claimed);
+    }
+
+    [Fact]
+    public void Ghosts_left_to_the_game_when_the_pulse_ends_are_released()
+    {
+        ledger.Show(Item("lid", HintKind.Part));
+        ledger.Show(Item("screw", HintKind.Screw));
+        ledger.PulseEnded();
+        Assert.All(pulse.Ghosts, g => Assert.False(g.Claimed));
     }
 
     [Fact]
@@ -290,7 +325,9 @@ public class GhostLedgerTests
         public void RiseAgain() => inner.RiseAgain();
         public Ghost? MuteMarker(string spot) => inner.MuteMarker(spot);
         public void Unmute(Ghost marker) => inner.Unmute(marker);
-        public void Paint(Ghost ghost, bool missing, bool waiting) => inner.Paint(ghost, missing, waiting);
+        public void Paint(Ghost ghost, Look look, bool faint) => inner.Paint(ghost, look, faint);
         public void Unpaint(Ghost ghost) => inner.Unpaint(ghost);
+        public void Claim(Ghost ghost) => inner.Claim(ghost);
+        public void Release(Ghost ghost) => inner.Release(ghost);
     }
 }

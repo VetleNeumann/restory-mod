@@ -179,6 +179,7 @@ public class Plugin : BaseUnityPlugin
         Teardown.Add(PartsStoreSortPatch.Unload);
         Teardown.Add(WorkbenchSession.Unload);
         Teardown.Add(HintGhosts.Unload);
+        Teardown.Add(HintOutliner.Unload);
         Teardown.Add(ButtonPromptsFeature.Unload);
         Teardown.Add(DeviceFade.Unload);
         Teardown.Add(NotepadInventorySwapPoller.Unload);

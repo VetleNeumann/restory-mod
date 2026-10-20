@@ -285,7 +285,11 @@ public static class PatchTargets
     public static readonly PatchTarget BehaviorSwitcherCastCollider = new("Restory.Gameplay.Elements.ElementBehaviorSwitcher", "CastCollider");
     public static readonly PatchTarget HighlighterPreset = new(Highlighter, "outlinePresetInstance");
     public static readonly PatchTarget HighlighterFrontOutline = new(Highlighter, "frontOutlineProperties");
-    public static readonly PatchTarget HighlighterBackOutline = new(Highlighter, "backOutlineProperties");
+    internal const string OutlinePreset = "Restory.Data.Outline.OutlineSettingsPreset";
+    public static readonly PatchTarget PresetRenderStyle = new(OutlinePreset, "renderStyle");
+    public static readonly PatchTarget PresetCommon = new(OutlinePreset, "commonSettings");
+    public static readonly PatchTarget PresetFront = new(OutlinePreset, "frontSettings");
+    public static readonly PatchTarget PresetBack = new(OutlinePreset, "backSettings");
     public static readonly PatchTarget TooltipHighlighterComplete = new(TooltipHighlighter, "CompleteTransitionSequence");
     // Tubes (batteries): a serial socket's entry plus the places behind it, which take parts through it.
     public static readonly PatchTarget SerialSubordinates = new("Restory.Gameplay.Elements.SerialElementSocket", "subordinateSockets");

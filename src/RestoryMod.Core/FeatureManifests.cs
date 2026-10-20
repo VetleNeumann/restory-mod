@@ -540,6 +540,16 @@ public static class FeatureManifests
         ZoomTarget,
         PlayerInputGetAxisRaw);
 
+    public static readonly FeatureManifest WorkbenchAdvice = new(nameof(WorkbenchAdvice),
+        WorkSurfaceToggleAdvices,
+        WorkSurfaceAdviceSign,
+        new(InputActionElement, "ActionId"),
+        new(InputActionElement, "AxisRange"),
+        new(InputActionElement, "SetActionIdAndAxisRange"),
+        new("Restory.UserInterface.GUI_LocalisedText"),
+        new("Restory.UserInterface.CommonElements.GUI_ControlsTypeGameObjectsSwitcher"),
+        new("Restory.Infrastructure.CommonServices.ControlsManager", "ControlType"));
+
     public static readonly FeatureManifest R2Tool = new(nameof(R2Tool),
         CleaningExecutePressed,
         CleaningExecuteReleased,
@@ -615,6 +625,7 @@ public static class FeatureManifests
         ScrewHintButton,
         EveryPartHint,
         ZoomToggle,
+        WorkbenchAdvice,
         R2Tool,
         DeviceFade,
         SettingsMenuDump,

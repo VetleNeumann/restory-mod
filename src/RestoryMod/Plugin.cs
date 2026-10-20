@@ -4,6 +4,7 @@ using BepInEx.Logging;
 using HarmonyLib;
 using RestoryMod.Core;
 using RestoryMod.Features.ButtonPrompts;
+using RestoryMod.Features.ButtonSwap;
 using RestoryMod.Features.CursorSpeed;
 using RestoryMod.Features.Diagnostics;
 using RestoryMod.Features.DpadSend;
@@ -21,6 +22,7 @@ using RestoryMod.Features.Fade;
 using RestoryMod.Features.R2Tool;
 using RestoryMod.Features.ShoulderButtons;
 using RestoryMod.Features.StickScroll;
+using RestoryMod.Features.WorkbenchAdvice;
 using RestoryMod.Features.ZoomToggle;
 
 namespace RestoryMod;
@@ -66,6 +68,7 @@ public class Plugin : BaseUnityPlugin
         DropHintFeature.Bind(Config);
         ScrewHintButtonFeature.Bind(Config);
         ZoomToggleFeature.Bind(Config);
+        NotepadInventorySwapFeature.Bind(Config);
         R2ToolFeature.Bind(Config);
         DeviceFadeFeature.Bind(Config);
         EveryPartHintFeature.Bind(Config);
@@ -124,6 +127,7 @@ public class Plugin : BaseUnityPlugin
             typeof(WorkbenchSessionEndPatch),
             typeof(ZoomToggleUpdatePatch),
             typeof(ZoomToggleAxisPatch),
+            typeof(WorkbenchAdvicePatch),
             typeof(R2ToolCrossPressPatch),
             typeof(R2ToolCrossReleasePatch),
             typeof(R2ToolPaintingUpdatePatch),
@@ -141,6 +145,7 @@ public class Plugin : BaseUnityPlugin
             typeof(PlayStationArtPatch));
         if (StickScrollFeature.TargetsPresent()) gameObject.AddComponent<StickScrollDriver>();
         gameObject.AddComponent<ShoulderButtonsPoller>();
+        gameObject.AddComponent<NotepadInventorySwapPoller>();
         if (ButtonPromptsFeature.TargetsPresent()) gameObject.AddComponent<ButtonPromptsPoller>();
         // Idle unless DpadSendSlotPressPatch applied: it is what records a pressed slot.
         gameObject.AddComponent<DpadSendPoller>();
@@ -159,6 +164,7 @@ public class Plugin : BaseUnityPlugin
         NotepadKeyListenPatch.Resume();
         WorkbenchSession.Resume();
         HintGhosts.Resume();
+        WorkbenchAdvicePatch.Resume();
         DropdownModesFeature.FindCursors();
         PartsBoxSections.AttachToPanels();
         PartsStoreSortPatch.Resume();
@@ -170,6 +176,7 @@ public class Plugin : BaseUnityPlugin
         Teardown.Add(HintGhosts.Unload);
         Teardown.Add(ButtonPromptsFeature.Unload);
         Teardown.Add(DeviceFade.Unload);
+        Teardown.Add(NotepadInventorySwapPoller.Unload);
     }
 
     /// <summary>

@@ -20,7 +20,7 @@ namespace RestoryMod.Features.ShoulderButtons;
 /// <summary>
 /// Reads L1/R1 and L2/R2 each frame and hands the press to whatever is on screen: the Tool window
 /// while Cleaning, else the inventory (the parts box at the workbench), else the PC's mail app, else
-/// its web browser, else (L1 only) the device at the workbench, which it Fades or brings back.
+/// its web browser, else (L1 only) the device at the workbench, which it fades while L1 is held.
 /// None of these screens has a per-frame update of its own to hook. The Look direction is handled
 /// in <see cref="LookDirectionPatch"/> instead, inside the game's own update for it.
 /// </summary>
@@ -51,7 +51,7 @@ internal sealed class ShoulderButtonsPoller : MonoBehaviour
                     StepMailFolder(bumperStep);
                     return;
                 case BumperTarget.Fade:
-                    DeviceFade.Toggle();
+                    DeviceFade.Fade();
                     return;
                 case BumperTarget.None:
                     bumperStep = 0;

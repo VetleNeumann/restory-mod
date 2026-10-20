@@ -26,11 +26,7 @@ internal static class ZoomToggleFeature
             "R2 is then free for the screw hint.");
     }
 
-    public static bool TargetsPresent() => GameTargets.AllPresent(
-        PatchTargets.ZoomUpdateTarget,
-        PatchTargets.ZoomAxisId,
-        PatchTargets.ZoomTarget,
-        PatchTargets.PlayerInputGetAxisRaw);
+    public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.ZoomToggle);
 
     /// <summary>
     /// Zoom input for one frame large enough that the game, after clamping it to its per-frame limit,

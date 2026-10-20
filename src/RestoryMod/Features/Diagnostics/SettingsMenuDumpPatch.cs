@@ -26,7 +26,7 @@ internal static class SettingsMenuDumpPatch
     }
 
     // Dev aid only: not patched at all unless switched on at startup.
-    private static bool Prepare() => Enabled.Value && GameTargets.AllPresent(PatchTargets.SettingsMenuShow);
+    private static bool Prepare() => Enabled.Value && GameTargets.AllPresent(FeatureManifests.SettingsMenuDump);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.SettingsMenuShow)!;
 

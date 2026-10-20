@@ -29,7 +29,7 @@ internal static class ScrewHintButtonFeature
     }
 
     public static bool TargetsPresent() => HintPulse.TargetsPresent() && WorkbenchSession.TargetsPresent()
-        && GameTargets.AllPresent(PatchTargets.TooltipServiceShow);
+        && GameTargets.AllPresent(FeatureManifests.ScrewHintButton);
 
     private static bool errorLogged;
 

@@ -57,13 +57,7 @@ internal static class DropdownModesFeature
     /// <summary>Every target the feature touches; each patch class's Prepare() uses this.</summary>
     public static bool TargetsPresent()
     {
-        if (!GameTargets.AllPresent(
-                PatchTargets.UiInputProcess, PatchTargets.UiInputSendMove, PatchTargets.UiInputSendSubmit,
-                PatchTargets.UiInputProcessMouseEvent, PatchTargets.CursorUpdateImageSetActive,
-                PatchTargets.CursorImage, PatchTargets.CursorPlayerMouse,
-                PatchTargets.DropdownShow, PatchTargets.DropdownHide, PatchTargets.DropdownOnSubmit,
-                PatchTargets.DropdownOnPointerClick, PatchTargets.DropdownList))
-            return false;
+        if (!GameTargets.AllPresent(FeatureManifests.DropdownModes)) return false;
 
         dropdownListField ??= GameTargets.Field(PatchTargets.DropdownList);
         cursorPlayerMouseField ??= GameTargets.Field(PatchTargets.CursorPlayerMouse);

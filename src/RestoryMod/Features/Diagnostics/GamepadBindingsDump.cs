@@ -30,7 +30,7 @@ internal static class GamepadBindingsDump
     }
 
     // Dev aid only: not patched at all unless switched on at startup.
-    private static bool Prepare() => Enabled.Value && GameTargets.AllPresent(PatchTargets.CursorControlsTypeChanged);
+    private static bool Prepare() => Enabled.Value && GameTargets.AllPresent(FeatureManifests.GamepadBindingsDump);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.CursorControlsTypeChanged)!;
 

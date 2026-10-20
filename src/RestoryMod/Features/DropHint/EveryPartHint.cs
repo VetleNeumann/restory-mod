@@ -53,35 +53,8 @@ internal static class EveryPartHintFeature
     private static Dictionary<ConfigDefinition, string>? Orphans(ConfigFile config) =>
         AccessTools.Property(typeof(ConfigFile), "OrphanedEntries")?.GetValue(config) as Dictionary<ConfigDefinition, string>;
 
-    public static bool TargetsPresent() => HintPulse.TargetsPresent() && GameTargets.AllPresent(
-        PatchTargets.ElementProjectionData,
-        PatchTargets.SocketIsBlocked,
-        PatchTargets.SocketNestedElement,
-        PatchTargets.SocketCompatibleElementInfo,
-        PatchTargets.SocketBlockers,
-        PatchTargets.SocketAdditionalBlockers,
-        PatchTargets.HintShowDisassembling,
-        PatchTargets.HintShowAssembling,
-        PatchTargets.HintHighlighter,
-        PatchTargets.DeviceElementSockets,
-        PatchTargets.SocketIsAvailable,
-        PatchTargets.SocketLastNestedElement,
-        PatchTargets.ElementDataIsInspected,
-        PatchTargets.ElementIsDragging,
-        PatchTargets.ElementIsOnSurface,
-        PatchTargets.ElementInfoPrefab,
-        PatchTargets.FlexibleAttachedModel,
-        PatchTargets.FlexiblePlacementModel,
-        PatchTargets.BehaviorSwitcherCastCollider,
-        PatchTargets.HighlighterPreset,
-        PatchTargets.HighlighterFrontOutline,
-        PatchTargets.HighlighterBackOutline,
-        PatchTargets.TooltipHighlighterComplete,
-        PatchTargets.SocketBlockedSockets,
-        PatchTargets.SerialSubordinates,
-        PatchTargets.SubordinateSocket,
-        PatchTargets.ElementProgress,
-        PatchTargets.SocketScrewSlot);
+    public static bool TargetsPresent() => HintPulse.TargetsPresent() &&
+        GameTargets.AllPresent(FeatureManifests.EveryPartHint);
 
     private static readonly AccessTools.FieldRef<ElementSocket, HashSet<ElementSocket>> AdditionalBlockers =
         AccessTools.FieldRefAccess<ElementSocket, HashSet<ElementSocket>>("additionalBlockers");

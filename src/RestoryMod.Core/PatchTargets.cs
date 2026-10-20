@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RestoryMod.Core;
 
@@ -11,24 +12,25 @@ public sealed record PatchTarget(string TypeName, string? MemberName = null)
 }
 
 /// <summary>
-/// Every game type/member the mod hooks into. The plugin resolves these at runtime with AccessTools;
-/// the TargetCheck tests resolve them against the installed game DLL after each game update.
-/// Add an entry here whenever a patch starts depending on something new.
+/// The game types/members the mod hooks into or reads by name. The plugin resolves these at runtime
+/// with AccessTools; the TargetCheck tests resolve them against the installed game DLL after each
+/// game update. Add a field here when a patch starts depending on something new by name, and list it
+/// in the manifest of every feature that uses it (<see cref="FeatureManifests"/>).
 /// </summary>
 public static class PatchTargets
 {
     public const string GameAssembly = "Restory.Assembly";
 
-    private const string VirtualCursorView = "Restory.UserInterface.VirtualCursorView";
-    private const string SettingsMenu = "Restory.UI.Presenters.SettingsMenu.GUI_SettingsMenu";
-    private const string SettingsMenuSoundView = "Restory.UI.Views.SettingsMenu.GUI_SettingsMenuSoundView";
-    private const string InventoryPanel = "Restory.UI.Presenters.Inventory.InventoryPanel";
-    private const string InventoryItemsView = "Restory.UI.Views.Inventory.InventoryItemsView";
-    private const string InventoryPanelViewType = "Restory.UI.Views.Inventory.InventoryPanelView";
-    private const string NotepadActivator = "Restory.Gameplay.OverlayActivators.NotepadActivator";
-    private const string NotepadWindow = "Restory.UI.Presenters.Notepad.GUI_NotepadWindow";
-    private const string UiInputModule = "UnityEngine.EventSystems.CustomRewiredStandaloneInputModule";
-    private const string ScrollbarInput = "Restory.UserInterface.CommonElements.GUI_ScrollbarInput";
+    internal const string VirtualCursorView = "Restory.UserInterface.VirtualCursorView";
+    internal const string SettingsMenu = "Restory.UI.Presenters.SettingsMenu.GUI_SettingsMenu";
+    internal const string SettingsMenuSoundView = "Restory.UI.Views.SettingsMenu.GUI_SettingsMenuSoundView";
+    internal const string InventoryPanel = "Restory.UI.Presenters.Inventory.InventoryPanel";
+    internal const string InventoryItemsView = "Restory.UI.Views.Inventory.InventoryItemsView";
+    internal const string InventoryPanelViewType = "Restory.UI.Views.Inventory.InventoryPanelView";
+    internal const string NotepadActivator = "Restory.Gameplay.OverlayActivators.NotepadActivator";
+    internal const string NotepadWindow = "Restory.UI.Presenters.Notepad.GUI_NotepadWindow";
+    internal const string UiInputModule = "UnityEngine.EventSystems.CustomRewiredStandaloneInputModule";
+    internal const string ScrollbarInput = "Restory.UserInterface.CommonElements.GUI_ScrollbarInput";
 
     // Cursor speed: the game resets PlayerMouse.pointerSpeed in this handler on every controls-type change.
     public static readonly PatchTarget CursorControlsTypeChanged = new(VirtualCursorView, "ResolveControlsManagerOnControlsTypeChanged");
@@ -36,7 +38,7 @@ public static class PatchTargets
     public static readonly PatchTarget CursorControlsManager = new(VirtualCursorView, "controlsManager");
 
     // Rotation speed: the device's per-frame spin is scaled just before the game applies it.
-    private const string RotationController = "Restory.Gameplay.Disassemble.DisassembleRotationController";
+    internal const string RotationController = "Restory.Gameplay.Disassemble.DisassembleRotationController";
     public static readonly PatchTarget RotationApply = new(RotationController, "ApplyRotation");
     public static readonly PatchTarget RotationXAxis = new(RotationController, "xAxisRotation");
     public static readonly PatchTarget RotationYAxis = new(RotationController, "yAxisRotation");
@@ -51,9 +53,9 @@ public static class PatchTargets
     public static readonly PatchTarget CursorUpdateImageSetActive = new(VirtualCursorView, "UpdateImageSetActive");
     public static readonly PatchTarget CursorImage = new(VirtualCursorView, "image");
 
-    // TextMeshPro ships with the engine, not the game assembly, so these stay out of All (TargetCheck
-    // loads only the game assembly); the patches still check them in Prepare().
-    private const string TmpDropdown = "TMPro.TMP_Dropdown";
+    // TextMeshPro ships with the engine, not the game assembly, so these stay out of All (in Unchecked:
+    // TargetCheck loads only the game assembly); the patches still check them in Prepare().
+    internal const string TmpDropdown = "TMPro.TMP_Dropdown";
     public static readonly PatchTarget DropdownShow = new(TmpDropdown, "Show");
     public static readonly PatchTarget DropdownHide = new(TmpDropdown, "Hide");
     public static readonly PatchTarget DropdownOnSubmit = new(TmpDropdown, "OnSubmit");
@@ -104,9 +106,9 @@ public static class PatchTargets
     public static readonly PatchTarget ScrollbarInputResolveScroll = new(ScrollbarInput, "ResolveActionScrollInputEvent");
     // Shoulder buttons: L2/R2 look from the game's away-from-workbench updates; L1/R1 and L2/R2 drive the
     // Tool window, the inventory's and browser's category bars and the browser tabs, captured as shown.
-    private const string DetectionWorkState = "Restory.Gameplay.Work.StateMachine.DetectionWorkState";
-    private const string DraggingWorkState = "Restory.Gameplay.Work.StateMachine.DraggingWorkState";
-    private const string ToolWindow = "Restory.UI.Presenters.CleaningToolsSelectionWindow.GUI_CleaningToolsSelectionWindow";
+    internal const string DetectionWorkState = "Restory.Gameplay.Work.StateMachine.DetectionWorkState";
+    internal const string DraggingWorkState = "Restory.Gameplay.Work.StateMachine.DraggingWorkState";
+    internal const string ToolWindow = "Restory.UI.Presenters.CleaningToolsSelectionWindow.GUI_CleaningToolsSelectionWindow";
     public static readonly PatchTarget DetectionWorkStateOnUpdate = new(DetectionWorkState, "OnUpdate");
     public static readonly PatchTarget DetectionWorkStatePlayerInput = new(DetectionWorkState, "playerInput");
     public static readonly PatchTarget DetectionWorkStateCameraDirectionSwitcher = new(DetectionWorkState, "cameraDirectionSwitcher");
@@ -126,9 +128,9 @@ public static class PatchTargets
     // Mail list: the D-pad steps the Selected mail by running the list's own click handler; the folder
     // switch and mail-service change handlers are followed to keep a mail selected. L1/R1 click the
     // mail folder buttons.
-    private const string MailClient = "Restory.UI.Presenters.GUI_MailClient";
-    private const string MailList = "Restory.UI.Presenters.GUI_MailClientEmailButtonsInFolderPanel";
-    private const string MailListPair = MailList + "+LetterAndButtonPair";
+    internal const string MailClient = "Restory.UI.Presenters.GUI_MailClient";
+    internal const string MailList = "Restory.UI.Presenters.GUI_MailClientEmailButtonsInFolderPanel";
+    internal const string MailListPair = MailList + "+LetterAndButtonPair";
     public static readonly PatchTarget MailLaunchProcess = new(MailClient, "LaunchProcess");
     public static readonly PatchTarget MailStopProcess = new(MailClient, "StopProcess");
     public static readonly PatchTarget MailFolderChanged = new(MailClient, "ResolveFolderSelectionChanged");
@@ -144,7 +146,7 @@ public static class PatchTargets
 
     // D-pad part send: after the drag state's per-frame update, the chosen destination's hover state is
     // set and the game's private release handler runs. Trash can and shredder hover via pointer events.
-    private const string DraggingState = "Restory.Gameplay.Disassemble.StateMachine.DraggingDisassembleState";
+    internal const string DraggingState = "Restory.Gameplay.Disassemble.StateMachine.DraggingDisassembleState";
     public static readonly PatchTarget DraggingOnUpdate = new(DraggingState, "OnUpdate");
     public static readonly PatchTarget DraggingRelease = new(DraggingState, "ResolveButtonJustReleased");
     public static readonly PatchTarget DraggingCompleteDrag = new(DraggingState, "CompleteDrag");
@@ -164,14 +166,14 @@ public static class PatchTargets
     public static readonly PatchTarget DraggingWarningService = new(DraggingState, "gameWarningService");
     public static readonly PatchTarget DraggingWarningDatabase = new(DraggingState, "gameWarningDatabase");
     // A held parts box slot: the game starts the drag on the first cursor move while it is held.
-    private const string StorageSlot = "Restory.UI.Presenters.Inventory.StorageSlotElements.StorageSlotElement";
+    internal const string StorageSlot = "Restory.UI.Presenters.Inventory.StorageSlotElements.StorageSlotElement";
     public static readonly PatchTarget SlotOnPointerDown = new(StorageSlot, "OnPointerDown");
     public static readonly PatchTarget SlotOnPointerMove = new(StorageSlot, "OnPointerMove");
     public static readonly PatchTarget SlotIsHolding = new(StorageSlot, "isHolding");
     // D-pad send away from the workbench: after the work drag state's update, the matching branch of
     // the game's drop resolver runs (destination's drop call, then the resolver's private CompleteDrag).
-    private const string WorkDraggingState = "Restory.Gameplay.Work.StateMachine.DraggingWorkState";
-    private const string Resolver = "Restory.Gameplay.Work.Dragging.DragResolver";
+    internal const string WorkDraggingState = "Restory.Gameplay.Work.StateMachine.DraggingWorkState";
+    internal const string Resolver = "Restory.Gameplay.Work.Dragging.DragResolver";
     public static readonly PatchTarget WorkDraggingSelectedObject = new(WorkDraggingState, "selectedObject");
     public static readonly PatchTarget WorkDraggingIsWaitingForConfirmation = new(WorkDraggingState, "isWaitingForConfirmation");
     public static readonly PatchTarget WorkDraggingStateMachine = new(WorkDraggingState, "stateMachine");
@@ -188,7 +190,7 @@ public static class PatchTargets
 
     // Hover grace: after each hover state's per-frame detection, the lingering thing is put back in its
     // stored selection, which the Activate press acts on.
-    private const string DisassembleDetection = "Restory.Gameplay.Disassemble.StateMachine.DetectionDisassembleState";
+    internal const string DisassembleDetection = "Restory.Gameplay.Disassemble.StateMachine.DetectionDisassembleState";
     public static readonly PatchTarget DisassembleDetectionOnUpdate = new(DisassembleDetection, "OnUpdate");
     public static readonly PatchTarget DisassembleDetectionPlayerInput = new(DisassembleDetection, "playerInput");
     public static readonly PatchTarget DisassembleDetectionSelection = new(DisassembleDetection, "cursorSelectionService");
@@ -208,20 +210,20 @@ public static class PatchTargets
     // Drop hint: after the game's pick every screw the dropped part freed gets a ghost. The hint pulse
     // (highlighter) members: one ghost per screw, a fading pulse rises again when screws join it, R2
     // holds it at its peak, and a screw going in or out takes its ghost away.
-    private const string DropHint = "Restory.Gameplay.Disassemble.Tooltips.SmallElementTooltipHandler";
-    private const string TooltipHighlighter = "Restory.Gameplay.Elements.TooltipProjectionHighlighter";
+    internal const string DropHint = "Restory.Gameplay.Disassemble.Tooltips.SmallElementTooltipHandler";
+    internal const string TooltipHighlighter = "Restory.Gameplay.Elements.TooltipProjectionHighlighter";
     public static readonly PatchTarget DropHintHandleBlocked = new(DropHint, "HandleBlockedSockets");
     public static readonly PatchTarget DropHintDetachedSocket = new(DropHint, "detachedSocket");
     public static readonly PatchTarget DropHintHighlighter = new(DropHint, "tooltipProjectionHighlighter");
     public static readonly PatchTarget HighlighterProjections = new("Restory.Gameplay.Elements.ProjectionHighlighterBase", "highlightedProjections");
     public static readonly PatchTarget TooltipHighlighterCreate = new(TooltipHighlighter, "CreateAndHighlightProjection");
-    private const string Highlighter = "Restory.Gameplay.Elements.ProjectionHighlighterBase";
+    internal const string Highlighter = "Restory.Gameplay.Elements.ProjectionHighlighterBase";
     public static readonly PatchTarget HighlighterSequence = new(Highlighter, "transitionSequence");
     public static readonly PatchTarget HighlighterToPeak = new(Highlighter, "toPeakDuration");
     public static readonly PatchTarget HighlighterToBase = new(Highlighter, "toBaseDuration");
     public static readonly PatchTarget HighlighterPeakScale = new(Highlighter, "peakScale");
     public static readonly PatchTarget HighlighterSetScale = new(Highlighter, "SetHighlightedProjectionsScale");
-    private const string Socket = "Restory.Gameplay.Elements.ElementSocket";
+    internal const string Socket = "Restory.Gameplay.Elements.ElementSocket";
     public static readonly PatchTarget SocketBlockedSockets = new(Socket, "BlockedSockets");
     public static readonly PatchTarget SocketIsBlocked = new(Socket, "IsBlocked");
     public static readonly PatchTarget SocketNestedElement = new(Socket, "NestedElement");
@@ -230,7 +232,7 @@ public static class PatchTargets
 
     // Screw hint button: R2 at the workbench runs the game's own hint (its GetTooltip action, which
     // has no gamepad button), reaching it and its highlighter through the game's tooltip service.
-    private const string TooltipService = "Restory.Gameplay.Disassemble.Tooltips.DisassembleTooltipService";
+    internal const string TooltipService = "Restory.Gameplay.Disassemble.Tooltips.DisassembleTooltipService";
     public static readonly PatchTarget TooltipServiceInitialize = new(TooltipService, "Initialize");
     public static readonly PatchTarget TooltipServiceDispose = new(TooltipService, "Dispose");
     public static readonly PatchTarget TooltipServiceShow = new(TooltipService, "ResolveGetTooltipButtonPressed");
@@ -244,7 +246,7 @@ public static class PatchTargets
     // Taking apart walks each target's blockers (the serialized list and a flip lid's runtime set) and
     // never reads an unknown part's condition; putting back ghosts loose parts on the bench and, in red,
     // sockets no loose part fills. Ghosts leave when their part stops being ready.
-    private const string SimpleHint = "Restory.Gameplay.Disassemble.Tooltips.SimpleDisassembleTooltipHandler";
+    internal const string SimpleHint = "Restory.Gameplay.Disassemble.Tooltips.SimpleDisassembleTooltipHandler";
     public static readonly PatchTarget HintShowDisassembling = new(SimpleHint, "ShowDisassemblingTooltip");
     public static readonly PatchTarget HintShowAssembling = new(SimpleHint, "ShowAssemblingTooltip");
     public static readonly PatchTarget HintHighlighter = new(SimpleHint, "projectionHighlighter");
@@ -256,7 +258,7 @@ public static class PatchTargets
     public static readonly PatchTarget ElementIsDragging = new("Restory.Gameplay.Elements.ElementBase", "IsDragging");
     public static readonly PatchTarget ElementIsOnSurface = new("Restory.Gameplay.Elements.ElementBase", "IsOnSurface");
     public static readonly PatchTarget ElementInfoPrefab = new("Restory.Data.Elements.ElementInfo", "Prefab");
-    private const string FlexibleElement = "Restory.Gameplay.Elements.FlexibleElement";
+    internal const string FlexibleElement = "Restory.Gameplay.Elements.FlexibleElement";
     public static readonly PatchTarget FlexibleAttachedModel = new(FlexibleElement, "AttachedModel");
     public static readonly PatchTarget FlexiblePlacementModel = new(FlexibleElement, "PlacementModel");
     public static readonly PatchTarget BehaviorSwitcherCastCollider = new("Restory.Gameplay.Elements.ElementBehaviorSwitcher", "CastCollider");
@@ -276,7 +278,7 @@ public static class PatchTargets
 
     // Zoom toggle: an L2 press at the workbench becomes a full zoom input to the game's zoom update,
     // and the triggers' own zoom input is muted there.
-    private const string ZoomController = "Restory.Gameplay.Devices.DeviceZoomController";
+    internal const string ZoomController = "Restory.Gameplay.Devices.DeviceZoomController";
     public static readonly PatchTarget ZoomUpdateTarget = new(ZoomController, "UpdateTargetZoom");
     public static readonly PatchTarget ZoomAxisId = new(ZoomController, "zoomAxisId");
     public static readonly PatchTarget ZoomTarget = new(ZoomController, "targetZoom");
@@ -284,7 +286,7 @@ public static class PatchTargets
 
     // Outline diagnostics ([Debug] OutlineDiagnostics): every outline switch and preset change on
     // parts, screws and slots, the slot pulse, and the socket graph the drop hint reads.
-    private const string OutlinableAdapter = "Restory.Gameplay.Common.OutlinableAdapter";
+    internal const string OutlinableAdapter = "Restory.Gameplay.Common.OutlinableAdapter";
     public static readonly PatchTarget OutlineAdapterSetActive = new(OutlinableAdapter, "set_IsActive");
     public static readonly PatchTarget OutlineAdapterSetPreset = new(OutlinableAdapter, "set_OverridePreset");
     public static readonly PatchTarget ProjectionHighlighterPlay = new("Restory.Gameplay.Elements.ProjectionHighlighterBase", "PlaySequence");
@@ -292,7 +294,7 @@ public static class PatchTargets
     // Hitbox overlay: both workbench hover states are read after their per-frame detection (what the
     // game hovers, its layer mask and cursor); the game camera comes from the cursor detector, and a
     // socket's own screw slot tells it apart from a part ghost.
-    private const string EmptyDetection = "Restory.Gameplay.Disassemble.StateMachine.EmptyDisassembleState";
+    internal const string EmptyDetection = "Restory.Gameplay.Disassemble.StateMachine.EmptyDisassembleState";
     public static readonly PatchTarget DisassembleDetectionDetector = new(DisassembleDetection, "cursorDetectorService");
     public static readonly PatchTarget DisassembleDetectionMask = new(DisassembleDetection, "detectionLayerMask");
     public static readonly PatchTarget DisassembleDetectionHits = new(DisassembleDetection, "raycastHits");
@@ -316,7 +318,7 @@ public static class PatchTargets
 
     // Button prompts: every prompt picks its glyph set in this one method; the patch swaps the pick for
     // the pad Steam Input hides from Rewired, or for the "Button prompts" setting.
-    private const string InputActionElement = "Restory.UI.Presenters.Controllers.GUI_InputActionElement";
+    internal const string InputActionElement = "Restory.UI.Presenters.Controllers.GUI_InputActionElement";
     public static readonly PatchTarget PromptGetControllerId = new(InputActionElement, "TryGetControllerId");
     public static readonly PatchTarget PromptUpdateData = new(InputActionElement, "UpdateData");
     public static readonly PatchTarget PromptControllerIdsList = new(InputActionElement, "controllerIdsList");
@@ -327,339 +329,32 @@ public static class PatchTargets
     public static readonly PatchTarget ControllerIdsDefaultGamepad = new("IAmFuture.Data.Controllers.ControllerIdsList", "DefaultGamepadId");
     public static readonly PatchTarget GameSettingsGamepadScheme = new("Restory.Gameplay.GameSettings.GameSettingsManager", "GamepadScheme");
     // PlayStation art: the prompt image is swapped for one of the game's unused PS5 sprites after it draws.
-    private const string PromptImageView = "Restory.UI.Views.Controllers.GUI_InputActionElementImageView";
-    private const string PromptView = "Restory.UI.Views.Controllers.GUI_InputActionElementView";
+    internal const string PromptImageView = "Restory.UI.Views.Controllers.GUI_InputActionElementImageView";
+    internal const string PromptView = "Restory.UI.Views.Controllers.GUI_InputActionElementView";
     public static readonly PatchTarget PromptImageUpdateView = new(PromptImageView, "UpdateView");
     public static readonly PatchTarget PromptImageTarget = new(PromptImageView, "targetImage");
     public static readonly PatchTarget PromptViewControllerId = new(PromptView, "controllerId");
     public static readonly PatchTarget PromptViewElementId = new(PromptView, "elementId");
 
-    public static IReadOnlyList<PatchTarget> All { get; } = new[]
+    /// <summary>Named targets TargetCheck can't resolve, each with the reason.</summary>
+    public static IReadOnlyList<PatchTarget> Unchecked { get; } = new[]
     {
-        PromptGetControllerId,
-        PromptUpdateData,
-        PromptControllerIdsList,
-        PromptControllerIdsMap,
-        PromptGameSettings,
-        ControllerIdsMapLookup,
-        ControllerIdsLookup,
-        ControllerIdsDefaultGamepad,
-        GameSettingsGamepadScheme,
-        PromptImageUpdateView,
-        PromptImageTarget,
-        PromptViewControllerId,
-        PromptViewElementId,
-        CursorControlsTypeChanged,
-        CursorPlayerMouse,
-        CursorControlsManager,
-        RotationApply,
-        RotationXAxis,
-        RotationYAxis,
-        RotationControlsManager,
-        UiInputProcess,
-        UiInputSendMove,
-        UiInputSendSubmit,
-        UiInputProcessMouseEvent,
-        CursorUpdateImageSetActive,
-        CursorImage,
-        SettingsMenuShow,
-        SettingsMenuSoundSettingsView,
-        SoundViewDialogueVolumeSlider,
-        SettingsMenuMainView,
-        MainViewMonitorDropdown,
-        RestoryDropdownContainer,
-        InventoryPanelConstruct,
-        InventoryPanelShow,
-        InventoryPanelSortItems,
-        InventoryPanelUpdateItemsView,
-        InventoryPanelFilteredItems,
-        InventoryPanelFilter,
-        InventoryPanelDeviceService,
-        InventoryPanelView,
-        InventoryPanelDragService,
-        InventoryPanelDropService,
-        DragServiceState,
-        DropServiceIsProcess,
-        InventoryPanelViewItems,
-        InventoryItemsViewContainer,
-        NotepadActivatorInitialize,
-        NotepadActivatorDispose,
-        NotepadActivatorPlayerInput,
-        NotepadActivatorWindow,
-        NotepadActivatorItem,
-        NotepadActivatorPauseMenu,
-        NotepadWindowUpdateViewState,
-        NotepadWindowHotkeyPressed,
-        NotepadWindowPointerInside,
-        NotepadWindowIsPointerInside,
-        NotepadWindowIsSlidingMode,
-        NotepadWindowItem,
-        ScrollbarInputResolveScroll,
-        DetectionWorkStateOnUpdate,
-        DetectionWorkStatePlayerInput,
-        DetectionWorkStateCameraDirectionSwitcher,
-        DraggingWorkStateOnUpdate,
-        DraggingWorkStatePlayerInput,
-        DraggingWorkStateCameraDirectionSwitcher,
-        CameraDirectionSwitcherBlockers,
-        ToolWindowShow,
-        ToolWindowIsShown,
-        ToolWindowSelectionService,
-        InventoryFilterCategoryBar,
-        BrowserLaunchProcess,
-        MarketplaceFilterCategoryBar,
-        HomeDepotFilterCategoryBar,
-        PartsFilterCategoryBar,
-        MailLaunchProcess,
-        MailStopProcess,
-        MailFolderChanged,
-        MailContentsChanged,
-        MailClientList,
-        MailClientFolders,
-        MailListEntries,
-        MailListClick,
-        MailListPairButton,
-        MailListPairLetter,
-        MailFolderButtons,
-        MailFolderButtonButton,
-        DraggingOnUpdate,
-        DraggingRelease,
-        DraggingCompleteDrag,
-        DraggingPlayerInput,
-        DraggingSelectedElement,
-        DraggingIsRecycling,
-        DraggingIsShredding,
-        DraggingIsOverInventory,
-        DraggingIsOverSonicBath,
-        DraggingIsOverCleaner,
-        DraggingGameMode,
-        DraggingElementCleaner,
-        DraggingUltrasonicService,
-        DraggingRecycleService,
-        DraggingShredderService,
-        DraggingStorageDragService,
-        DraggingWarningService,
-        DraggingWarningDatabase,
-        SlotOnPointerDown,
-        SlotOnPointerMove,
-        SlotIsHolding,
-        WorkDraggingSelectedObject,
-        WorkDraggingIsWaitingForConfirmation,
-        WorkDraggingStateMachine,
-        WorkDraggingResolver,
-        ResolverCompleteDrag,
-        ResolverRecycleService,
-        ResolverShredderService,
-        ResolverConsumers,
-        ConsumersInventoryDetector,
-        InventoryDetectorIsDetected,
-        UltrasonicSonicBath,
-        RecycleTrashCan,
-        ShredderServiceShredder,
-        DisassembleDetectionOnUpdate,
-        DisassembleDetectionPlayerInput,
-        DisassembleDetectionSelection,
-        DisassembleDetectionRotation,
-        DisassembleDetectionWaiting,
-        DisassembleDetectionElement,
-        DisassembleDetectionProjection,
-        DisassembleDetectionButton,
-        DisassembleDetectionResetElement,
-        DisassembleDetectionSetElement,
-        WorkDetectionSelection,
-        WorkDetectionObject,
-        WorkDetectionSelectObject,
-        WorkDetectionResetObject,
-        WorkDetectionVisitsBlock,
-        DropHintHandleBlocked,
-        DropHintDetachedSocket,
-        DropHintHighlighter,
-        HighlighterProjections,
-        TooltipHighlighterCreate,
-        HighlighterSequence,
-        HighlighterToPeak,
-        HighlighterToBase,
-        HighlighterPeakScale,
-        ZoomUpdateTarget,
-        ZoomAxisId,
-        ZoomTarget,
-        PlayerInputGetAxisRaw,
-        TooltipServiceInitialize,
-        TooltipServiceDispose,
-        TooltipServiceShow,
-        TooltipServiceSmallHandler,
-        TooltipServiceSocketChanged,
-        TooltipHighlighterFactory,
-        ProjectionFactoryDestroySmall,
-        HintShowDisassembling,
-        HintShowAssembling,
-        HintHighlighter,
-        DeviceElementSockets,
-        SocketIsAvailable,
-        SocketLastNestedElement,
-        SocketBlockers,
-        ElementDataIsInspected,
-        ElementIsDragging,
-        ElementIsOnSurface,
-        ElementInfoPrefab,
-        FlexibleAttachedModel,
-        FlexiblePlacementModel,
-        BehaviorSwitcherCastCollider,
-        HighlighterPreset,
-        HighlighterFrontOutline,
-        HighlighterBackOutline,
-        TooltipHighlighterComplete,
-        SerialSubordinates,
-        SubordinateSocket,
-        ElementProgress,
-        HighlighterSetScale,
-        TooltipServiceTargetDevice,
-        TooltipServiceIsDisassembling,
-        TooltipServiceIsActive,
-        TooltipServiceStateMachine,
-        SocketBlockedSockets,
-        SocketIsBlocked,
-        ElementProjectionData,
-        OutlineAdapterSetActive,
-        OutlineAdapterSetPreset,
-        ProjectionHighlighterPlay,
-        SocketAdditionalBlockers,
-        DisassembleDetectionDetector,
-        DisassembleDetectionMask,
-        DisassembleDetectionHits,
-        EmptyDetectionOnUpdate,
-        EmptyDetectionPlayerInput,
-        EmptyDetectionDetector,
-        EmptyDetectionSelection,
-        EmptyDetectionMask,
-        EmptyDetectionHits,
-        EmptyDetectionElement,
-        CursorDetectorCamera,
-        SocketScrewSlot,
-        CursorDetectorTryToDetect,
-        DisassembleDetectionDeviceService,
-        EmptyDetectionDeviceService,
-        DeviceServiceWorkSurface,
-
-        // Members the plugin reads directly (compiled against) rather than through the entries above;
-        // listed so the TargetCheck tests catch a game update that moves them.
-        new PatchTarget("Restory.Infrastructure.CommonServices.ControlsManager", "ControlType"),
-        new PatchTarget(UiInputModule, "RewiredPlayerIds"),
-        new PatchTarget(UiInputModule, "HorizontalActionId"),
-        new PatchTarget(UiInputModule, "VerticalActionId"),
-        new PatchTarget(UiInputModule, "SubmitActionId"),
-        new PatchTarget("Restory.UI.Presenters.Inventory.InventoryPanel", "IsVisible"),
-        new PatchTarget("Restory.UI.Presenters.Inventory.InventoryPanelFilter", "Sort"),
-        new PatchTarget("Restory.Gameplay.Devices.DeviceService", "PlacedDeviceContainer"),
-        new PatchTarget("Restory.Gameplay.Devices.Device", "SortedSockets"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementSocket", "NestedElement"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementSocket", "CompatibleElementInfo"),
-        new PatchTarget("Restory.Gameplay.Workplace.WorkSurface", "PlacedElements"),
-        new PatchTarget("Restory.Gameplay.Devices.DismantledDevicePack", "PlacedElements"),
-        new PatchTarget("Restory.Gameplay.Devices.DeviceContainer", "Device"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "Info"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsSelected"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsHighlighted"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementProjection"),
-        new PatchTarget(OutlinableAdapter, "OverridePreset"),
-        new PatchTarget(OutlinableAdapter, "IsActive"),
-        new PatchTarget("Restory.Gameplay.Elements.PlacedElements", "ElementsOnSurface"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementTransformRecord", "Element"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementData", "Info"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementData", "Condition"),
-        new PatchTarget("Restory.Data.Elements.ElementInfo", "Category"),
-        new PatchTarget("Restory.Data.Elements.Condition.BurntElementCondition"),
-        new PatchTarget("Restory.Data.Elements.Condition.DamagedElementCondition"),
-        new PatchTarget("Restory.Data.Elements.Condition.DirtyElementCondition"),
-        new PatchTarget("Restory.Data.Elements.Condition.PerfectElementCondition"),
-        new PatchTarget("Restory.StorageSystem.StorageElements.StorageItemElement", "ElementData"),
-        new PatchTarget("Restory.StorageSystem.IReadOnlyStorageSlot", "Item"),
-        new PatchTarget("Restory.StorageSystem.IReadOnlyStorageSlot", "Index"),
-        new PatchTarget("Restory.StorageSystem.IReadOnlyStorageSlot", "Count"),
-        new PatchTarget("Restory.UI.Presenters.Notepad.GUI_NotepadWindow", "IsVisible"),
-        new PatchTarget("Restory.UI.Presenters.Notepad.GUI_NotepadWindow", "IsSlidingMode"),
-        new PatchTarget("Restory.Gameplay.Equipment.NotepadInteractiveWorkplaceItem", "WindowIsPinned"),
-        new PatchTarget("Restory.UI.Presenters.PauseMenu.GUI_PauseMenu", "IsShown"),
-        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "AddInputEventDelegate"),
-        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "RemoveInputEventDelegate"),
-        new PatchTarget("Restory.UserInterface.VirtualCursorView"),
-        new PatchTarget("RewiredConsts.Action+UI", "UIGamepadWheelHorizontal"),
-        new PatchTarget("RewiredConsts.Action+UI", "UIGamepadWheelVertical"),
-        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "GetButtonDown"),
-        new PatchTarget("Restory.Gameplay.GameView.CameraDirectionSwitcher", "CurrentDirection"),
-        new PatchTarget("Restory.Gameplay.GameView.CameraDirectionSwitcher", "ApplyMainCameraDirection"),
-        new PatchTarget("Restory.Gameplay.GameView.CameraDirection", "Left"),
-        new PatchTarget("Restory.Gameplay.GameView.CameraDirection", "Main"),
-        new PatchTarget("Restory.Gameplay.GameView.CameraDirection", "Right"),
-        new PatchTarget("Restory.Gameplay.Common.ActiveStateSwitcher", "ShouldSystemBeActive"),
-        new PatchTarget(ToolWindow, "CleaningTools"),
-        new PatchTarget("Restory.UI.Presenters.CleaningToolsSelectionWindow.GUI_CleaningTool", "ToolInfo"),
-        new PatchTarget("Restory.Gameplay.Equipment.CleaningToolSelectionService", "CurrentlySelectedTool"),
-        new PatchTarget("Restory.Gameplay.Equipment.CleaningToolSelectionService", "TryToSelectTool"),
-        new PatchTarget("Restory.UI.Presenters.GUI_WebBrowser", "IsVisible"),
-        new PatchTarget("Restory.UI.Presenters.GUI_WebBrowser", "PageSwitcher"),
-        new PatchTarget("Restory.UI.Presenters.GUI_WebBrowserPageSwitcher", "Tabs"),
-        new PatchTarget("Restory.UI.Presenters.GUI_WebBrowserPageSwitcher", "CurrentTab"),
-        new PatchTarget("Restory.UI.Presenters.GUI_WebBrowserPageSwitcher", "ResolveTabClick"),
-        new PatchTarget("Restory.UI.Views.GUI_WebBrowserTabView", "BrowserPage"),
-        new PatchTarget(MailList, "CurrentlySelectedLetter"),
-        new PatchTarget("Restory.UI.Presenters.GUI_MailClientFoldersPanel", "CurrentlySelectedFolder"),
-        new PatchTarget("Restory.UI.Presenters.GUI_MailClientFolderButton", "EmailFolder"),
-        new PatchTarget("Restory.UI.Presenters.GUI_EmailMessageButton"),
-        new PatchTarget("Restory.UI.Views.ToggleButtonGroup", "Buttons"),
-        new PatchTarget("Restory.UI.Views.ToggleButton", "IsSelected"),
-        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "Id"),
-        new PatchTarget("Restory.Gameplay.Inventory.StorageElasticElementsDragService", "IsPointerOverInventory"),
-        new PatchTarget("Restory.Gameplay.InteractiveObjects.InteractiveObject", "CompleteDrag"),
-        new PatchTarget("Restory.Gameplay.GameDialogues.GameWarningService", "ShowWarning"),
-        new PatchTarget("Restory.Data.GameWarnings.GameWarningDatabase", "BrokenElementWarning"),
-        new PatchTarget("Restory.Gameplay.InteractiveObjects.TrashObject"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementsContainer"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementsBox"),
-        new PatchTarget("Restory.Gameplay.Recycle.RecycleService", "TryToRecycleInteractiveObject"),
-        new PatchTarget("Restory.Gameplay.Shredders.ShredderService", "TryToShredInteractiveObject"),
-        new PatchTarget("Restory.Gameplay.Inventory.InteractiveObjectsToObjectConsumersDragHandlingService", "TryToDropDraggedObjectIntoInventory"),
-        new PatchTarget("Restory.Infrastructure.StateMachines.StateMachineMonoBase", "Enter"),
-        new PatchTarget("Restory.Gameplay.Work.StateMachine.DetectionWorkState"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "ConditionHandler"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "BehaviorSwitcher"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementProjection", "OutlinableAdapter"),
-        new PatchTarget(OutlinableAdapter, "Outlinable"),
-        new PatchTarget("Restory.Gameplay.Devices.DeviceContainer"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementConditionHandler", "ElementData"),
-        new PatchTarget("Restory.Gameplay.Quests.QuestItem"),
-        new PatchTarget("Restory.Gameplay.Disassemble.DisassembleGameMode", "IsInCompetition"),
-        new PatchTarget("Restory.Gameplay.Equipment.ElementCleaner", "DraggingElementInitialCleaningData"),
-        new PatchTarget("Restory.Gameplay.Equipment.Ultrasonic.UltrasonicService", "TryFitElementToSonicBath"),
-        new PatchTarget("Restory.Gameplay.Equipment.Ultrasonic.SonicBath", "ElementFitter"),
-        new PatchTarget("Restory.Gameplay.Equipment.TrashCan", "IsActive"),
-        new PatchTarget("Restory.Gameplay.Equipment.TrashCan", "IsDetected"),
-        new PatchTarget("Restory.Gameplay.Equipment.TrashCan", "OnPointerEnter"),
-        new PatchTarget("Restory.Gameplay.Equipment.TrashCan", "OnPointerExit"),
-        new PatchTarget("Restory.Gameplay.Equipment.Shredder", "IsActive"),
-        new PatchTarget("Restory.Gameplay.Equipment.Shredder", "IsDetected"),
-        new PatchTarget("Restory.Gameplay.Equipment.Shredder", "OnPointerEnter"),
-        new PatchTarget("Restory.Gameplay.Equipment.Shredder", "OnPointerExit"),
-        new PatchTarget("RewiredConsts.Action+MiniGame", "Activate"),
-        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "GetButton"),
-        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "GetButtonUp"),
-        new PatchTarget("Restory.Gameplay.GameCursor.CursorSelectionService", "SetDetection"),
-        new PatchTarget("Restory.Gameplay.GameCursor.CursorSelectionService", "DetectedGameObject"),
-        new PatchTarget("Restory.Gameplay.Disassemble.DisassembleRotationController", "IsRotationButtonPressed"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "InSocket"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsBlocked"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementBase", "IsActivated"),
-        new PatchTarget("Restory.Gameplay.Elements.ISwitchableElement"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementButton"),
-        new PatchTarget("Restory.Data.Elements.ElementCategory", "Small"),
-        new PatchTarget("Restory.Gameplay.Elements.ElementProjection", "MakeBright"),
-        new PatchTarget("Restory.Gameplay.GameCursor.CursorDetectorService", "GameDetector"),
-        new PatchTarget("Restory.Gameplay.PlayerInput.IPlayerInput", "GetMousePosition"),
-        new PatchTarget("Restory.Constants.ProjectConstants+Layers", "Projections"),
-        new PatchTarget("Restory.Constants.ProjectConstants+Layers", "Elements"),
-        new PatchTarget("Restory.Constants.ProjectConstants+Layers", "Device"),
-        new PatchTarget("Restory.Data.Base.RestoryEntityInfoBase", "ID"),
-        new PatchTarget("Restory.Gameplay.Equipment.Ultrasonic.SonicBath"),
-        new PatchTarget("Restory.Gameplay.InteractiveObjects.InteractiveObject", "IsInteractable"),
+        // TextMeshPro, not the game assembly.
+        DropdownShow,
+        DropdownHide,
+        DropdownOnSubmit,
+        DropdownOnPointerClick,
+        DropdownList,
     };
+
+    /// <summary>
+    /// Every target TargetCheck resolves: the union of the feature manifests, less <see cref="Unchecked"/>.
+    /// </summary>
+    public static IReadOnlyList<PatchTarget> All => all ??= FeatureManifests.All
+        .SelectMany(m => m.Targets)
+        .Distinct()
+        .Except(Unchecked)
+        .ToList();
+
+    private static IReadOnlyList<PatchTarget>? all;
 }

@@ -3,6 +3,7 @@ using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
 using RestoryMod.Core;
+using RestoryMod.Features.AppSwitch;
 using RestoryMod.Features.ButtonPrompts;
 using RestoryMod.Features.ButtonSwap;
 using RestoryMod.Features.CursorSpeed;
@@ -64,6 +65,7 @@ public class Plugin : BaseUnityPlugin
         HitboxEnlargingFeature.Bind(Config);
         HitboxOverlayFeature.Bind(Config);
         MailListFeature.Bind(Config);
+        AppSwitchFeature.Bind(Config);
         HintPulse.Bind(Config);
         DropHintFeature.Bind(Config);
         ScrewHintButtonFeature.Bind(Config);
@@ -151,6 +153,7 @@ public class Plugin : BaseUnityPlugin
         gameObject.AddComponent<DpadSendPoller>();
         // Idle unless the mail list targets resolve and MailLaunchPatch has captured the Mail app.
         gameObject.AddComponent<MailListPoller>();
+        if (AppSwitchFeature.TargetsPresent()) gameObject.AddComponent<AppSwitchPoller>();
         if (ScrewHintButtonFeature.TargetsPresent()) gameObject.AddComponent<ScrewHintPoller>();
         if (R2ToolFeature.TargetsPresent()) gameObject.AddComponent<R2ToolPoller>();
         if (DeviceFadeFeature.TargetsPresent()) gameObject.AddComponent<DeviceFadePoller>();

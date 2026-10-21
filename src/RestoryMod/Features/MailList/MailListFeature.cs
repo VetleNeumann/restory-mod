@@ -27,16 +27,22 @@ internal readonly struct MailEntry(GUI_EmailMessageButton button, object letter)
 /// Selected mail. Every selection runs the list's own click handler, so the game opens and marks
 /// the mail read as on a click.
 /// </summary>
-internal static class MailListFeature
+internal sealed class MailListFeature : IFeature
 {
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.MailList;
+
+    public void Load(FeatureContext ctx)
     {
-        Enabled = config.Bind("Mail", "DpadSelectsMail", true,
+        Enabled = ctx.Config.Bind("Mail", "DpadSelectsMail", true,
             "In the PC's mail app, D-pad up/down step through the mail in the open folder (hold to repeat). " +
             "Once a mail is selected, one stays selected when switching folders or taking an order, and " +
             "the list scrolls to keep it in view.");
+        ctx.Patch(typeof(MailLaunchPatch), typeof(MailStopPatch), typeof(MailSelectedPatch), typeof(MailFolderChangedPatch),
+            typeof(MailContentsChangedPatch));
+        // Idle unless the mail list targets resolve and MailLaunchPatch has captured the Mail app.
+        ctx.AddPoller<MailListPoller>();
     }
 
     private static bool? targetsPresent;

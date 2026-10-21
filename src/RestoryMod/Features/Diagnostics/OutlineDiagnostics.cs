@@ -14,6 +14,19 @@ using UnityEngine;
 
 namespace RestoryMod.Features.Diagnostics;
 
+internal sealed class OutlineDiagnosticsFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.OutlineDiagnostics;
+
+    public void Load(FeatureContext ctx)
+    {
+        OutlineDiagnostics.Bind(ctx.Config);
+        ctx.Patch(typeof(OutlineAdapterActivePatch), typeof(OutlineAdapterPresetPatch), typeof(ProjectionPulsePatch),
+            typeof(DropHintGraphPatch));
+        if (OutlineDiagnostics.Enabled) ctx.AddPoller<OutlineWatcher>();
+    }
+}
+
 /// <summary>
 /// Dev aid: logs every outline change on device parts, screws and the slots they go back into, to
 /// find out what lights a screw and what turns it off again. The game switches outlines through
@@ -31,7 +44,7 @@ internal static class OutlineDiagnostics
     /// <summary>Set by [Debug] DumpOutlines; the watcher logs every outline once and clears it.</summary>
     public static bool DumpRequested;
 
-    public static void Bind(ConfigFile config)
+    internal static void Bind(ConfigFile config)
     {
         entry = config.Bind("Debug", "OutlineDiagnostics", false,
             "Log every outline change on device parts, screws and their slots: what switched it, the preset, " +
@@ -160,7 +173,7 @@ internal static class OutlineDiagnostics
 internal static class OutlineAdapterActivePatch
 {
     private static bool Prepare() =>
-        OutlineDiagnostics.Enabled && GameTargets.AllPresent(PatchTargets.OutlineAdapterSetActive);
+        OutlineDiagnostics.Enabled && GameTargets.AllPresent(FeatureManifests.OutlineDiagnostics, PatchTargets.OutlineAdapterSetActive);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.OutlineAdapterSetActive)!;
 
@@ -178,7 +191,7 @@ internal static class OutlineAdapterActivePatch
 internal static class OutlineAdapterPresetPatch
 {
     private static bool Prepare() =>
-        OutlineDiagnostics.Enabled && GameTargets.AllPresent(PatchTargets.OutlineAdapterSetPreset);
+        OutlineDiagnostics.Enabled && GameTargets.AllPresent(FeatureManifests.OutlineDiagnostics, PatchTargets.OutlineAdapterSetPreset);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.OutlineAdapterSetPreset)!;
 
@@ -197,7 +210,7 @@ internal static class OutlineAdapterPresetPatch
 internal static class ProjectionPulsePatch
 {
     private static bool Prepare() =>
-        OutlineDiagnostics.Enabled && GameTargets.AllPresent(PatchTargets.ProjectionHighlighterPlay);
+        OutlineDiagnostics.Enabled && GameTargets.AllPresent(FeatureManifests.OutlineDiagnostics, PatchTargets.ProjectionHighlighterPlay);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.ProjectionHighlighterPlay)!;
 
@@ -254,7 +267,7 @@ internal static class DropHintGraphPatch
 
     private static bool Prepare()
     {
-        if (!OutlineDiagnostics.Enabled || !GameTargets.AllPresent(
+        if (!OutlineDiagnostics.Enabled || !GameTargets.AllPresent(FeatureManifests.OutlineDiagnostics,
                 PatchTargets.DropHintHandleBlocked, PatchTargets.DropHintDetachedSocket, PatchTargets.SocketAdditionalBlockers))
             return false;
         additionalBlockers = GameTargets.Field(PatchTargets.SocketAdditionalBlockers);

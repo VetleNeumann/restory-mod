@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using static RestoryMod.Core.PatchTargets;
 
 namespace RestoryMod.Core;
@@ -12,6 +13,13 @@ namespace RestoryMod.Core;
 public sealed record FeatureManifest(string Name, IReadOnlyList<PatchTarget> Targets)
 {
     public FeatureManifest(string name, params PatchTarget[] targets) : this(name, (IReadOnlyList<PatchTarget>)targets) { }
+
+    /// <summary>The targets a patch checks that this manifest does not list, in the order given.</summary>
+    public IReadOnlyList<PatchTarget> NotListed(IEnumerable<PatchTarget> targets)
+    {
+        var listed = new HashSet<PatchTarget>(Targets);
+        return targets.Where(t => !listed.Contains(t)).ToList();
+    }
 
     public override string ToString() => Name;
 }
@@ -666,6 +674,10 @@ public static class FeatureManifests
         new("Restory.Data.Outline.ElementOutlineSettings", "DirtyElementOutline"),
         new("Restory.Data.Outline.ElementOutlineSettings", "DamagedElementOutline"));
 
+    public static readonly FeatureManifest NotepadInventorySwap = new(nameof(NotepadInventorySwap),
+        new("RewiredConsts.Action+Copybook", "OpenCopybook"),
+        new("RewiredConsts.Action+Inventory", "Inventory0"));
+
     /// <summary>The end-to-end harness (RestoryMod.E2E): not shipped, but checked so a game update names what moved.</summary>
     public static readonly FeatureManifest EndToEndHarness = new(nameof(EndToEndHarness),
         new List<PatchTarget>(SaveWrites) { CursorDetectorTryToDetect, HighlighterProjections, ElementViewElement, ElementViewOutline, ElementViewOutlineSettings });
@@ -701,6 +713,7 @@ public static class FeatureManifests
         WorkbenchAdvice,
         R2Tool,
         DeviceFade,
+        NotepadInventorySwap,
         SettingsMenuDump,
         GamepadBindingsDump,
         OutlineDiagnostics,

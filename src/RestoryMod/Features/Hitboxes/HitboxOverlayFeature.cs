@@ -17,17 +17,22 @@ namespace RestoryMod.Features.Hitboxes;
 /// Hitbox overlay: a debug view at the workbench that draws native and enlarged hitboxes over the
 /// game and lists what lies under the cursor. It only reads; enlarging is HitboxEnlargingFeature.
 /// </summary>
-internal static class HitboxOverlayFeature
+internal sealed class HitboxOverlayFeature : IFeature
 {
     public static ConfigEntry<bool> Show = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.HitboxOverlay;
+
+    public void Load(FeatureContext ctx)
     {
-        Show = config.Bind(
+        Show = ctx.Config.Bind(
             "Debug",
             "ShowHitboxes",
             false,
             "Hitbox overlay: draw hitboxes at the workbench over the game, with a readout of what lies under the cursor.");
+        ctx.Patch(typeof(HitboxOverlayDetectionPatch), typeof(HitboxOverlayEmptyBenchPatch));
+        // Idle unless ShowHitboxes is on and a workbench hover state recorded this frame.
+        ctx.AddPoller<HitboxOverlay>();
     }
 }
 
@@ -60,9 +65,9 @@ internal static class HoverCapture
 
     private static AccessTools.FieldRef<GameCursorDetector, Camera>? gameCamera;
 
-    public static bool Prepare()
+    public static bool Prepare(FeatureManifest feature)
     {
-        if (!GameTargets.AllPresent(PatchTargets.CursorDetectorCamera)) return false;
+        if (!GameTargets.AllPresent(feature, PatchTargets.CursorDetectorCamera)) return false;
         gameCamera ??= AccessTools.FieldRefAccess<GameCursorDetector, Camera>(PatchTargets.CursorDetectorCamera.MemberName!);
         return true;
     }
@@ -100,7 +105,7 @@ internal static class HoverCapture
 internal static class HitboxOverlayDetectionPatch
 {
     private static bool Prepare() =>
-        GameTargets.AllPresent(
+        GameTargets.AllPresent(FeatureManifests.HitboxOverlay,
             PatchTargets.DisassembleDetectionOnUpdate,
             PatchTargets.DisassembleDetectionPlayerInput,
             PatchTargets.DisassembleDetectionDetector,
@@ -113,8 +118,8 @@ internal static class HitboxOverlayDetectionPatch
             PatchTargets.DisassembleDetectionProjection,
             PatchTargets.DisassembleDetectionButton,
             PatchTargets.DisassembleDetectionDeviceService)
-        && HoverCapture.Prepare()
-        && WorkbenchHitboxes.Prepare();
+        && HoverCapture.Prepare(FeatureManifests.HitboxOverlay)
+        && WorkbenchHitboxes.Prepare(FeatureManifests.HitboxOverlay);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.DisassembleDetectionOnUpdate)!;
 
@@ -155,7 +160,7 @@ internal static class HitboxOverlayDetectionPatch
 internal static class HitboxOverlayEmptyBenchPatch
 {
     private static bool Prepare() =>
-        GameTargets.AllPresent(
+        GameTargets.AllPresent(FeatureManifests.HitboxOverlay,
             PatchTargets.EmptyDetectionOnUpdate,
             PatchTargets.EmptyDetectionPlayerInput,
             PatchTargets.EmptyDetectionDetector,
@@ -164,8 +169,8 @@ internal static class HitboxOverlayEmptyBenchPatch
             PatchTargets.EmptyDetectionSelection,
             PatchTargets.EmptyDetectionElement,
             PatchTargets.EmptyDetectionDeviceService)
-        && HoverCapture.Prepare()
-        && WorkbenchHitboxes.Prepare();
+        && HoverCapture.Prepare(FeatureManifests.HitboxOverlay)
+        && WorkbenchHitboxes.Prepare(FeatureManifests.HitboxOverlay);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.EmptyDetectionOnUpdate)!;
 

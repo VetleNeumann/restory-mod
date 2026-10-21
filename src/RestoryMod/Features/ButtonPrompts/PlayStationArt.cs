@@ -11,6 +11,13 @@ using UnityEngine.UI;
 
 namespace RestoryMod.Features.ButtonPrompts;
 
+internal sealed class PlayStationArtFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.PlayStationArt;
+
+    public void Load(FeatureContext ctx) => ctx.Patch(typeof(PlayStationArtPatch));
+}
+
 /// <summary>
 /// The game's unused PS5 button sprites, loaded from its own image bundle. Its glyph lists draw
 /// PlayStation pads with the generic A/B art; <see cref="PlayStationArtPatch"/> swaps these in.

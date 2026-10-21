@@ -12,14 +12,22 @@ namespace RestoryMod.Features.RotationSpeed;
 /// game's optional Round() snapping, so the setting changes speed only. The value is read every
 /// frame, so config changes apply live.
 /// </summary>
-internal static class RotationSpeedFeature
+internal sealed class RotationSpeedFeature : IFeature
 {
     // The game's own speed (1.0) spins far too fast on a stick; 0.4 was picked in play.
     private const float DefaultSpeed = 0.4f;
 
     public static ConfigEntry<float> Speed = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.RotationSpeed;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(RotationSpeedPatch));
+    }
+
+    private static void Bind(ConfigFile config)
     {
         Speed = config.Bind(
             "Controller",

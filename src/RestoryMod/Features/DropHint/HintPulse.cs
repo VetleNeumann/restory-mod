@@ -11,6 +11,17 @@ using UnityEngine;
 
 namespace RestoryMod.Features.DropHint;
 
+internal sealed class HintPulseFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.HintPulse;
+
+    public void Load(FeatureContext ctx)
+    {
+        HintPulse.Bind(ctx.Config);
+        ctx.Patch(typeof(HintPulseJoinPatch), typeof(HintPulseStaleGhostPatch), typeof(HintPulseSizePatch));
+    }
+}
+
 /// <summary>
 /// The yellow pulse every workbench screw hint shares (the game's one TooltipProjectionHighlighter):
 /// the drop hint, the game's hint button and the mod's additions all add ghosts to it. With
@@ -23,7 +34,7 @@ internal static class HintPulse
 {
     public static ConfigEntry<bool> Tidy = null!;
 
-    public static void Bind(ConfigFile config)
+    internal static void Bind(ConfigFile config)
     {
         Tidy = config.Bind("Workbench", "TidyHintPulse", true,
             "Keeps the yellow screw hints tidy: one pulse per screw, a fading pulse brightens again when more " +
@@ -43,7 +54,7 @@ internal static class HintPulse
         AccessTools.FieldRefAccess<ProjectionHighlighterBase, float>("peakScale");
 
     /// <summary>The pulse's own members, which every user of this class reads.</summary>
-    public static bool TargetsPresent() => GameTargets.AllPresent(
+    public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.HintPulse,
         PatchTargets.HighlighterProjections,
         PatchTargets.HighlighterSequence,
         PatchTargets.HighlighterToPeak,
@@ -137,7 +148,7 @@ internal static class HintPulseJoinPatch
 [HarmonyPatch]
 internal static class HintPulseSizePatch
 {
-    private static bool Prepare() => HintPulse.TargetsPresent() && GameTargets.AllPresent(PatchTargets.HighlighterSetScale);
+    private static bool Prepare() => HintPulse.TargetsPresent() && GameTargets.AllPresent(FeatureManifests.HintPulse, PatchTargets.HighlighterSetScale);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.HighlighterSetScale)!;
 
@@ -151,7 +162,7 @@ internal static class HintPulseSizePatch
 [HarmonyPatch]
 internal static class HintPulseStaleGhostPatch
 {
-    private static bool Prepare() => HintPulse.TargetsPresent() && GameTargets.AllPresent(
+    private static bool Prepare() => HintPulse.TargetsPresent() && GameTargets.AllPresent(FeatureManifests.HintPulse,
         PatchTargets.TooltipServiceSmallHandler,
         PatchTargets.DropHintHighlighter,
         PatchTargets.TooltipServiceSocketChanged);

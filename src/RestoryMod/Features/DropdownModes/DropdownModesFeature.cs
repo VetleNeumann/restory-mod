@@ -19,9 +19,20 @@ namespace RestoryMod.Features.DropdownModes;
 /// and the stick moved the highlighted row and the cursor at once. This keeps one of the two in
 /// charge: pointer mode or nav mode, per <see cref="Core.DropdownModes"/>.
 /// </summary>
-internal static class DropdownModesFeature
+internal sealed class DropdownModesFeature : IFeature
 {
     public static ConfigEntry<bool> Enabled = null!;
+
+    public FeatureManifest Manifest => FeatureManifests.DropdownModes;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(DropdownOpenPatch), typeof(DropdownFramePatch), typeof(DropdownStickMovePatch),
+            typeof(DropdownSubmitPatch), typeof(DropdownCursorClickPatch), typeof(DropdownCursorImagePatch));
+        FindCursors();
+        ctx.OnUnload(Unload);
+    }
 
     private static readonly Core.DropdownModes Modes = new();
     private static readonly HashSet<VirtualCursorView> CursorViews = new();
@@ -46,7 +57,7 @@ internal static class DropdownModesFeature
     public static bool CursorHidden => gamepadCursor && Modes.CursorHidden;
     public static bool InNavMode => gamepadCursor && Modes.IsOpen && Modes.Mode == DropdownMode.Nav;
 
-    public static void Bind(ConfigFile config)
+    private static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("Controller", "DropdownModes", true,
             "In an open dropdown, the gamepad drives either the cursor (stick moves it, A clicks) or " +

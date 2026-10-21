@@ -13,7 +13,7 @@ using RestoryMod.Core;
 
 namespace RestoryMod.Features.PartsBox;
 
-internal static class PartsBoxFeature
+internal sealed class PartsBoxFeature : IFeature
 {
     /// <summary>
     /// Checked at runtime rather than in Prepare(), unlike the debug toggles, so the sections can be
@@ -21,7 +21,17 @@ internal static class PartsBoxFeature
     /// </summary>
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.PartsBox;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(PartsBoxSortPatch), typeof(PartsBoxHeadersPatch), typeof(PartsBoxPrewarmPatch));
+        PartsBoxSections.AttachToPanels();
+        ctx.OnUnload(PartsBoxSections.Unload);
+    }
+
+    private static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("PartsBox", "Sections", true,
             "While a device is on the workbench, sort the parts box in \"How to reassemble\" order and " +
@@ -43,7 +53,7 @@ internal static class PartsBoxFeature
 [HarmonyPatch]
 internal static class PartsBoxSortPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.PartsBox,
         PatchTargets.InventoryPanelSortItems,
         PatchTargets.InventoryPanelFilteredItems,
         PatchTargets.InventoryPanelFilter,
@@ -119,7 +129,7 @@ internal static class PartsBoxSortPatch
 [HarmonyPatch]
 internal static class PartsBoxHeadersPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.PartsBox,
         PatchTargets.InventoryPanelUpdateItemsView,
         PatchTargets.InventoryPanelView,
         PatchTargets.InventoryPanelViewItems,
@@ -148,7 +158,7 @@ internal static class PartsBoxHeadersPatch
 [HarmonyPatch]
 internal static class PartsBoxPrewarmPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.PartsBox,
         PatchTargets.InventoryPanelConstruct,
         PatchTargets.InventoryPanelView,
         PatchTargets.InventoryPanelViewItems,

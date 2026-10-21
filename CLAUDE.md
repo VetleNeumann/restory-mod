@@ -11,7 +11,7 @@ Rewired input, Zenject DI). Personal repo. Game installed on this box; `GamePath
 - `scripts/dev.sh hot`: builds and hot-reloads into the running game through ScriptEngine (pinned r11.2,
   installed on first use), with no restart. The first `hot` after a `run` restarts once to move the mod from
   `plugins/RestoryMod/` to `BepInEx/scripts/`; `run` moves it back. A reload unpatches, runs
-  `Plugin.Teardown`, then loads the new copy, which picks up scene-load setup at the end of `Plugin.Awake`.
+  `Plugin.Teardown`, then loads the new copy, whose features pick up scene-load setup in their `Load`.
   A copy hands over only what it saw itself: after the first `hot` from an older build, reload the scene once.
 - `scripts/dev.sh e2e [scenario] [--stop-at N]`: end-to-end run through a virtual Xbox pad (ViGEmBus), with
   saves blocked; prints numbered checks and exits 1 on any failure. Scenarios live in
@@ -37,21 +37,26 @@ and the target that moved. At runtime the patch that checks that target skips it
 features check per patch, so only that patch goes). A compiled-against member checked only by TargetCheck
 fails when the code reaches it instead.
 
-## Adding a patch
+## Adding a feature or patch
 
-1. One patch class per feature; `Prepare()` returns `GameTargets.AllPresent(...)` (the feature's manifest,
-   or a subset per patch) so a moved target skips only that feature. Register it in `Plugin.cs`.
-2. List every game member the code touches in the feature's manifest in `FeatureManifests` (Core),
-   including ones compiled against directly, so TargetCheck covers them; members reached by name also get a
-   `PatchTargets` field. `PatchTargets.All` is derived from the manifests.
+1. Manifest: list every game member the code touches in the feature's manifest in `FeatureManifests` (Core),
+   including ones compiled against directly, and add it to `FeatureManifests.All`, so TargetCheck covers
+   them; members reached by name also get a `PatchTargets` field. `PatchTargets.All` is derived from the
+   manifests.
+2. Feature: one `IFeature` class per manifest, named `<Manifest>Feature`, added to `FeatureList.All` (the load
+   order). Its `Load(ctx)` binds config, applies patch classes (`ctx.Patch`), adds pollers and registers undo
+   steps. Each patch class's `Prepare()` returns `GameTargets.AllPresent(manifest)` or
+   `AllPresent(manifest, subset...)`, so a moved target skips only that feature or patch. At startup the
+   plugin logs an error for any patch class no feature registers, any manifest no feature loads, and any
+   `Prepare` target missing from its manifest.
 3. Pure logic (orderings, ranges, rules) goes in `RestoryMod.Core` with unit tests; CI runs only Core.
 4. Prefix/postfix only. HarmonyX here is 2.9.0: `[HarmonyOptional]` does not exist.
-5. Anything left in the game outside the plugin's own GameObject (cloned or added objects and components,
-   rewired navigation, listeners on game objects) gets an undo step in `Plugin.Teardown`, so `dev.sh hot`
-   reloads cleanly. See `SettingsRowsPatch`. Setup that runs once per scene (Zenject `Construct`,
-   `Initialize`, Awake) also needs a load-time path in `Plugin.Awake`: find live MonoBehaviours
-   (`PartsBoxSections.AttachToPanels`), or for plain Zenject classes take the old copy's references from
-   `Handoff` (`NotepadKeyListenPatch.Resume`).
+5. Hot reload: anything left in the game outside the plugin's own GameObject (cloned or added objects and
+   components, rewired navigation, listeners on game objects) gets an undo step (`ctx.OnUnload`, or
+   `Plugin.Teardown.Add` for what is created later, see `SettingsRowsPatch`), so `dev.sh hot` reloads
+   cleanly. Setup that runs once per scene (Zenject `Construct`, `Initialize`, Awake) also needs a path in
+   `Load`: find live MonoBehaviours (`PartsBoxSections.AttachToPanels`), or for plain Zenject classes leave
+   references on unload and take them back with `ctx.Handoff` (`WorkbenchSessionFeature`).
 
 ## Unity gotchas learned the hard way
 

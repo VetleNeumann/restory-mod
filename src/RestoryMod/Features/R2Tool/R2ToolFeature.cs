@@ -20,15 +20,20 @@ namespace RestoryMod.Features.R2Tool;
 /// same. The two count as one button, released once both are up. Only while TriggerZoomToggle is on:
 /// with it off the triggers zoom there, as in the game.
 /// </summary>
-internal static class R2ToolFeature
+internal sealed class R2ToolFeature : IFeature
 {
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.R2Tool;
+
+    public void Load(FeatureContext ctx)
     {
-        Enabled = config.Bind("Controller", "R2Cleans", true,
+        Enabled = ctx.Config.Bind("Controller", "R2Cleans", true,
             "While cleaning, soldering or painting a part, R2 works the tool as Cross (A on Xbox) does. Only " +
             "while TriggerZoomToggle is on; with it off, R2 zooms there.");
+        ctx.Patch(typeof(R2ToolCrossPressPatch), typeof(R2ToolCrossReleasePatch), typeof(R2ToolPaintingUpdatePatch),
+            typeof(R2ToolPaintingButtonPatch));
+        if (TargetsPresent()) ctx.AddPoller<R2ToolPoller>();
     }
 
     public static bool TargetsPresent() => WorkbenchSession.TargetsPresent() && GameTargets.AllPresent(FeatureManifests.R2Tool);

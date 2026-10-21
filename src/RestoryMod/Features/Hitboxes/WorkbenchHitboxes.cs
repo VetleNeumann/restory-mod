@@ -70,10 +70,10 @@ internal sealed class WorkbenchHitboxes
     private readonly RaycastHit[] viewHits = new RaycastHit[16];
     private readonly List<RayHit<WorkbenchThing>> rayHits = new();
 
-    /// <summary>Resolves the private members the listing needs; for the patches' Prepare().</summary>
-    public static bool Prepare()
+    /// <summary>Resolves the private members the listing needs; for the Prepare() of a patch of this feature.</summary>
+    public static bool Prepare(FeatureManifest feature)
     {
-        if (!GameTargets.AllPresent(PatchTargets.SocketScrewSlot, PatchTargets.DeviceServiceWorkSurface)) return false;
+        if (!GameTargets.AllPresent(feature, PatchTargets.SocketScrewSlot, PatchTargets.DeviceServiceWorkSurface)) return false;
         screwSlotOf ??= AccessTools.FieldRefAccess<ElementSocket, ElementProjection>(PatchTargets.SocketScrewSlot.MemberName!);
         workSurfaceOf ??= AccessTools.FieldRefAccess<DeviceService, WorkSurface>(PatchTargets.DeviceServiceWorkSurface.MemberName!);
         return true;

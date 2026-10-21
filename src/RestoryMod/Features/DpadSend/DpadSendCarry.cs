@@ -32,7 +32,7 @@ internal static class DpadSendCarryPatch
     private static AccessTools.FieldRef<InteractiveObjectsToObjectConsumersDragHandlingService, InventoryBoxDetector>? inventoryDetectorOf;
     private static Action<InventoryBoxDetector, bool>? setInventoryDetected;
 
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.DpadSend,
         PatchTargets.DraggingWorkStateOnUpdate,
         PatchTargets.DraggingWorkStatePlayerInput,
         PatchTargets.WorkDraggingSelectedObject,

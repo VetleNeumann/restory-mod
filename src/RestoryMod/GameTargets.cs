@@ -1,44 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using BepInEx.Logging;
 using HarmonyLib;
 using RestoryMod.Core;
 
 namespace RestoryMod;
-
-/// <summary>
-/// Applies each patch class on its own so one broken target (e.g. after a game update) only
-/// disables that feature. Patch classes should implement a static Prepare() that returns false
-/// when their targets are missing.
-/// </summary>
-internal static class FeaturePatcher
-{
-    public static void Apply(Harmony harmony, ManualLogSource log, params Type[] patchClasses)
-    {
-        var applied = new List<string>();
-        var skipped = new List<string>();
-
-        foreach (var patchClass in patchClasses)
-        {
-            try
-            {
-                var patched = harmony.CreateClassProcessor(patchClass).Patch();
-                if (patched is { Count: > 0 })
-                    applied.Add(patchClass.Name);
-                else
-                    skipped.Add(patchClass.Name);
-            }
-            catch (Exception e)
-            {
-                skipped.Add(patchClass.Name);
-                log.LogError($"Patch {patchClass.Name} failed: {e}");
-            }
-        }
-
-        log.LogInfo($"Patches applied: [{string.Join(", ", applied)}]; skipped: [{string.Join(", ", skipped)}]");
-    }
-}
 
 /// <summary>Runtime lookups for <see cref="PatchTarget"/> entries. Each logs a warning when missing.</summary>
 internal static class GameTargets
@@ -66,10 +32,16 @@ internal static class GameTargets
     }
 
     /// <summary>
-    /// True when every target resolves (type, plus member as method, field or property).
-    /// Logs each missing one; meant for patch classes' Prepare().
+    /// True when each of these targets from the feature's manifest resolves (type, plus member as method,
+    /// field or property). Logs each missing one, and an error for any the manifest does not list, since
+    /// TargetCheck only covers what manifests list. Meant for a patch class's own Prepare().
     /// </summary>
-    public static bool AllPresent(params PatchTarget[] targets) => AllPresent(targets, feature: null);
+    public static bool AllPresent(FeatureManifest manifest, params PatchTarget[] targets)
+    {
+        foreach (var target in manifest.NotListed(targets))
+            Plugin.Logger.LogError($"Patch target {target} is not in the {manifest} manifest: add it there so TargetCheck covers it");
+        return AllPresent(targets, manifest.Name);
+    }
 
     /// <summary>
     /// True when every target in the feature's manifest resolves; logs each missing one with the
@@ -77,16 +49,14 @@ internal static class GameTargets
     /// </summary>
     public static bool AllPresent(FeatureManifest manifest) => AllPresent(manifest.Targets, manifest.Name);
 
-    private static bool AllPresent(IEnumerable<PatchTarget> targets, string? feature)
+    private static bool AllPresent(IEnumerable<PatchTarget> targets, string feature)
     {
         var all = true;
         foreach (var target in targets)
         {
             var type = TypeByName(target.TypeName);
             if (type is not null && (target.MemberName is null || HasMember(type, target.MemberName))) continue;
-            Plugin.Logger.LogWarning(feature is null
-                ? $"Patch target missing: {target}"
-                : $"Patch target missing for {feature}: {target}");
+            Plugin.Logger.LogWarning($"Patch target missing for {feature}: {target}");
             all = false;
         }
         return all;

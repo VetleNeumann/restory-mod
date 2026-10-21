@@ -15,7 +15,7 @@ namespace RestoryMod.Features.StickScroll;
 /// Stick scroll: the right stick glides scrollable menus at a speed that follows its tilt, replacing
 /// the game's arrow-key-style stepping (one jump, a 0.3 s pause, then ten jumps a second).
 /// </summary>
-internal static class StickScrollFeature
+internal sealed class StickScrollFeature : IFeature
 {
     public static ConfigEntry<bool> Enabled = null!;
     private static ConfigEntry<float> innerDeadzone = null!;
@@ -27,7 +27,16 @@ internal static class StickScrollFeature
     private static ConfigEntry<float> maxSpeed = null!;
     private static ConfigEntry<float> rampTime = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.StickScroll;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(StickScrollGameHandlerPatch));
+        if (TargetsPresent()) ctx.AddPoller<StickScrollDriver>();
+    }
+
+    private static void Bind(ConfigFile config)
     {
         var defaults = StickScrollSettings.Default;
         const string section = "Stick scroll";

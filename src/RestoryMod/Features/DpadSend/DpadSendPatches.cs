@@ -20,17 +20,23 @@ using Rewired;
 
 namespace RestoryMod.Features.DpadSend;
 
-internal static class DpadSendFeature
+internal sealed class DpadSendFeature : IFeature
 {
     /// <summary>Checked on each press, so it can be switched live from the config file.</summary>
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.DpadSend;
+
+    public void Load(FeatureContext ctx)
     {
-        Enabled = config.Bind("Controller", "DpadSendParts", true,
+        Enabled = ctx.Config.Bind("Controller", "DpadSendParts", true,
             "At the workbench, while holding a part with the gamepad, the D-pad sends it straight to a " +
             "destination: up to the washing bin, right to the tool cup, left to the parts box, down to the " +
             "trash can (or the shredder once bought). A destination that would refuse the part does nothing.");
+        ctx.Patch(typeof(DpadSendPatch), typeof(DpadSendFallbackGuardPatch), typeof(DpadSendSlotPressPatch),
+            typeof(DpadSendCarryPatch));
+        // Idle unless DpadSendSlotPressPatch applied: it is what records a pressed slot.
+        ctx.AddPoller<DpadSendPoller>();
     }
 
     private static bool errorLogged;
@@ -73,7 +79,7 @@ internal static class DpadSendPatch
     internal static AccessTools.FieldRef<RecycleService, TrashCan>? trashCanOf;
     internal static AccessTools.FieldRef<ShredderService, Shredder>? shredderOf;
 
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.DpadSend,
         PatchTargets.DraggingOnUpdate,
         PatchTargets.DraggingRelease,
         PatchTargets.DraggingPlayerInput,
@@ -312,7 +318,7 @@ internal static class DpadSendPatch
 [HarmonyPatch]
 internal static class DpadSendFallbackGuardPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.DpadSend,
         PatchTargets.DraggingCompleteDrag,
         PatchTargets.DraggingIsRecycling,
         PatchTargets.DraggingIsShredding);

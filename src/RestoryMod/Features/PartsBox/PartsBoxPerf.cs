@@ -10,6 +10,17 @@ using UnityEngine;
 
 namespace RestoryMod.Features.PartsBox;
 
+internal sealed class PartsBoxDiagnosticsFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.PartsBoxDiagnostics;
+
+    public void Load(FeatureContext ctx)
+    {
+        PartsBoxDiagnostics.Bind(ctx.Config);
+        ctx.Patch(typeof(PartsBoxShowTimingPatch));
+    }
+}
+
 /// <summary>[Debug] PartsBoxDiagnostics: parts box timing, and the missing-parts inputs in the log.</summary>
 internal static class PartsBoxDiagnostics
 {
@@ -17,7 +28,7 @@ internal static class PartsBoxDiagnostics
 
     public static bool Enabled => entry.Value;
 
-    public static void Bind(ConfigFile config)
+    internal static void Bind(ConfigFile config)
     {
         entry = config.Bind("Debug", "PartsBoxDiagnostics", false,
             "Log parts box timing (how much of opening it is this mod) and the missing-parts inputs. " +

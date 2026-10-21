@@ -12,12 +12,22 @@ using RestoryMod.Core;
 
 namespace RestoryMod.Features.PartsStore;
 
-internal static class PartsStoreFeature
+internal sealed class PartsStoreFeature : IFeature
 {
     /// <summary>Checked at runtime, like the parts box sections, so it can be switched live from the config file.</summary>
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.PartsStore;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(PartsStoreSortPatch));
+        PartsStoreSortPatch.Resume(ctx.Handoff);
+        ctx.OnUnload(() => PartsStoreSortPatch.Unload(ctx.Handoff));
+    }
+
+    private static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("PartsStore", "ReassemblyOrder", true,
             "Sort the parts store by device model, then in \"How to reassemble\" order instead of by price. " +
@@ -39,7 +49,7 @@ internal static class PartsStoreFeature
 [HarmonyPatch]
 internal static class PartsStoreSortPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.PartsStore.Targets.ToArray());
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.PartsStore);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.ShopFilterSortFilteredItems)!;
 
@@ -61,15 +71,15 @@ internal static class PartsStoreSortPatch
     }
 
     /// <summary>After a hot reload the player may already have flipped the toggle: take the start state over.</summary>
-    public static void Resume()
+    public static void Resume(Handoff handoff)
     {
-        if (Handoff.Take(nameof(PartsStoreSortPatch)) is [GUI_ElementsShopProductsPanelFilterView view, bool on] && view)
+        if (handoff.Take() is [GUI_ElementsShopProductsPanelFilterView view, bool on] && view)
             (startView, startOn) = (view, on);
     }
 
-    public static void Unload()
+    public static void Unload(Handoff handoff)
     {
-        if (startView) Handoff.Leave(nameof(PartsStoreSortPatch), startView, startOn);
+        if (startView) handoff.Leave(startView, startOn);
     }
 
     private static void Postfix(

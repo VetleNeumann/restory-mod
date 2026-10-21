@@ -7,17 +7,17 @@ public enum Mark
 {
     None,
 
-    /// <summary>The hint's outline on an attached part or screw.</summary>
+    /// <summary>The hint's outline on a thing that is there: an attached part, a screw, a loose part.</summary>
     Pulse,
 
-    /// <summary>The hint's yellow part ghost in a socket a loose part or screw can fill now.</summary>
+    /// <summary>The hint's dim, steady outline on a waiting part.</summary>
+    FaintPulse,
+
+    /// <summary>The hint's yellow part ghost in an empty socket: a screw slot whose screw can go in now.</summary>
     Ghost,
 
     /// <summary>The hint's red part ghost in a missing socket.</summary>
     RedGhost,
-
-    /// <summary>The hint's faint part ghost for a waiting part.</summary>
-    FaintGhost,
 
     /// <summary>The game's own outline on the thing under the virtual cursor.</summary>
     HoverOutline,

@@ -32,6 +32,9 @@ public sealed class RunLedger
 
     public RunVerdict Verdict { get; private set; } = RunVerdict.Passed;
 
+    /// <summary>The number of the check begun last; 0 before the first.</summary>
+    public int Number => number;
+
     /// <summary>Numbers the next check; false when the run halts here instead of making it.</summary>
     public bool BeginCheck(string label)
     {

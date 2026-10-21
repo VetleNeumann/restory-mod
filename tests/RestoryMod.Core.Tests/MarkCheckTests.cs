@@ -22,11 +22,11 @@ public class MarkCheckTests
     public void Subset_check_looks_only_at_the_things_it_names()
     {
         var expected = Marks(("Battery", Mark.RedGhost));
-        var actual = Marks(("Back cover", Mark.Pulse), ("Battery", Mark.FaintGhost));
+        var actual = Marks(("Back cover", Mark.Pulse), ("Battery", Mark.FaintPulse));
 
         var mismatches = MarkCheck.Compare(expected, actual, exact: false);
 
-        Assert.Equal(new[] { new MarkMismatch("Battery", Mark.RedGhost, Mark.FaintGhost) }, mismatches);
+        Assert.Equal(new[] { new MarkMismatch("Battery", Mark.RedGhost, Mark.FaintPulse) }, mismatches);
     }
 
     [Fact]

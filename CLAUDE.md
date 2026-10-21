@@ -13,6 +13,10 @@ Rewired input, Zenject DI). Personal repo. Game installed on this box; `GamePath
   `plugins/RestoryMod/` to `BepInEx/scripts/`; `run` moves it back. A reload unpatches, runs
   `Plugin.Teardown`, then loads the new copy, which picks up scene-load setup at the end of `Plugin.Awake`.
   A copy hands over only what it saw itself: after the first `hot` from an older build, reload the scene once.
+- `scripts/dev.sh e2e [scenario] [--stop-at N]`: end-to-end run through a virtual Xbox pad (ViGEmBus), with
+  saves blocked; prints numbered checks and exits 1 on any failure. Scenarios live in
+  `src/RestoryMod.E2E/Scenarios/`; `dump model=...` logs real part names and marks for writing new ones.
+  Failure screenshots land in `$GameDir/BepInEx/e2e/`. See `docs/adr/0002-e2e-drives-real-input.md`.
 - `scripts/screenshot.sh`: DPI-aware capture of the Windows screen; read the PNG to see the game.
 - Log: `$GameDir/BepInEx/LogOutput.log`. Config: `$GameDir/BepInEx/config/com.zantox.restorymod.cfg`;
   the plugin watches it, so hand edits apply live.

@@ -622,6 +622,10 @@ public static class FeatureManifests
         new(ElementBase, "IsHighlighted"),
         new(OutlinableAdapter, "IsActive"));
 
+    /// <summary>The end-to-end harness (RestoryMod.E2E): not shipped, but checked so a game update names what moved.</summary>
+    public static readonly FeatureManifest EndToEndHarness = new(nameof(EndToEndHarness),
+        new List<PatchTarget>(SaveWrites) { CursorDetectorTryToDetect, HighlighterProjections });
+
     public static IReadOnlyList<FeatureManifest> All { get; } = new[]
     {
         ButtonPrompts,
@@ -655,5 +659,6 @@ public static class FeatureManifests
         SettingsMenuDump,
         GamepadBindingsDump,
         OutlineDiagnostics,
+        EndToEndHarness,
     };
 }

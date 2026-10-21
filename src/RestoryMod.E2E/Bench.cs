@@ -138,8 +138,8 @@ internal static class Bench
         var service = WorkbenchSession.Service;
         var highlighter = service is null ? null : WorkbenchSession.Highlighter(service);
         if (!highlighter) return marks;
-        foreach (var (thing, ghost) in Drawn(things, highlighter!))
-            marks[thing.Name] = MarkOf(present: thing.Loose || thing.Part, GamePulse.LookOf(ghost));
+        foreach (var (thing, look) in DrawnLooks(things, highlighter!))
+            marks[thing.Name] = MarkOf(present: thing.Loose || thing.Part, look?.Look);
         return marks;
     }
 
@@ -153,12 +153,67 @@ internal static class Bench
         var service = WorkbenchSession.Service;
         var highlighter = service is null ? null : WorkbenchSession.Highlighter(service);
         if (!highlighter) return hidden;
-        foreach (var (thing, ghost) in Drawn(things, highlighter!))
+        foreach (var (thing, look) in DrawnLooks(things, highlighter!))
         {
-            if (GamePulse.LookOf(ghost) == Look.Screw) hidden[thing.Name] = GamePulse.DrawnHidden(highlighter!, ghost);
+            if (look is { Look: Look.Screw } screw) hidden[thing.Name] = screw.Hidden;
         }
         return hidden;
     }
+
+    private static readonly AccessTools.FieldRef<ProjectionHighlighterBase, Outlinable.OutlineProperties?> PulseFront =
+        AccessTools.FieldRefAccess<ProjectionHighlighterBase, Outlinable.OutlineProperties?>(PatchTargets.HighlighterFrontOutline.MemberName);
+    private static readonly AccessTools.FieldRef<OutlineSettingsPreset, RenderStyle> PresetStyle =
+        AccessTools.FieldRefAccess<OutlineSettingsPreset, RenderStyle>(PatchTargets.PresetRenderStyle.MemberName);
+    private static readonly AccessTools.FieldRef<OutlineSettingsPreset, Outlinable.OutlineProperties> PresetCommon =
+        AccessTools.FieldRefAccess<OutlineSettingsPreset, Outlinable.OutlineProperties>(PatchTargets.PresetCommon.MemberName);
+    private static readonly AccessTools.FieldRef<OutlineSettingsPreset, Outlinable.OutlineProperties> PresetFront =
+        AccessTools.FieldRefAccess<OutlineSettingsPreset, Outlinable.OutlineProperties>(PatchTargets.PresetFront.MemberName);
+
+    // The look each ghost is drawn in now, judged against the look table from what it shows (LookCheck),
+    // not from what the mod says it painted.
+    private static IEnumerable<(BenchThing thing, DrawnLook? look)> DrawnLooks(List<BenchThing> things,
+        ProjectionHighlighterBase highlighter)
+    {
+        var pulse = PulseFront(highlighter);
+        var view = Object.FindAnyObjectByType<ElementView>();
+        var settings = view ? ViewSettings(view!) : null;
+        foreach (var (thing, ghost) in Drawn(things, highlighter))
+        {
+            yield return (thing, pulse is null ? null
+                : LookCheck.Classify(FrontOf(ghost, pulse), ToRgba(pulse.Color), look => ConditionColour(settings, look)));
+        }
+    }
+
+    // A ghost's front as drawn: the pulse's own fill shader means the screw look's fill, EPO's dots the
+    // missing look's.
+    private static DrawnHalf FrontOf(ElementProjection ghost, Outlinable.OutlineProperties pulse)
+    {
+        var front = ghost.OutlinableAdapter.Outlinable.FrontParameters;
+        var shader = front.FillPass.Shader;
+        var pattern = shader == pulse.FillPass.Shader ? FillPattern.Pulse
+            : shader && shader.name.EndsWith("Dots") ? FillPattern.Dots
+            : FillPattern.Solid;
+        var width = pulse.DilateShift > 0f ? front.DilateShift / pulse.DilateShift : 1f;
+        return new DrawnHalf(ToRgba(front.Color), width, pattern);
+    }
+
+    // The game's own outline colour for a condition look (its hover outline's for that condition), or null.
+    private static Rgba? ConditionColour(ElementOutlineSettings? settings, Look look)
+    {
+        if (!settings) return null;
+        var preset = look switch
+        {
+            Look.Burnt => settings!.BurntElementOutline,
+            Look.Damaged => settings!.DamagedElementOutline,
+            Look.Dirty => settings!.DirtyElementOutline,
+            _ => null,
+        };
+        if (!preset) return null;
+        var drawn = PresetStyle(preset!) == RenderStyle.FrontBack ? PresetFront(preset!) : PresetCommon(preset!);
+        return drawn is null ? null : ToRgba(drawn.Color);
+    }
+
+    private static Rgba ToRgba(Color c) => new(c.r, c.g, c.b, c.a);
 
     // Every ghost the pulse highlighter draws now, with the thing it sits on.
     private static IEnumerable<(BenchThing thing, ElementProjection ghost)> Drawn(List<BenchThing> things,
@@ -183,8 +238,7 @@ internal static class Bench
     // A missing socket wears the missing look, even a tube's entry with a part in it and room behind; a
     // part shown to need work, its condition's. Else
     // on a thing that is there the ghost draws over it: a pulse; in an empty socket it stands for the part
-    // that goes there: a ghost. The look is read off the preset the ghost wears, which decides how it is
-    // drawn (see GamePulse.Paint).
+    // that goes there: a ghost. The look is judged from how the ghost is drawn (see LookCheck).
     private static Mark MarkOf(bool present, Look? look) => look switch
     {
         Look.Missing => Mark.MissingGhost,

@@ -18,6 +18,18 @@ public class LookTests
         Assert.Equal(look, Looks.OfHint(HintKind.LoosePart, condition));
     }
 
+    [Theory]
+    [InlineData(Look.Burnt, PartCondition.Burnt)]
+    [InlineData(Look.Damaged, PartCondition.Damaged)]
+    [InlineData(Look.Dirty, PartCondition.Dirty)]
+    [InlineData(Look.Ready, null)]
+    [InlineData(Look.Missing, null)]
+    [InlineData(Look.Screw, null)]
+    public void A_condition_look_names_the_condition_it_shows(Look look, PartCondition? condition)
+    {
+        Assert.Equal(condition, look.Condition());
+    }
+
     [Fact]
     public void A_condition_look_pulses_in_the_condition_colour_brightest_at_the_peak()
     {

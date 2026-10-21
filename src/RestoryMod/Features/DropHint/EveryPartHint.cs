@@ -147,12 +147,8 @@ internal sealed class EveryPartHintFeature : IFeature
     {
         var ledger = HintGhosts.For(highlighter);
         // Shown, a part to take off counts as seen, as the game's own pick-up does: its condition shows now.
-        var plan = Hint.PlanRevealing(Snapshot(device), takingApart, part =>
-        {
-            var data = part.GetComponent<ElementBase>().ConditionHandler.ElementData;
-            data.IsInspected = true;
-            return BenchState.ConditionOf(data.Condition);
-        });
+        var plan = Hint.PlanRevealing(Snapshot(device), takingApart,
+            part => ConditionLook.Reveal(part.GetComponent<ElementBase>()));
         foreach (var item in plan) ledger.Show(item);
         ledger.Reconcile(plan);
     }

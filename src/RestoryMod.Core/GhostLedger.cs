@@ -32,20 +32,17 @@ public interface IGhostPulse<TSpot, TGhost> where TGhost : class
 
     void Unmute(TGhost marker);
 
-    /// <summary>Gives a ghost the hint's own look at the pulse's current brightness.</summary>
+    /// <summary>
+    /// Takes a ghost the hint now tracks, a screw's too: moves it to the hint's own outlines, drawn one by
+    /// one so overlapping ghosts stay apart, and paints it with this look.
+    /// </summary>
+    void Take(TGhost ghost, Look look);
+
+    /// <summary>Gives a taken ghost the hint's own look at the pulse's current brightness.</summary>
     void Paint(TGhost ghost, Look look);
 
-    /// <summary>Gives a ghost the pulse's plain look back.</summary>
-    void Unpaint(TGhost ghost);
-
-    /// <summary>
-    /// Moves a ghost the hint tracks, a screw's too, to the hint's own outlines, drawn one by one so
-    /// overlapping ghosts stay apart.
-    /// </summary>
-    void Claim(TGhost ghost);
-
-    /// <summary>Hands a claimed ghost back to the game's outlines.</summary>
-    void Release(TGhost ghost);
+    /// <summary>Hands a taken ghost back to the game's outlines, with the pulse's plain look.</summary>
+    void LetGo(TGhost ghost);
 }
 
 /// <summary>
@@ -119,13 +116,13 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
             Forget(entry);
             entry = null;
         }
-        if (entry is null)
+        var taking = entry is null;
+        if (taking)
         {
             entry = new Entry(ghost, item.Kind);
             entries[item.Target] = entry;
-            pulse.Claim(ghost);
         }
-        Restyle(item.Target, entry, item);
+        Restyle(item.Target, entry!, item, taking);
     }
 
     /// <summary>
@@ -219,12 +216,11 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
             if (entries.ContainsKey(item.Target) || pulse.GhostUnder(item.Target) is not { } ghost) continue;
             var entry = new Entry(ghost, item.Kind);
             entries[item.Target] = entry;
-            pulse.Claim(ghost);
-            Restyle(item.Target, entry, item);
+            Restyle(item.Target, entry, item, taking: true);
         }
     }
 
-    private void Restyle(TSpot spot, Entry entry, HintItem<TSpot> item)
+    private void Restyle(TSpot spot, Entry entry, HintItem<TSpot> item, bool taking)
     {
         entry.Kind = item.Kind;
         entry.Look = Looks.OfHint(item.Kind, item.Condition);
@@ -234,7 +230,8 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
             pulse.Unmute(entry.Muted);
             entry.Muted = null;
         }
-        pulse.Paint(entry.Ghost, entry.Look);
+        if (taking) pulse.Take(entry.Ghost, entry.Look);
+        else pulse.Paint(entry.Ghost, entry.Look);
     }
 
     private void ForgetAll()
@@ -246,7 +243,6 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
     private void Forget(Entry entry)
     {
         if (entry.Muted is not null) pulse.Unmute(entry.Muted);
-        pulse.Unpaint(entry.Ghost);
-        pulse.Release(entry.Ghost);
+        pulse.LetGo(entry.Ghost);
     }
 }

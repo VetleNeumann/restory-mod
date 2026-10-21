@@ -1,7 +1,6 @@
 using System;
 using System.Reflection;
 using HarmonyLib;
-using Restory.Data.Elements.Condition;
 using Restory.Data.Outline;
 using Restory.Gameplay.Common;
 using Restory.Gameplay.Elements;
@@ -37,15 +36,7 @@ internal static class ConditionHoverPatch
         try
         {
             if (!EveryPartHintFeature.IsReadyToTakeOff(___element)) return;
-            var data = ___element.ConditionHandler.ElementData;
-            data.IsInspected = true;
-            var preset = data.Condition switch
-            {
-                BurntElementCondition => ___outlineSettings.BurntElementOutline,
-                DirtyElementCondition => ___outlineSettings.DirtyElementOutline,
-                DamagedElementCondition => ___outlineSettings.DamagedElementOutline,
-                _ => null,
-            };
+            var preset = ConditionLook.Preset(___outlineSettings, ConditionLook.Reveal(___element));
             if (preset) ___outlineAdapter.OverridePreset = preset;
         }
         catch (Exception e)

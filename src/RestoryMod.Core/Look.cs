@@ -82,7 +82,16 @@ public static class Looks
         _ => Look.Ready,
     };
 
-    public static bool IsCondition(this Look look) => look is Look.Burnt or Look.Damaged or Look.Dirty;
+    public static bool IsCondition(this Look look) => look.Condition() is not null;
+
+    /// <summary>The condition a condition look shows; null for any other look.</summary>
+    public static PartCondition? Condition(this Look look) => look switch
+    {
+        Look.Burnt => PartCondition.Burnt,
+        Look.Damaged => PartCondition.Damaged,
+        Look.Dirty => PartCondition.Dirty,
+        _ => null,
+    };
 
     /// <summary>
     /// A look at the pulse's current color, in plain view or hidden behind something. A condition look

@@ -512,6 +512,13 @@ public static class FeatureManifests
         TooltipServiceStateMachine,
         new(DisassembleDetection));
 
+    /// <summary>Keeps taking-apart mode while a tube's parts slide forward (TubeModePatch).</summary>
+    public static readonly FeatureManifest TubeMode = new(nameof(TubeMode),
+        TooltipServiceSocketChanged,
+        TooltipServiceIsDisassembling,
+        SerialSubordinates,
+        SubordinateSocket);
+
     public static readonly FeatureManifest ScrewHintButton = new(nameof(ScrewHintButton),
         TooltipServiceShow);
 
@@ -638,7 +645,7 @@ public static class FeatureManifests
 
     /// <summary>The end-to-end harness (RestoryMod.E2E): not shipped, but checked so a game update names what moved.</summary>
     public static readonly FeatureManifest EndToEndHarness = new(nameof(EndToEndHarness),
-        new List<PatchTarget>(SaveWrites) { CursorDetectorTryToDetect, HighlighterProjections });
+        new List<PatchTarget>(SaveWrites) { CursorDetectorTryToDetect, HighlighterProjections, ElementViewElement, ElementViewOutline });
 
     public static IReadOnlyList<FeatureManifest> All { get; } = new[]
     {
@@ -664,6 +671,7 @@ public static class FeatureManifests
         HintPulse,
         DropHint,
         WorkbenchSession,
+        TubeMode,
         ScrewHintButton,
         EveryPartHint,
         ZoomToggle,

@@ -47,6 +47,9 @@ internal static class DropHintFreedScrewsPatch
                 screw.Info.Category != ElementCategory.Small || socket.IsBlocked)
                 continue;
             ___tooltipProjectionHighlighter.CreateAndHighlightProjection(screw.ProjectionData, socket.transform);
+            // The game's ghost sits where the screw is lifted to, not on the screw.
+            var ghost = GamePulse.GhostUnder(___tooltipProjectionHighlighter, socket.transform);
+            if (ghost) GhostFit.ToPart(ghost!, screw);
         }
     }
 }

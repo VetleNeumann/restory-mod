@@ -67,7 +67,10 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
             AccessTools.FieldRefAccess<OutlineSettingsPreset, Outlinable.OutlineProperties>("backSettings");
     }
 
-    public ElementProjection? GhostUnder(Transform spot)
+    public ElementProjection? GhostUnder(Transform spot) => GhostUnder(highlighter, spot);
+
+    /// <summary>The newest ghost of this highlighter's pulse on this spot, or null.</summary>
+    public static ElementProjection? GhostUnder(TooltipProjectionHighlighter highlighter, Transform spot)
     {
         var ghosts = Ghosts(highlighter);
         for (var i = ghosts.Count - 1; i >= 0; i--)
@@ -86,6 +89,7 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         if (!ghost) return null;
         // A pooled ghost keeps the size another highlighter left it at.
         if (HintPulse.Tidy.Value) ghost!.transform.localScale = Vector3.one;
+        EveryPartHintFeature.Fit(ghost!, spot, kind);
         // The pool is shared with the game's screw-slot markers, whose outline the hint may have muted.
         ghost!.OutlinableAdapter.Outlinable.enabled = true;
         return ghost;

@@ -56,6 +56,7 @@ public static class FeatureManifests
     private static readonly PatchTarget CategorySmall = new("Restory.Data.Elements.ElementCategory", "Small");
     private static readonly PatchTarget ProjectionType = new(ElementProjection);
     private static readonly PatchTarget ProjectionOutlinable = new(ElementProjection, "OutlinableAdapter");
+    private static readonly PatchTarget ProjectionMeshFilter = new(ElementProjection, "MeshFilter");
     private static readonly PatchTarget OutlinableOutlinable = new(OutlinableAdapter, "Outlinable");
     private static readonly PatchTarget OutlinableOverridePreset = new(OutlinableAdapter, "OverridePreset");
     private static readonly PatchTarget SwitchableElement = new("Restory.Gameplay.Elements.ISwitchableElement");
@@ -506,7 +507,10 @@ public static class FeatureManifests
         SocketCompatibleElementInfo,
         ElementInfo,
         InfoCategory,
-        CategorySmall);
+        CategorySmall,
+        HighlighterProjections,
+        ProjectionType,
+        ProjectionMeshFilter);
 
     /// <summary>
     /// The game's tooltip service, kept for the hint and the R2 button. Shared, so it checks its own
@@ -561,6 +565,7 @@ public static class FeatureManifests
         ElementInfoPrefab,
         FlexibleAttachedModel,
         FlexiblePlacementModel,
+        ProjectionMeshFilter,
         BehaviorSwitcherCastCollider,
         HighlighterPreset,
         HighlighterFrontOutline,

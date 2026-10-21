@@ -235,6 +235,27 @@ internal sealed class EveryPartHintFeature : IFeature
         };
     }
 
+    /// <summary>Lays a ghost of this kind on this spot over its part as drawn (GhostFit); a screw slot's stays the game's marker's.</summary>
+    public static void Fit(ElementProjection ghost, Transform spot, HintKind kind)
+    {
+        try
+        {
+            if (kind == HintKind.LoosePart)
+            {
+                if (Loose.TryGetValue(spot, out var part) && part) GhostFit.ToPart(ghost, part);
+                return;
+            }
+            if (!Sockets.TryGetValue(spot, out var socket) || !socket) return;
+            if (kind is HintKind.Part or HintKind.Screw && socket.NestedElement) GhostFit.ToPart(ghost, socket.NestedElement);
+            else if (kind == HintKind.Missing && socket.CompatibleElementInfo) GhostFit.ToPrefab(ghost, socket.CompatibleElementInfo);
+        }
+        catch (Exception e)
+        {
+            // The game's own shape still shows.
+            LogOnce(e);
+        }
+    }
+
     /// <summary>On unload: lets go of the last snapshot's scene objects.</summary>
     internal static void Unload()
     {

@@ -138,8 +138,10 @@ internal sealed class LynxHint : IScenario
         yield return d.ExpectWithin(0.5f, "R2 again: the hint goes at once");
 
         // Sends: each part leaves the hand for its destination with one D-pad press.
-        yield return d.Send(Speaker, PadButton.Down, "the trash can");
-        yield return d.Send(PowerButton, PadButton.Left, "the parts box");
+        // While held, each part shows a guide on every destination that would take it, and only those; the
+        // parts box only for a part the device has no room for, so a part just taken off shows none there.
+        yield return d.Send(Speaker, PadButton.Down, "the trash can", guides: "Down");
+        yield return d.Send(PowerButton, PadButton.Left, "the parts box", guides: "");
         yield return d.Park();
         yield return Toggle();
         yield return d.ExpectIncludes("sent away: nothing left of them to point at", (Speaker, None), (PowerButton, None));
@@ -153,27 +155,24 @@ internal sealed class LynxHint : IScenario
         yield return d.ExpectState("the power button's slot sits under Missing parts", "the power button's slot",
             "Missing", () => Screens.SectionOf(PowerButton));
 
-        // A part held from its slot goes with one D-pad press too: up, to the washing bin.
+        // A part held from its slot is sent with one D-pad press too, but only where it would be taken: the
+        // power button is clean, so the washing bin refuses it and it stays in the box.
         var inBox = Screens.CountOf(PowerButton);
         yield return d.MoveTo((RectTransform)Screens.Slot(PowerButton).transform, "the power button's slot");
         yield return d.Hold(PadButton.A, true);
         yield return d.Press(PadButton.Up);
-        yield return Game.Until(() => Screens.CountOf(PowerButton) < inBox, 5f, "the power button came out of its slot");
-        yield return Game.Until(() => Object.FindObjectsByType<ElementBase>(FindObjectsSortMode.None).All(e => !e.IsDragging),
-            5f, "nothing left in hand");
+        yield return d.ExpectStateStays("D-pad up from its slot: the clean power button stays in the parts box",
+            "power buttons in the parts box", inBox.ToString(), () => Screens.CountOf(PowerButton).ToString(), 1f);
         d.LetGoOfA();
-        yield return d.ExpectState("D-pad up from its slot: the power button isn't left on the bench", "loose power buttons",
-            "0", () => Driver.ThingsOnBench().Count(t => t.Name.StartsWith(Loose(PowerButton))).ToString());
+        yield return Driver.Wait(0.3f);
         if (Screens.InventoryShown() != "open") yield return d.Press(PadButton.X);
-        yield return d.ExpectState("D-pad up from its slot: the power button leaves the parts box", "power buttons in the parts box",
-            (inBox - 1).ToString(), () => Screens.CountOf(PowerButton).ToString());
         yield return d.Press(PadButton.X);
         yield return d.ExpectState("X again: the parts box closes", "the inventory", "closed", Screens.InventoryShown);
 
         // Last, as it takes the bench to cleaning: the dirty membrane goes right, to the tool cup, where it is
         // the part to clean.
         yield return d.Send(DpadMembrane, PadButton.Right, "the tool cup",
-            part => part && !part.IsDragging && Game.CleaningTarget() == part);
+            part => part && !part.IsDragging && Game.CleaningTarget() == part, guides: "Right,Up");
     }
 
     // A fresh spot along the lower mat for each part laid down, clear of the parts box and tool cup.

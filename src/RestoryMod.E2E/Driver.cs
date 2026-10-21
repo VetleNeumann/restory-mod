@@ -277,7 +277,9 @@ internal sealed class Driver
     /// off first, a loose one picked up. Done once the part has left the bench and the hand, or for a
     /// destination that keeps it at the bench, once <paramref name="arrived"/> holds for it.
     /// </summary>
-    public IEnumerator Send(string thing, PadButton direction, string destination, System.Func<ElementBase, bool>? arrived = null)
+    /// <param name="guides">The D-pad directions whose send guides show while the part is held, such as "Down" or "Left,Up".</param>
+    public IEnumerator Send(string thing, PadButton direction, string destination, System.Func<ElementBase, bool>? arrived = null,
+        string? guides = null)
     {
         var at = Thing(thing);
         ElementBase part;
@@ -293,12 +295,24 @@ internal sealed class Driver
             part = LooseOf(thing);
             yield return HoldA(() => part.IsDragging, $"'{thing}' was picked up", seconds: 3f, keepHeld: true);
         }
+        // No guides reads so before any could show, so it must last a moment.
+        if (guides == "")
+            yield return ExpectStateStays($"holding '{thing}': no send guides", "send guides", guides, SendGuides, 0.5f);
+        else if (guides != null)
+            yield return ExpectState($"holding '{thing}': send guides show for {guides}", "send guides", guides, SendGuides);
         yield return Press(direction);
         arrived ??= p => !p || !p.IsDragging && Bench.Things().All(t => t.Loose != p);
         yield return Game.Until(() => arrived(part), 5f, $"'{thing}' went to {destination}");
         LetGoOfA();
         yield return Wait(0.3f);
     }
+
+    /// <summary>The directions of the send guides showing now, in sorted order.</summary>
+    public static string SendGuides() => string.Join(",", Object.FindObjectsByType<RectTransform>(FindObjectsSortMode.None)
+        .Where(t => t.gameObject.activeInHierarchy && t.name.StartsWith("RestoryMod_SendGuide_"))
+        .Select(t => t.name.Substring("RestoryMod_SendGuide_".Length))
+        .Distinct()
+        .OrderBy(d => d, System.StringComparer.Ordinal));
 
     /// <summary>Puts a screw back in its slot: press the slot, then hold A until it is screwed in.</summary>
     public IEnumerator ScrewIn(string socketThing)

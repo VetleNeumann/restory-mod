@@ -2,8 +2,10 @@ using System;
 using System.Reflection;
 using BepInEx.Configuration;
 using HarmonyLib;
+using Restory.Data.Devices;
 using Restory.Data.Elements.Condition;
 using Restory.Data.GameWarnings;
+using Restory.Gameplay.Devices;
 using Restory.Gameplay.Disassemble;
 using Restory.Gameplay.Disassemble.StateMachine;
 using Restory.Gameplay.Elements;
@@ -91,6 +93,7 @@ internal static class DpadSendPatch
         PatchTargets.DraggingIsOverCleaner,
         PatchTargets.DraggingGameMode,
         PatchTargets.DraggingElementCleaner,
+        PatchTargets.DraggingDeviceService,
         PatchTargets.DraggingUltrasonicService,
         PatchTargets.DraggingRecycleService,
         PatchTargets.DraggingShredderService,
@@ -115,6 +118,7 @@ internal static class DpadSendPatch
         ref bool ___isOverCleaner,
         DisassembleGameMode ___disassembleGameMode,
         ElementCleaner ___elementCleaner,
+        DeviceService ___deviceService,
         UltrasonicService ___ultrasonicService,
         RecycleService ___recycleService,
         ShredderService ___shredderService,
@@ -149,10 +153,7 @@ internal static class DpadSendPatch
                 shredderOwned: shredder && shredder.gameObject.activeInHierarchy);
 
             var element = ___selectedElement;
-            var part = new HeldPart(
-                Damaged: element.ConditionHandler.ElementData.Condition is DamagedElementCondition,
-                QuestItem: element is QuestItem,
-                NeedsCleaning: ___elementCleaner.DraggingElementInitialCleaningData != null);
+            var part = Describe(element, ___elementCleaner, ___deviceService);
             if (PartSend.WarnsBrokenPart(destination, part))
                 ___gameWarningService.ShowWarning(___gameWarningDatabase.BrokenElementWarning);
             if (!PartSend.Accepts(destination, part)) return;
@@ -176,6 +177,21 @@ internal static class DpadSendPatch
         {
             DpadSendFeature.LogOnce(e);
         }
+    }
+
+    /// <summary>The held part as the destinations' rules see it, read the way the game's own drop reads it.</summary>
+    internal static HeldPart Describe(ElementBase element, ElementCleaner elementCleaner, DeviceService deviceService)
+    {
+        var cleaning = elementCleaner.DraggingElementInitialCleaningData;
+        var placed = deviceService ? deviceService.PlacedDeviceContainer : null;
+        return new HeldPart(
+            Damaged: element.ConditionHandler.ElementData.Condition is DamagedElementCondition,
+            QuestItem: element is QuestItem,
+            NeedsCleaning: cleaning != null)
+        {
+            Washable = cleaning != null && cleaning.CanBeCleaned(),
+            FromPlacedDevice = placed && placed.Device && placed.Device.Info == element.Info.SourceDevice as DeviceInfo,
+        };
     }
 
     private static void SendTo(Destination destination, DraggingDisassembleState state, ElementBase element,

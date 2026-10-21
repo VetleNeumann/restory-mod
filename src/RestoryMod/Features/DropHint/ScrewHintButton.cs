@@ -17,17 +17,20 @@ namespace RestoryMod.Features.DropHint;
 /// are checked for again, so parts that become ready join it; once let go it fades as usual. R2
 /// otherwise zooms out, which <see cref="ZoomToggle.ZoomToggleFeature"/> takes over.
 /// </summary>
-internal static class ScrewHintButtonFeature
+internal sealed class ScrewHintButtonFeature : IFeature
 {
     public static ConfigEntry<HintButtonMode> Mode = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.ScrewHintButton;
+
+    public void Load(FeatureContext ctx)
     {
-        Mode = config.Bind("Controller", "R2Hint", HintButtonMode.Hold,
+        Mode = ctx.Config.Bind("Controller", "R2Hint", HintButtonMode.Hold,
             "At the workbench, R2 shows the hint, as Space does on a keyboard. Hold: it stays lit while R2 is " +
             "held. Toggle: it stays lit until R2 is pressed again or you leave the workbench. Off: R2 leaves " +
             "the hint alone. Also in the settings menu as \"R2 hint\". With TriggerZoomToggle off, R2 also still " +
             "zooms out.");
+        if (TargetsPresent()) ctx.AddPoller<ScrewHintPoller>();
     }
 
     public static bool TargetsPresent() => HintPulse.TargetsPresent() && WorkbenchSession.TargetsPresent()

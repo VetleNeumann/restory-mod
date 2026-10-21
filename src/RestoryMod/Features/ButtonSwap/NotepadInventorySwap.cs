@@ -15,14 +15,18 @@ namespace RestoryMod.Features.ButtonSwap;
 /// the two actions follows (opening, closing, the button prompts) and nothing is saved: switched off
 /// or unloaded, the game's own binding is back. The keyboard keeps J and Tab.
 /// </summary>
-internal static class NotepadInventorySwapFeature
+internal sealed class NotepadInventorySwapFeature : IFeature
 {
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.NotepadInventorySwap;
+
+    public void Load(FeatureContext ctx)
     {
-        Enabled = config.Bind("Controller", "SwapNotepadInventoryButtons", true,
+        Enabled = ctx.Config.Bind("Controller", "SwapNotepadInventoryButtons", true,
             "Triangle / Y opens the Notepad and Square / X the inventory, the other way round from the game.");
+        ctx.AddPoller<NotepadInventorySwapPoller>();
+        ctx.OnUnload(NotepadInventorySwapPoller.Unload);
     }
 }
 

@@ -20,12 +20,22 @@ namespace RestoryMod.Features.ButtonPrompts;
 /// setting can also pin one set. The game draws every set but PlayStation with the same generic art,
 /// so <see cref="PlayStationArt"/> supplies the PlayStation one.
 /// </summary>
-internal static class ButtonPromptsFeature
+internal sealed class ButtonPromptsFeature : IFeature
 {
     public static ConfigEntry<PromptStyle> Style = null!;
     public static ConfigEntry<bool> DetectThroughSteamInput = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.ButtonPrompts;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(ButtonPromptsPatch));
+        if (TargetsPresent()) ctx.AddPoller<ButtonPromptsPoller>();
+        ctx.OnUnload(Unload);
+    }
+
+    private static void Bind(ConfigFile config)
     {
         Style = config.Bind(
             "Controller",

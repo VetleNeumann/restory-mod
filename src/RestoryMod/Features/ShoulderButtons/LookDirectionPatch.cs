@@ -19,7 +19,7 @@ internal static class LookDirectionPatch
 {
     private static AccessTools.FieldRef<CameraDirectionSwitcher, ActiveStateSwitcher>? blockers;
 
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.ShoulderButtons,
         PatchTargets.DetectionWorkStateOnUpdate,
         PatchTargets.DetectionWorkStatePlayerInput,
         PatchTargets.DetectionWorkStateCameraDirectionSwitcher,

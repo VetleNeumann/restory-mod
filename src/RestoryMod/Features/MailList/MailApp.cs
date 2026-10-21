@@ -14,7 +14,7 @@ internal static class MailApp
 {
     public static GUI_MailClient? Client;
 
-    public static bool TargetsPresent() => GameTargets.AllPresent(
+    public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.MailList,
         PatchTargets.MailLaunchProcess,
         PatchTargets.MailStopProcess);
 

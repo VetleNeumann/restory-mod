@@ -10,6 +10,13 @@ using RestoryMod.Features.DropHint;
 
 namespace RestoryMod.Features.HoverOutline;
 
+internal sealed class ConditionHoverFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.ConditionHover;
+
+    public void Load(FeatureContext ctx) => ctx.Patch(typeof(ConditionHoverPatch));
+}
+
 /// <summary>
 /// The hover outline on a ready part shows its condition (burnt, dirty, damaged) while it is still on
 /// the device, and the hover counts as having seen it. The game shows a condition only on a part lying

@@ -22,14 +22,26 @@ namespace RestoryMod.Features.DropHint;
 /// it now, and a red ghost in each such socket no loose part can fill. The game still decides which
 /// of the two you are doing.
 /// </summary>
-internal static class EveryPartHintFeature
+internal sealed class EveryPartHintFeature : IFeature
 {
     private const string Section = "Workbench";
     private const string OldKey = "HintShowsEveryScrew";
 
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.EveryPartHint;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(EveryPartDisassembleHintPatch), typeof(EveryPartAssembleHintPatch), typeof(HintGhostsPulseEndPatch));
+        if (TargetsPresent()) ctx.AddPoller<HintGhostWatcher>();
+        HintGhosts.Resume();
+        ctx.OnUnload(HintGhosts.Unload);
+        ctx.OnUnload(HintOutliner.Unload);
+    }
+
+    private static void Bind(ConfigFile config)
     {
         var definition = new ConfigDefinition(Section, "HintShowsEveryPart");
         var orphans = Orphans(config);

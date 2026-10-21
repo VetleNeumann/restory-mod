@@ -23,6 +23,17 @@ using UIAction = RewiredConsts.Action.UI;
 
 namespace RestoryMod.Features.WorkbenchAdvice;
 
+internal sealed class WorkbenchAdviceFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.WorkbenchAdvice;
+
+    public void Load(FeatureContext ctx)
+    {
+        ctx.Patch(typeof(WorkbenchAdvicePatch));
+        WorkbenchAdvicePatch.Resume();
+    }
+}
+
 /// <summary>
 /// The controls sign at the workbench. The game lists its zoom triggers as R2 then L2 (zoom in, then
 /// out); we put L2 first, as the pad has them, and show L2 alone while the zoom toggle is on, since R2

@@ -16,12 +16,20 @@ namespace RestoryMod.Features.Hitboxes;
 /// hit, so the game's own selection takes it: nothing is deselected and selected again each frame,
 /// and hover grace treats it like any other pick.
 /// </summary>
-internal static class HitboxEnlargingFeature
+internal sealed class HitboxEnlargingFeature : IFeature
 {
     public static ConfigEntry<bool> Enabled = null!;
     public static ConfigEntry<float> MinimumSizePercent = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.HitboxEnlarging;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(HitboxEnlargingDetectionPatch), typeof(HitboxEnlargingEmptyBenchPatch), typeof(HitboxEnlargingRayPatch));
+    }
+
+    private static void Bind(ConfigFile config)
     {
         Enabled = config.Bind(
             "Controller",
@@ -98,11 +106,11 @@ internal static class HitboxEnlarging
 internal static class HitboxEnlargingDetectionPatch
 {
     private static bool Prepare() =>
-        GameTargets.AllPresent(
+        GameTargets.AllPresent(FeatureManifests.HitboxEnlarging,
             PatchTargets.DisassembleDetectionOnUpdate,
             PatchTargets.DisassembleDetectionMask,
             PatchTargets.DisassembleDetectionDeviceService)
-        && WorkbenchHitboxes.Prepare();
+        && WorkbenchHitboxes.Prepare(FeatureManifests.HitboxEnlarging);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.DisassembleDetectionOnUpdate)!;
 
@@ -117,11 +125,11 @@ internal static class HitboxEnlargingDetectionPatch
 internal static class HitboxEnlargingEmptyBenchPatch
 {
     private static bool Prepare() =>
-        GameTargets.AllPresent(
+        GameTargets.AllPresent(FeatureManifests.HitboxEnlarging,
             PatchTargets.EmptyDetectionOnUpdate,
             PatchTargets.EmptyDetectionMask,
             PatchTargets.EmptyDetectionDeviceService)
-        && WorkbenchHitboxes.Prepare();
+        && WorkbenchHitboxes.Prepare(FeatureManifests.HitboxEnlarging);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.EmptyDetectionOnUpdate)!;
 
@@ -139,7 +147,7 @@ internal static class HitboxEnlargingRayPatch
 
     private static bool Prepare()
     {
-        if (!GameTargets.AllPresent(PatchTargets.CursorDetectorTryToDetect) || !HoverCapture.Prepare()) return false;
+        if (!GameTargets.AllPresent(FeatureManifests.HitboxEnlarging, PatchTargets.CursorDetectorTryToDetect) || !HoverCapture.Prepare(FeatureManifests.HitboxEnlarging)) return false;
         target ??= AccessTools.Method(typeof(GameCursorDetector), PatchTargets.CursorDetectorTryToDetect.MemberName,
             [typeof(Vector3), typeof(LayerMask), typeof(RaycastHit[]), typeof(int).MakeByRefType()]);
         if (target is null) Plugin.Logger.LogWarning($"Patch target missing: {PatchTargets.CursorDetectorTryToDetect} (ray hits overload)");

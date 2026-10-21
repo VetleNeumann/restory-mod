@@ -9,6 +9,17 @@ using UnityEngine.UI;
 
 namespace RestoryMod.Features.Diagnostics;
 
+internal sealed class SettingsMenuDumpFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.SettingsMenuDump;
+
+    public void Load(FeatureContext ctx)
+    {
+        SettingsMenuDumpPatch.Bind(ctx.Config);
+        ctx.Patch(typeof(SettingsMenuDumpPatch));
+    }
+}
+
 /// <summary>
 /// Dev aid: logs the settings menu's transform hierarchy once per session, so slider rows can be
 /// cloned without guessing the prefab layout. Toggle with [Debug] DumpSettingsMenu (needs a restart).
@@ -19,7 +30,7 @@ internal static class SettingsMenuDumpPatch
     public static ConfigEntry<bool> Enabled = null!;
     private static bool dumped;
 
-    public static void Bind(ConfigFile config)
+    internal static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("Debug", "DumpSettingsMenu", false,
             "Log the settings menu hierarchy the first time it opens each session.");

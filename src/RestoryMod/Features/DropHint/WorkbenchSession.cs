@@ -8,6 +8,18 @@ using RestoryMod.Core;
 
 namespace RestoryMod.Features.DropHint;
 
+internal sealed class WorkbenchSessionFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.WorkbenchSession;
+
+    public void Load(FeatureContext ctx)
+    {
+        ctx.Patch(typeof(WorkbenchSessionStartPatch), typeof(WorkbenchSessionEndPatch));
+        WorkbenchSession.Resume(ctx.Handoff);
+        ctx.OnUnload(() => WorkbenchSession.Unload(ctx.Handoff));
+    }
+}
+
 /// <summary>
 /// The game's tooltip service for the workbench session: it runs the hint, holds the pulse's
 /// highlighter and knows the device on the bench and whether the player is taking it apart or putting
@@ -27,7 +39,7 @@ internal static class WorkbenchSession
         AccessTools.FieldRefAccess<DisassembleTooltipService, DisassembleStateMachine>("disassembleStateMachine");
 
     /// <summary>What keeping the service and reaching its highlighter needs.</summary>
-    public static bool TargetsPresent() => GameTargets.AllPresent(
+    public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.WorkbenchSession,
         PatchTargets.TooltipServiceInitialize,
         PatchTargets.TooltipServiceDispose,
         PatchTargets.TooltipServiceSmallHandler,
@@ -36,7 +48,7 @@ internal static class WorkbenchSession
     private static bool? statePresent;
 
     /// <summary>What <see cref="Device"/>, <see cref="TakingApart"/> and <see cref="Detecting"/> need.</summary>
-    public static bool StatePresent => statePresent ??= TargetsPresent() && GameTargets.AllPresent(
+    public static bool StatePresent => statePresent ??= TargetsPresent() && GameTargets.AllPresent(FeatureManifests.WorkbenchSession,
         PatchTargets.TooltipServiceTargetDevice,
         PatchTargets.TooltipServiceIsDisassembling,
         PatchTargets.TooltipServiceIsActive,
@@ -65,18 +77,16 @@ internal static class WorkbenchSession
         service.IsActive && StateMachine(service).ActiveState is DetectionDisassembleState;
 
     /// <summary>On unload: leaves the service for the next copy, which won't see Initialize again this scene.</summary>
-    internal static void Unload()
+    internal static void Unload(Handoff handoff)
     {
-        if (Service is not null) Handoff.Leave(nameof(WorkbenchSession), Service);
+        if (Service is not null) handoff.Leave(Service);
     }
 
     /// <summary>Picks up the service the previous copy kept on a hot reload; nothing on a normal start.</summary>
-    internal static void Resume()
+    internal static void Resume(Handoff handoff)
     {
         if (!TargetsPresent()) return;
-        // A copy built before this class existed left the service under its old owner's name.
-        if ((Handoff.Take(nameof(WorkbenchSession)) ?? Handoff.Take("ScrewHintServicePatch"))
-            is not [DisassembleTooltipService service]) return;
+        if (handoff.Take() is not [DisassembleTooltipService service]) return;
         Service = service;
         Plugin.Logger.LogInfo("Workbench session taken over from the previous plugin copy.");
     }

@@ -9,6 +9,13 @@ using RestoryMod.Core;
 
 namespace RestoryMod.Features.DropHint;
 
+internal sealed class TubeModeFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.TubeMode;
+
+    public void Load(FeatureContext ctx) => ctx.Patch(typeof(TubeModePatch));
+}
+
 /// <summary>
 /// Keeps the game's taking-apart mode through a tube's shift (TubeMode): without it, taking one battery
 /// out of the Lynx switches the hint to putting back while the device still holds parts needing work.

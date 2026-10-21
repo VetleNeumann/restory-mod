@@ -674,6 +674,10 @@ public static class FeatureManifests
         new("Restory.Data.Outline.ElementOutlineSettings", "DirtyElementOutline"),
         new("Restory.Data.Outline.ElementOutlineSettings", "DamagedElementOutline"));
 
+    public static readonly FeatureManifest NotepadInventorySwap = new(nameof(NotepadInventorySwap),
+        new("RewiredConsts.Action+Copybook", "OpenCopybook"),
+        new("RewiredConsts.Action+Inventory", "Inventory0"));
+
     /// <summary>The end-to-end harness (RestoryMod.E2E): not shipped, but checked so a game update names what moved.</summary>
     public static readonly FeatureManifest EndToEndHarness = new(nameof(EndToEndHarness),
         new List<PatchTarget>(SaveWrites) { CursorDetectorTryToDetect, HighlighterProjections, ElementViewElement, ElementViewOutline, ElementViewOutlineSettings });
@@ -709,6 +713,7 @@ public static class FeatureManifests
         WorkbenchAdvice,
         R2Tool,
         DeviceFade,
+        NotepadInventorySwap,
         SettingsMenuDump,
         GamepadBindingsDump,
         OutlineDiagnostics,

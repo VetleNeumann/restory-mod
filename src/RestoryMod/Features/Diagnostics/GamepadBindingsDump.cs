@@ -11,6 +11,17 @@ using UnityEngine;
 
 namespace RestoryMod.Features.Diagnostics;
 
+internal sealed class GamepadBindingsDumpFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.GamepadBindingsDump;
+
+    public void Load(FeatureContext ctx)
+    {
+        GamepadBindingsDump.Bind(ctx.Config);
+        ctx.Patch(typeof(GamepadBindingsDump));
+    }
+}
+
 /// <summary>
 /// Logs the gamepad's UI bindings (Rewired joystick maps) and the virtual cursor's button
 /// bindings when the virtual cursor first resolves its controls type. Rewired's maps live in
@@ -23,7 +34,7 @@ internal static class GamepadBindingsDump
     public static ConfigEntry<bool> Enabled = null!;
     private static bool dumped;
 
-    public static void Bind(ConfigFile config)
+    internal static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("Debug", "DumpGamepadBindings", false,
             "Log the gamepad's UI bindings and the virtual cursor's button bindings once per session.");

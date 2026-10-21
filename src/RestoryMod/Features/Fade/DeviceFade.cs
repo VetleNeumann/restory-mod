@@ -21,16 +21,20 @@ namespace RestoryMod.Features.Fade;
 /// (see <see cref="ShoulderButtons.ShoulderButtonsPoller"/>, where screens that use L1 come first), or H
 /// on a keyboard. Letting go, leaving the workbench or changing device brings it back.
 /// </summary>
-internal static class DeviceFadeFeature
+internal sealed class DeviceFadeFeature : IFeature
 {
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.DeviceFade;
+
+    public void Load(FeatureContext ctx)
     {
-        Enabled = config.Bind("Workbench", "L1FadesDevice", true,
+        Enabled = ctx.Config.Bind("Workbench", "L1FadesDevice", true,
             "At the workbench, holding L1 (H on a keyboard) fades the device to a gray see-through shape that the " +
             "cursor passes through, so parts behind it can be picked up. Letting go brings it back. Screens that " +
             "use L1 (the inventory, the Tool window) take it first.");
+        if (TargetsPresent()) ctx.AddPoller<DeviceFadePoller>();
+        ctx.OnUnload(DeviceFade.Unload);
     }
 
     public static bool TargetsPresent() => WorkbenchSession.StatePresent && GameTargets.AllPresent(FeatureManifests.DeviceFade);

@@ -6,6 +6,13 @@ using RestoryMod.Core;
 
 namespace RestoryMod.Features.HoverOutline;
 
+internal sealed class BlockedHoverFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.BlockedHover;
+
+    public void Load(FeatureContext ctx) => ctx.Patch(typeof(BlockedHoverPatch));
+}
+
 /// <summary>
 /// No hover outline on a blocked part. Most prefabs keep a blocked part from being hovered at all;
 /// the rest (selectableWhenBlocked) let the game outline it in its "can't act" red. After the game

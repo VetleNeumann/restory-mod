@@ -11,15 +11,18 @@ namespace RestoryMod.Features.DropHint;
 /// The drop hint: when a removed part is dropped, the game pulses yellow ghosts over the screws that
 /// are now the last thing holding some part. The mod also ghosts every screw the dropped part freed.
 /// </summary>
-internal static class DropHintFeature
+internal sealed class DropHintFeature : IFeature
 {
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.DropHint;
+
+    public void Load(FeatureContext ctx)
     {
-        Enabled = config.Bind("Workbench", "DropHintEveryFreedScrew", true,
+        Enabled = ctx.Config.Bind("Workbench", "DropHintEveryFreedScrew", true,
             "When you drop a part you removed, the yellow pulse also covers every screw that part freed, " +
             "not only screws that are the last thing holding another part.");
+        ctx.Patch(typeof(DropHintFreedScrewsPatch));
     }
 
     public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.DropHint);

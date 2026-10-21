@@ -24,19 +24,23 @@ namespace RestoryMod.Features.HoverGrace;
 /// Activate press reads; after each frame's detection, the patches put the lingering thing back
 /// when the game found nothing else.
 /// </summary>
-internal static class HoverGraceFeature
+internal sealed class HoverGraceFeature : IFeature
 {
     public static ConfigEntry<int> WindowMs = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.HoverGrace;
+
+    public void Load(FeatureContext ctx)
     {
-        WindowMs = config.Bind(
+        WindowMs = ctx.Config.Bind(
             "Controller",
             "HoverGraceMs",
             HoverGraceWindow.DefaultMs,
             new ConfigDescription(
                 "Hover grace: how long (ms) a part, screw or bench object stays hovered after the gamepad cursor leaves it. 0 = off.",
                 new AcceptableValueRange<int>(0, HoverGraceWindow.MaxMs)));
+        ctx.Patch(typeof(HoverGraceDisassemblePatch), typeof(HoverGraceWorkPatch), typeof(HoverGraceWorkResetPatch),
+            typeof(HoverGraceWorkSelectPatch));
     }
 
     /// <summary>This frame's window in seconds; 0 unless a gamepad drives the cursor.</summary>
@@ -65,7 +69,7 @@ internal static class HoverGraceDisassemblePatch
 
     private static bool Prepare()
     {
-        if (!GameTargets.AllPresent(
+        if (!GameTargets.AllPresent(FeatureManifests.HoverGrace,
                 PatchTargets.DisassembleDetectionOnUpdate,
                 PatchTargets.DisassembleDetectionPlayerInput,
                 PatchTargets.DisassembleDetectionSelection,
@@ -173,7 +177,7 @@ internal static class HoverGraceWorkPatch
 
     private static bool Prepare()
     {
-        if (!GameTargets.AllPresent(
+        if (!GameTargets.AllPresent(FeatureManifests.HoverGrace,
                 PatchTargets.DetectionWorkStateOnUpdate,
                 PatchTargets.DetectionWorkStatePlayerInput,
                 PatchTargets.WorkDetectionSelection,
@@ -260,7 +264,7 @@ internal static class HoverGraceWorkPatch
 [HarmonyPatch]
 internal static class HoverGraceWorkResetPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.HoverGrace,
         PatchTargets.DetectionWorkStateOnUpdate,
         PatchTargets.WorkDetectionObject,
         PatchTargets.WorkDetectionResetObject);
@@ -284,7 +288,7 @@ internal static class HoverGraceWorkResetPatch
 [HarmonyPatch]
 internal static class HoverGraceWorkSelectPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.HoverGrace,
         PatchTargets.DetectionWorkStateOnUpdate,
         PatchTargets.WorkDetectionObject,
         PatchTargets.WorkDetectionSelectObject,

@@ -13,11 +13,19 @@ namespace RestoryMod.Features.CursorSpeed;
 /// Gamepad cursor speed. The game sets PlayerMouse.pointerSpeed = 1 whenever input switches to
 /// the gamepad; we override it with the configured multiplier, and re-apply live on change.
 /// </summary>
-internal static class CursorSpeedFeature
+internal sealed class CursorSpeedFeature : IFeature
 {
     public static ConfigEntry<float> Speed = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.CursorSpeed;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(CursorSpeedPatch));
+    }
+
+    private static void Bind(ConfigFile config)
     {
         Speed = config.Bind(
             "Controller",

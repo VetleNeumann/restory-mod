@@ -21,15 +21,18 @@ namespace RestoryMod.Features.AppSwitch;
 /// D-pad left/right on the PC close the open PC app and open its neighbour on the taskbar, as a
 /// click on that taskbar button would. See CONTEXT.md: App switch.
 /// </summary>
-internal static class AppSwitchFeature
+internal sealed class AppSwitchFeature : IFeature
 {
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.AppSwitch;
+
+    public void Load(FeatureContext ctx)
     {
-        Enabled = config.Bind("PC", "DpadSwitchesApps", true,
+        Enabled = ctx.Config.Bind("PC", "DpadSwitchesApps", true,
             "On the PC, D-pad left/right open the previous/next app on the taskbar, wrapping at the ends. " +
             "Off while a dropdown is open, while an app installs, while typing in a field, and while a hack runs.");
+        if (TargetsPresent()) ctx.AddPoller<AppSwitchPoller>();
     }
 
     public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.AppSwitch);

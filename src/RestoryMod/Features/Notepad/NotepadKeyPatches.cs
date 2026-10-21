@@ -12,12 +12,23 @@ using Rewired;
 
 namespace RestoryMod.Features.Notepad;
 
-internal static class NotepadKeyFeature
+internal sealed class NotepadKeyFeature : IFeature
 {
     /// <summary>Checked on each key press, so it can be switched live from the config file.</summary>
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.NotepadKey;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(NotepadKeyListenPatch), typeof(NotepadKeyUnlistenPatch), typeof(NotepadKeyHoldOpenPatch),
+            typeof(NotepadKeyIgnoreHoverPatch), typeof(NotepadKeyIgnoreHoverGetterPatch));
+        NotepadKeyListenPatch.Resume(ctx.Handoff);
+        ctx.OnUnload(() => NotepadKeyListenPatch.Unload(ctx.Handoff));
+    }
+
+    private static void Bind(ConfigFile config)
     {
         Enabled = config.Bind("Notepad", "KeyTogglesAtWorkbench", true,
             "At the workbench, the Notepad key (Square / X on a gamepad, J on a keyboard) switches the " +
@@ -55,7 +66,7 @@ internal static class NotepadKeyListenPatch
     private static GUI_PauseMenu? pauseMenu;
     private static Action<GUI_NotepadWindow>? updateViewState;
 
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.NotepadKey,
         PatchTargets.NotepadActivatorInitialize,
         PatchTargets.NotepadActivatorPlayerInput,
         PatchTargets.NotepadActivatorWindow,
@@ -99,7 +110,7 @@ internal static class NotepadKeyListenPatch
     /// (the patches are gone by now), and leaves the scene's references for the next copy, which can't
     /// see the activator's Initialize again until the scene reloads.
     /// </summary>
-    internal static void Unload()
+    internal static void Unload(Handoff handoff)
     {
         var notepadWindow = window;
         var held = State != default;
@@ -107,15 +118,15 @@ internal static class NotepadKeyListenPatch
         Unsubscribe();
         if (left[0] is null) return;
 
-        Handoff.Leave(nameof(NotepadKeyListenPatch), left);
+        handoff.Leave(left);
         if (held && notepadWindow && updateViewState is not null) updateViewState(notepadWindow!);
     }
 
     /// <summary>Picks up the listener the previous copy dropped on a hot reload; nothing on a normal start.</summary>
-    internal static void Resume()
+    internal static void Resume(Handoff handoff)
     {
         if (!Prepare()) return;
-        if (Handoff.Take(nameof(NotepadKeyListenPatch)) is not [IPlayerInput input, GUI_NotepadWindow notepadWindow,
+        if (handoff.Take() is not [IPlayerInput input, GUI_NotepadWindow notepadWindow,
                 NotepadInteractiveWorkplaceItem workplaceItem, var menu]
             || !notepadWindow || !workplaceItem)
             return;
@@ -175,7 +186,7 @@ internal static class NotepadKeyListenPatch
 [HarmonyPatch]
 internal static class NotepadKeyUnlistenPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(PatchTargets.NotepadActivatorDispose);
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.NotepadKey, PatchTargets.NotepadActivatorDispose);
 
     private static MethodBase TargetMethod() => GameTargets.Method(PatchTargets.NotepadActivatorDispose)!;
 
@@ -192,7 +203,7 @@ internal static class NotepadKeyUnlistenPatch
 [HarmonyPatch]
 internal static class NotepadKeyHoldOpenPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.NotepadKey,
         PatchTargets.NotepadWindowUpdateViewState,
         PatchTargets.NotepadWindowHotkeyPressed,
         PatchTargets.NotepadWindowIsSlidingMode,
@@ -230,7 +241,7 @@ internal static class NotepadKeyIgnoreHoverPatch
     /// <summary>True once patched; the key only ignores hover when this patch can apply it.</summary>
     internal static bool Active;
 
-    private static bool Prepare() => Active = GameTargets.AllPresent(
+    private static bool Prepare() => Active = GameTargets.AllPresent(FeatureManifests.NotepadKey,
         PatchTargets.NotepadWindowUpdateViewState,
         PatchTargets.NotepadWindowPointerInside,
         PatchTargets.NotepadWindowIsPointerInside,

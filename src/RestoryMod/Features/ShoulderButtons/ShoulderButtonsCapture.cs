@@ -38,7 +38,7 @@ internal static class ShoulderButtonsCapture
     private static bool? mailFoldersPresent;
 
     /// <summary>The Mail app is captured by <see cref="MailApp"/>; these are the fields L1/R1 read on it.</summary>
-    public static bool MailFoldersPresent() => mailFoldersPresent ??= MailApp.TargetsPresent() && GameTargets.AllPresent(
+    public static bool MailFoldersPresent() => mailFoldersPresent ??= MailApp.TargetsPresent() && GameTargets.AllPresent(FeatureManifests.ShoulderButtons,
         PatchTargets.MailClientFolders,
         PatchTargets.MailFolderButtons,
         PatchTargets.MailFolderButtonButton);
@@ -77,7 +77,7 @@ internal static class ShoulderButtonsCapture
 [HarmonyPatch]
 internal static class CleaningToolWindowCapturePatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.ShoulderButtons,
         PatchTargets.ToolWindowShow,
         PatchTargets.ToolWindowIsShown,
         PatchTargets.ToolWindowSelectionService);
@@ -90,7 +90,7 @@ internal static class CleaningToolWindowCapturePatch
 [HarmonyPatch]
 internal static class InventoryCapturePatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.ShoulderButtons,
         PatchTargets.InventoryPanelShow,
         PatchTargets.InventoryFilterCategoryBar);
 
@@ -102,7 +102,7 @@ internal static class InventoryCapturePatch
 [HarmonyPatch]
 internal static class BrowserCapturePatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.ShoulderButtons,
         PatchTargets.BrowserLaunchProcess,
         PatchTargets.MarketplaceFilterCategoryBar,
         PatchTargets.HomeDepotFilterCategoryBar,

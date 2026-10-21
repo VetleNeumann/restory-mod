@@ -15,15 +15,18 @@ namespace RestoryMod.Features.ZoomToggle;
 /// parts box, the PC, cleaning transitions) it ignores the toggle too. The mouse wheel is untouched
 /// unless a trigger is held at the same time.
 /// </summary>
-internal static class ZoomToggleFeature
+internal sealed class ZoomToggleFeature : IFeature
 {
     public static ConfigEntry<bool> Enabled = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.ZoomToggle;
+
+    public void Load(FeatureContext ctx)
     {
-        Enabled = config.Bind("Controller", "TriggerZoomToggle", true,
+        Enabled = ctx.Config.Bind("Controller", "TriggerZoomToggle", true,
             "At the workbench, L2 toggles between zoomed in and out instead of L2/R2 zooming while held. " +
             "R2 is then free for the screw hint.");
+        ctx.Patch(typeof(ZoomToggleUpdatePatch), typeof(ZoomToggleAxisPatch));
     }
 
     public static bool TargetsPresent() => GameTargets.AllPresent(FeatureManifests.ZoomToggle);

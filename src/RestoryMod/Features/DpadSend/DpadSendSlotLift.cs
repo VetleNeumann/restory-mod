@@ -60,7 +60,7 @@ internal static class DpadSendSlotLift
 [HarmonyPatch]
 internal static class DpadSendSlotPressPatch
 {
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.DpadSend,
         PatchTargets.SlotOnPointerDown,
         PatchTargets.SlotOnPointerMove,
         PatchTargets.SlotIsHolding);

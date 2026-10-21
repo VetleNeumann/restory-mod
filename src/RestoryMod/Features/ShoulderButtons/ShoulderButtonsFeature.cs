@@ -1,11 +1,12 @@
 using System;
 using BepInEx.Configuration;
 using Restory.UI.Presenters.PauseMenu;
+using RestoryMod.Core;
 using Object = UnityEngine.Object;
 
 namespace RestoryMod.Features.ShoulderButtons;
 
-internal static class ShoulderButtonsFeature
+internal sealed class ShoulderButtonsFeature : IFeature
 {
     // The game's own UI actions for the gamepad's shoulder buttons and triggers (RewiredConsts.Action.UI);
     // the game defines and binds them but never reads them.
@@ -21,7 +22,17 @@ internal static class ShoulderButtonsFeature
     public static ConfigEntry<bool> CleaningTools = null!;
     public static ConfigEntry<bool> MailFolders = null!;
 
-    public static void Bind(ConfigFile config)
+    public FeatureManifest Manifest => FeatureManifests.ShoulderButtons;
+
+    public void Load(FeatureContext ctx)
+    {
+        Bind(ctx.Config);
+        ctx.Patch(typeof(LookDirectionPatch), typeof(CleaningToolWindowCapturePatch), typeof(InventoryCapturePatch),
+            typeof(BrowserCapturePatch));
+        ctx.AddPoller<ShoulderButtonsPoller>();
+    }
+
+    private static void Bind(ConfigFile config)
     {
         LookEnabled = config.Bind("ShoulderButtons", "TriggersLookLeftAndRight", true,
             "Away from the workbench, L2/R2 turn the view one step left or right, as the mouse does at the " +

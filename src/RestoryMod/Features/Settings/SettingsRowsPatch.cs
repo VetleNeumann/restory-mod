@@ -16,6 +16,13 @@ using Object = UnityEngine.Object;
 
 namespace RestoryMod.Features.Settings;
 
+internal sealed class SettingsRowsFeature : IFeature
+{
+    public FeatureManifest Manifest => FeatureManifests.SettingsRows;
+
+    public void Load(FeatureContext ctx) => ctx.Patch(typeof(SettingsRowsPatch));
+}
+
 /// <summary>
 /// Adds the mod's rows to the settings menu, below "Dialogue volume": the "Controller sensitivity" and
 /// "Rotation sensitivity" sliders, then the "R2 hint" and "Button prompts" dropdowns. The menu is
@@ -49,7 +56,7 @@ internal static class SettingsRowsPatch
     private const string ButtonPromptsRowName = "RestoryMod_ButtonPrompts";
     private const string ButtonPromptsLabel = "Button prompts";
 
-    private static bool Prepare() => GameTargets.AllPresent(
+    private static bool Prepare() => GameTargets.AllPresent(FeatureManifests.SettingsRows,
         PatchTargets.SettingsMenuShow,
         PatchTargets.SettingsMenuSoundSettingsView,
         PatchTargets.SoundViewDialogueVolumeSlider);
@@ -128,7 +135,7 @@ internal static class SettingsRowsPatch
             row.AddComponent<SensitivityRow>().Init(slider, slider.GetComponentInChildren<TMP_Text>(true), spec.Entry);
         });
 
-    private static bool DropdownTargetsPresent() => GameTargets.AllPresent(
+    private static bool DropdownTargetsPresent() => GameTargets.AllPresent(FeatureManifests.SettingsRows,
         PatchTargets.SettingsMenuMainView,
         PatchTargets.MainViewMonitorDropdown,
         PatchTargets.RestoryDropdownContainer);

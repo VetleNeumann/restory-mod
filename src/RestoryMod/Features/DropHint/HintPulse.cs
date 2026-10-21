@@ -94,8 +94,18 @@ internal static class HintPulse
     /// <summary>Lets a held pulse fade as usual.</summary>
     public static void Release(ProjectionHighlighterBase highlighter) => Running(highlighter)?.Play();
 
-    /// <summary>Ends a pulse at once, skipping the fade, as the game does when a ghost goes away.</summary>
-    public static void End(ProjectionHighlighterBase highlighter) => Running(highlighter)?.Complete();
+    /// <summary>
+    /// Ends a pulse at once, skipping the fade, as the game does when a ghost goes away: jumps to just
+    /// before its end and lets DOTween finish it on its next update. Completing it from here broke
+    /// DOTween's tween list (the game's completion callback kills the sequence mid-Complete), which
+    /// froze every animation after, taking parts off included.
+    /// </summary>
+    public static void End(ProjectionHighlighterBase highlighter)
+    {
+        var pulse = Running(highlighter);
+        if (pulse is null) return;
+        pulse.Goto(Mathf.Max(0f, pulse.Duration(false) - 0.001f), andPlay: true);
+    }
 
     private static bool errorLogged;
 

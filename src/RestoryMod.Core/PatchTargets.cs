@@ -208,6 +208,18 @@ public static class PatchTargets
     public static readonly PatchTarget UltrasonicSonicBath = new("Restory.Gameplay.Equipment.Ultrasonic.UltrasonicService", "sonicBath");
     public static readonly PatchTarget RecycleTrashCan = new("Restory.Gameplay.Recycle.RecycleService", "trashCan");
     public static readonly PatchTarget ShredderServiceShredder = new("Restory.Gameplay.Shredders.ShredderService", "shredder");
+    // The tool cup takes only parts of the device on the bench; the send checks it as the game does.
+    public static readonly PatchTarget DraggingDeviceService = new(DraggingState, "deviceService");
+
+    // Send guides: each destination's own circle (the game's tooltip indicator), turned on where a send
+    // would work, with the D-pad direction drawn under it in the game's own (unused) D-pad art.
+    internal const string Indicator = "Restory.Gameplay.Tooltips.TooltipIndicator";
+    public static readonly PatchTarget IndicatorImage = new(Indicator, "indicatorImage");
+    public static readonly PatchTarget SonicBathIndicator = new("Restory.Gameplay.Equipment.Ultrasonic.SonicBath", "tooltipIndicator");
+    public static readonly PatchTarget CleanerIndicator = new("Restory.Gameplay.Equipment.ElementCleaner", "tooltipIndicator");
+    public static readonly PatchTarget InventoryBoxIndicator = new("Restory.Gameplay.Equipment.InventoryBox", "tooltipIndicator");
+    public static readonly PatchTarget TrashCanIndicator = new("Restory.Gameplay.Equipment.TrashCan", "tooltipIndicator");
+    public static readonly PatchTarget ShredderIndicator = new("Restory.Gameplay.Equipment.Shredder", "tooltipIndicator");
 
     // Hover grace: after each hover state's per-frame detection, the lingering thing is put back in its
     // stored selection, which the Activate press acts on.

@@ -18,6 +18,7 @@ using RestoryMod.Features.PartsBox;
 using RestoryMod.Features.PartsStore;
 using RestoryMod.Features.R2Tool;
 using RestoryMod.Features.RotationSpeed;
+using RestoryMod.Features.SendGuides;
 using RestoryMod.Features.Settings;
 using RestoryMod.Features.ShoulderButtons;
 using RestoryMod.Features.StickScroll;
@@ -50,6 +51,7 @@ internal static class FeatureList
         new MailListFeature(),
         new AppSwitchFeature(),
         new DpadSendFeature(),
+        new SendGuidesFeature(),
         new HoverGraceFeature(),
         new HitboxOverlayFeature(),
         new HitboxEnlargingFeature(),

@@ -150,16 +150,24 @@ _Avoid_: drop target, slot
 Moving a held part or carried object straight to a destination with one D-pad press instead of carrying it there. A send the destination would refuse leaves the thing held; only a damaged part sent to the parts box says why, with the game's own message.
 _Avoid_: quick drop, throw
 
+**Send guide**:
+The circle over a destination, with the D-pad direction under it, shown for as long as the player holds something that destination would take by a send. At the workbench the parts box shows one only for a surplus part, or when the game circles it itself; a part the device still has room for gets none. Shown on a gamepad only; the game's own circle without a direction stays as it was.
+_Avoid_: drop hint (that is the screw ghosts), drop indicator, D-pad hint
+
+**Surplus part**:
+A held part the device on the bench has no open socket left for: it came from another device, or more of it lie loose on the bench than the device has empty sockets for.
+_Avoid_: duplicate, spare, extra part
+
 **Parts box**:
 The player's inventory of loose parts, shown at the workbench.
 _Avoid_: inventory (when the workbench box is meant), storage
 
 **Washing bin**:
-The unlockable ultrasonic bath that cleans parts. It refuses damaged parts and takes no more once full.
+The unlockable ultrasonic bath that cleans parts. It refuses damaged parts and parts with nothing left to clean, and takes no more once full.
 _Avoid_: sonic bath, ultrasonic
 
 **Tool cup**:
-The spot right of the bench where a part is cleaned or soldered by hand. It takes only parts that are dirty or need soldering.
+The spot right of the bench where a part is cleaned or soldered by hand. It takes only parts of the device on the bench that are dirty or need soldering.
 _Avoid_: cleaner
 
 **Trash can**:

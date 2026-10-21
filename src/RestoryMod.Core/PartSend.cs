@@ -7,7 +7,17 @@ public enum Destination { PartsBox, WashingBin, ToolCup, TrashCan, Shredder }
 
 /// <summary>What the destinations' rules look at in a held part.</summary>
 /// <param name="NeedsCleaning">Dirty or in need of soldering: what the tool cup works on.</param>
-public readonly record struct HeldPart(bool Damaged, bool QuestItem, bool NeedsCleaning);
+public readonly record struct HeldPart(bool Damaged, bool QuestItem, bool NeedsCleaning)
+{
+    /// <summary>Has something left the washing bin can clean; a part that only needs soldering has not.</summary>
+    public bool Washable { get; init; }
+
+    /// <summary>Came out of the device on the bench: the tool cup works only on that device's parts.</summary>
+    public bool FromPlacedDevice { get; init; }
+
+    /// <summary>The device on the bench has no open socket left for it; see <see cref="PartSend.IsSurplus"/>.</summary>
+    public bool Surplus { get; init; }
+}
 
 /// <summary>
 /// Rules for sending a held part to a destination with one D-pad press. A send the destination would
@@ -79,7 +89,15 @@ public static class PartSend
     public static bool Accepts(Destination destination, HeldPart part) => destination switch
     {
         Destination.TrashCan or Destination.Shredder => part.Damaged,
-        Destination.ToolCup => !part.Damaged && part.NeedsCleaning,
+        Destination.ToolCup => !part.Damaged && part.NeedsCleaning && part.FromPlacedDevice,
+        Destination.WashingBin => !part.Damaged && !part.QuestItem && part.Washable,
         _ => !part.Damaged && !part.QuestItem,
     };
+
+    /// <summary>
+    /// A part the device on the bench has no open socket left for: more loose copies than it has empty
+    /// sockets of that kind. A part of another device has none, while a bought one may fit.
+    /// </summary>
+    /// <param name="looseCopies">Loose parts of this kind at the bench, the held one included.</param>
+    public static bool IsSurplus(int looseCopies, int openSockets) => looseCopies > openSockets;
 }

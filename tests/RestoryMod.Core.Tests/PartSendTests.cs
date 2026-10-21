@@ -43,7 +43,7 @@ public class PartSendTests
     }
 
     private static readonly HeldPart Clean = new(Damaged: false, QuestItem: false, NeedsCleaning: false);
-    private static readonly HeldPart Dirty = new(Damaged: false, QuestItem: false, NeedsCleaning: true);
+    private static readonly HeldPart Dirty = new(Damaged: false, QuestItem: false, NeedsCleaning: true) { Washable = true, FromPlacedDevice = true };
 
     [Fact]
     public void Tool_cup_takes_only_parts_that_need_cleaning_or_soldering()
@@ -52,13 +52,27 @@ public class PartSendTests
         Assert.False(PartSend.Accepts(Destination.ToolCup, Clean));
     }
 
-    [Theory]
-    [InlineData(Destination.PartsBox)]
-    [InlineData(Destination.WashingBin)]
-    public void Undamaged_part_goes_to_the_parts_box_or_washing_bin_whether_clean_or_dirty(Destination destination)
+    [Fact]
+    public void Tool_cup_refuses_a_part_from_a_device_other_than_the_one_on_the_bench()
     {
-        Assert.True(PartSend.Accepts(destination, Clean));
-        Assert.True(PartSend.Accepts(destination, Dirty));
+        // Such as a part taken out of the washing bin after the device was swapped.
+        Assert.False(PartSend.Accepts(Destination.ToolCup, Dirty with { FromPlacedDevice = false }));
+    }
+
+    [Fact]
+    public void Undamaged_part_goes_to_the_parts_box_whether_clean_or_dirty()
+    {
+        Assert.True(PartSend.Accepts(Destination.PartsBox, Clean));
+        Assert.True(PartSend.Accepts(Destination.PartsBox, Dirty));
+    }
+
+    [Fact]
+    public void Washing_bin_refuses_a_part_with_nothing_left_to_wash()
+    {
+        // Sending it would only waste a place in the bath; the game shows no circle for it either.
+        Assert.True(PartSend.Accepts(Destination.WashingBin, Dirty));
+        Assert.False(PartSend.Accepts(Destination.WashingBin, Clean));
+        Assert.False(PartSend.Accepts(Destination.WashingBin, Dirty with { Washable = false }));
     }
 
     [Theory]
@@ -123,5 +137,16 @@ public class PartSendTests
     public void Quest_item_is_refused_by_the_parts_box_and_washing_bin(Destination destination)
     {
         Assert.False(PartSend.Accepts(destination, new HeldPart(Damaged: false, QuestItem: true, NeedsCleaning: true)));
+    }
+
+    [Theory]
+    [InlineData(1, 1, false)] // just pulled out, or bought for it: a socket is open
+    [InlineData(2, 2, false)]
+    [InlineData(3, 2, true)]  // a third battery for a device that takes two
+    [InlineData(1, 0, true)]  // nothing in the device takes it, such as a part of another device
+    public void A_part_is_surplus_when_the_device_on_the_bench_has_no_open_socket_left_for_it(
+        int looseCopies, int openSockets, bool surplus)
+    {
+        Assert.Equal(surplus, PartSend.IsSurplus(looseCopies, openSockets));
     }
 }

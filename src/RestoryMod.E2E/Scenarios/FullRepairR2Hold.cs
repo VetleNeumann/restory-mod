@@ -31,6 +31,9 @@ internal sealed class FullRepairR2Hold : IScenario
         d = driver;
         d.Setting("Controller", "R2Hint", Core.HintButtonMode.Hold);
         d.Setting("Workbench", "HintShowsEveryPart", true);
+        // R2 works the cleaning tool only with the triggers on zoom toggle.
+        d.Setting("Controller", "TriggerZoomToggle", true);
+        d.Setting("Controller", "R2Cleans", true);
         yield return Game.LoadSave();
         yield return Game.PlaceDevice(Game.Model(Model), new Dictionary<string, Condition>
         {
@@ -89,8 +92,25 @@ internal sealed class FullRepairR2Hold : IScenario
         yield return d.TakeOff(BotPart, Driver.OnScreen(0.75f, 0.25f));
         yield return d.Park();
 
-        // Not under test: the board is cleaned and the damaged button thrown away by the game itself.
-        Game.Clean(d.Thing(Loose(Board)).Loose!);
+        // The dirty board goes right, to the tool cup, and R2 works the cleaning tool as A does: held
+        // while the cursor scrubs over the board, the dirt comes off.
+        var board = d.Thing(Loose(Board)).Loose!;
+        yield return d.Send(Loose(Board), PadButton.Right, "the tool cup",
+            part => part && !part.IsDragging && Game.CleaningTarget() == part);
+        yield return Game.Until(Game.InCleaning, 5f, "the board was ready to clean");
+        // The save may have left the soldering iron picked: R1 steps along the tools to one that cleans.
+        yield return PickTool(Game.ToolCleans, "a cleaning tool");
+        yield return d.R2(true);
+        yield return d.Sweep(board, () => Game.DirtRemoved() >= 50, passes: 4);
+        yield return d.R2(false);
+        yield return d.ExpectState("R2 held over the board in the tool cup: the dirt comes off", "the dirt removed",
+            "half or more", () => Game.DirtRemoved() >= 50 ? "half or more" : $"{Game.DirtRemoved()}%");
+        // Not under test: scrubbing every last speck off is the game's own, so the game finishes it.
+        Game.FinishCleaning();
+        yield return Game.Until(() => !Game.CleaningTarget() && board.IsOnSurface, 15f, "the clean board came back to the bench");
+        yield return d.Park();
+
+        // Not under test: the damaged button is thrown away by the game itself.
         Game.Discard(d.Thing(Loose(Button)).Loose!);
         yield return Driver.Wait(0.5f);
 
@@ -128,6 +148,16 @@ internal sealed class FullRepairR2Hold : IScenario
     }
 
     private static string Loose(string part) => "loose " + part;
+
+    // R1 steps along the tools in the Cleaning tool window until the one wanted is picked.
+    private IEnumerator PickTool(System.Func<bool> picked, string what)
+    {
+        for (var i = 0; !picked(); i++)
+        {
+            if (i == 8) throw new StepFailed($"R1 never picked {what}; picked: {Game.CleaningTool()}");
+            yield return d.Press(PadButton.RB);
+        }
+    }
 
     // R2 pulled, the hint checked, R2 let go and the pulse checked gone.
     private IEnumerator Hint(string label, params (string thing, Mark mark)[] marks)

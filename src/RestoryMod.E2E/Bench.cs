@@ -197,9 +197,14 @@ internal static class Bench
     private static readonly AccessTools.FieldRef<DeviceZoomController, float> TargetZoom =
         AccessTools.FieldRefAccess<DeviceZoomController, float>(PatchTargets.ZoomTarget.MemberName);
 
-    /// <summary>Where the zoom is headed: 0 all the way out, 1 all the way in; as text for a check.</summary>
+    /// <summary>
+    /// Where the zoom on the device at the workbench is headed: 0 all the way out, 1 all the way in; as text
+    /// for a check. Every device container in the room has a zoom of its own, idle but for the one in use.
+    /// </summary>
     public static string Zoom() =>
-        Object.FindAnyObjectByType<DeviceZoomController>() is { } zoom && zoom ? TargetZoom(zoom).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "no zoom";
+        Object.FindAnyObjectByType<DeviceService>() is { } devices && devices && devices.PlacedDeviceContainer is { } container && container
+        && container.GetComponent<DeviceZoomController>() is { } zoom && zoom
+            ? TargetZoom(zoom).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "no zoom";
 
     /// <summary>The marks as one log line per thing, for a failure report or a dump.</summary>
     public static IEnumerable<string> Describe(Dictionary<string, Mark> marks) =>

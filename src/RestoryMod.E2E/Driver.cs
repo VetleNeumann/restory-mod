@@ -196,6 +196,47 @@ internal sealed class Driver
         return MoveTo(point, what);
     }
 
+    /// <summary>
+    /// Scrubs the cursor back and forth over a part, a zigzag across all of it on screen, up to
+    /// <paramref name="passes"/> times or until <paramref name="done"/> holds. Whatever tool is worked by a
+    /// held button must be held by the scenario, which checks the outcome itself.
+    /// </summary>
+    public IEnumerator Sweep(ElementBase part, System.Func<bool> done, int passes)
+    {
+        for (var pass = 0; pass < passes && !done(); pass++)
+        {
+            // Measured again on each pass, as the camera may still be closing in on the part.
+            var (min, max) = ScreenBounds(part);
+            foreach (var point in SweepPath.Zigzag(min, max, rowSpacing: 20f))
+            {
+                if (done()) yield break;
+                yield return MoveTo(new Vector2(point.X, point.Y), $"a point of the sweep over '{part.name}'");
+            }
+        }
+    }
+
+    // The screen box around the part's meshes, kept on screen.
+    private static (Vec2 min, Vec2 max) ScreenBounds(ElementBase part)
+    {
+        var renderers = part.GetComponentsInChildren<Renderer>().Where(r => r.enabled).ToList();
+        if (renderers.Count == 0) throw new StepFailed($"'{part.name}' has nothing drawn to sweep over");
+        var bounds = renderers[0].bounds;
+        foreach (var r in renderers.Skip(1)) bounds.Encapsulate(r.bounds);
+        var camera = Camera.main;
+        float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+        for (var i = 0; i < 8; i++)
+        {
+            var corner = bounds.center + Vector3.Scale(bounds.extents,
+                new Vector3((i & 1) == 0 ? -1 : 1, (i & 2) == 0 ? -1 : 1, (i & 4) == 0 ? -1 : 1));
+            var screen = camera.WorldToScreenPoint(corner);
+            x0 = Mathf.Min(x0, screen.x);
+            y0 = Mathf.Min(y0, screen.y);
+            x1 = Mathf.Max(x1, screen.x);
+            y1 = Mathf.Max(y1, screen.y);
+        }
+        return (new Vec2(Mathf.Max(x0, 0f), Mathf.Max(y0, 0f)), new Vec2(Mathf.Min(x1, Screen.width), Mathf.Min(y1, Screen.height)));
+    }
+
     /// <summary>Moves the cursor off the device, to the top left of the screen, so it hovers nothing.</summary>
     public IEnumerator Park() => MoveTo(new Vector2(Screen.width * 0.1f, Screen.height * 0.85f), "the parking spot");
 
@@ -289,6 +330,27 @@ internal sealed class Driver
             entry.BoxedValue = old;
             config.SaveOnConfigSet = saving;
         });
+    }
+
+    /// <summary>One of the mod's settings as it stands now, numbers to one decimal.</summary>
+    public static string SettingValue(string section, string key)
+    {
+        var value = BepInEx.Bootstrap.Chainloader.PluginInfos["com.zantox.restorymod"].Instance.Config[section, key].BoxedValue;
+        return value is float f ? f.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) : value.ToString();
+    }
+
+    /// <summary>
+    /// Presses a D-pad direction until the pad has <paramref name="target"/> selected in a menu; for
+    /// getting to the part of a menu under test, not checked itself.
+    /// </summary>
+    public IEnumerator Select(GameObject target, PadButton direction, string what, int presses = 20)
+    {
+        for (var i = 0; Menus.Selected() != target; i++)
+        {
+            if (i == presses)
+                throw new StepFailed($"{presses} presses of {direction} never selected {what}; selected: {Menus.SelectedRow()}");
+            yield return Press(direction);
+        }
     }
 
     public void RestoreSettings()

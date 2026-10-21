@@ -8,7 +8,6 @@ using Restory.Data.Elements.Condition;
 using Restory.Gameplay.Devices;
 using Restory.Gameplay.Elements;
 using Restory.Gameplay.Equipment;
-using Restory.Gameplay.Soldering;
 using Restory.Gameplay.Work.StateMachine;
 using Restory.Gameplay.WorkOrders.EmailOrders;
 using Restory.Gameplay.Workplace;
@@ -38,7 +37,7 @@ internal enum Condition
 
 /// <summary>
 /// Setup the harness does by calling the game directly rather than by input: loading the save, putting a
-/// chosen device on the bench, spare parts in the parts box, finishing Cleaning. None of it is under test.
+/// chosen device on the bench, spare parts in the parts box. None of it is under test.
 /// </summary>
 internal static class Game
 {
@@ -140,10 +139,16 @@ internal static class Game
         yield return Until(InRoom, 10f, "standing in the room to swap the device");
         var unknown = conditions.Keys.Where(k => model.Elements.OfType<ElementInfo>().All(e => NameOf(e) != k)).ToList();
         if (unknown.Count > 0) throw new StepFailed($"{NameOf(model)} has no part {string.Join(", ", unknown)}");
-        var elements = model.Elements.OfType<ElementInfo>().Select(info => new ElementData
+        // A dirty part gets the game's default dirt, not a pick at random: some picks need a tool the
+        // brush isn't, or burn the traces of a board so it needs resoldering too.
+        var plainDirt = HarmonyLib.Traverse.Create(Find<ElementService>()).Field("defaultMaskPreset").GetValue()
+            ?? throw new StepFailed("no default dirt preset on the ElementService");
+        var elements = model.Elements.OfType<ElementInfo>().Select(info =>
         {
-            Info = info,
-            Condition = ConditionFor(conditions.TryGetValue(NameOf(info), out var c) ? c : Condition.Perfect),
+            var condition = conditions.TryGetValue(NameOf(info), out var c) ? c : Condition.Perfect;
+            var data = new ElementData { Info = info, Condition = ConditionFor(condition) };
+            if (condition == Condition.Dirty) HarmonyLib.Traverse.Create(data).Field("DirtMaskPresetOverride").SetValue(plainDirt);
+            return data;
         }).ToList();
         var deviceCondition = new RandomlyGeneratedDeviceCondition("e2e_" + Guid.NewGuid().ToString("N"), model, null, elements);
         var devices = Find<DeviceService>();
@@ -180,6 +185,27 @@ internal static class Game
         yield return new WaitForSecondsRealtime(1f);
     }
 
+    /// <summary>From the room to sitting at the PC, its desktop shown, as the PC's own button would.</summary>
+    public static IEnumerator EnterPc()
+    {
+        yield return Until(InRoom, 10f, "standing in the room to sit at the PC");
+        Resolve<Restory.Gameplay.OverlayActivators.PcActivator>().ShowWindow();
+        yield return Until(() => Pc.Screen() == "shown", 10f, "the PC's screen came up");
+        yield return new WaitForSecondsRealtime(1f);
+    }
+
+    /// <summary>Back from the PC to the room.</summary>
+    public static IEnumerator LeavePc()
+    {
+        Resolve<Restory.Gameplay.OverlayActivators.PcActivator>().HideWindow();
+        yield return Until(() => Pc.Screen() == "hidden", 10f, "the PC's screen went away");
+        yield return Until(InRoom, 10f, "back in the room from the PC");
+        yield return new WaitForSecondsRealtime(1f);
+    }
+
+    /// <summary>Where the player looks in the room: Main, Left or Right.</summary>
+    public static string Look() => Find<Restory.Gameplay.GameView.CameraDirectionSwitcher>().CurrentDirection.ToString();
+
     /// <summary>The device on the bench passed the game's check as fully restored.</summary>
     public static bool Restored() =>
         Find<DeviceService>().PlacedDeviceContainer is { } container && container
@@ -188,13 +214,43 @@ internal static class Game
     /// <summary>The part the tool cup's cleaning is set on now, or null.</summary>
     public static ElementBase? CleaningTarget() => Find<ElementCleaner>().TargetElement is { } part && part ? part : null;
 
-    /// <summary>Cleans a dirty part to perfect at once, as the game's cleaning cheat does.</summary>
-    public static void Clean(ElementBase part)
+    /// <summary>The bench is in Cleaning, past the part's move to the tool cup, ready for the tool.</summary>
+    public static bool InCleaning() =>
+        WorkbenchSession.Service is { } service && service.IsActive
+        && WorkbenchSession.ActiveState(service) is Restory.Gameplay.Disassemble.StateMachine.CleaningDisassembleState;
+
+    /// <summary>The tool picked for Cleaning, by name.</summary>
+    public static string CleaningTool() =>
+        Find<CleaningToolSelectionService>().CurrentlySelectedTool is { } tool && tool ? NameOf(tool) : "none";
+
+    /// <summary>The tool picked takes dirt off, as a brush does; the soldering iron doesn't.</summary>
+    public static bool ToolCleans() => Find<CleaningToolSelectionService>().CurrentlySelectedTool is Restory.Data.Equipment.CleaningToolInfo;
+
+    /// <summary>
+    /// How much of the dirt the Cleaning to-do card shows as removed, 0 to 100, or -1 with no card up.
+    /// </summary>
+    public static int DirtRemoved()
     {
-        var cleaner = Find<ElementCleaner>();
-        cleaner.SetCleaningTool(Resolve<CleaningToolSelectionService>().CurrentlySelectedTool);
-        cleaner.SetTarget(part);
-        cleaner.CompleteCleaning(Resolve<SolderingService>().IsActive);
-        cleaner.ResetTarget();
+        var card = Object.FindObjectsByType<Restory.Gameplay.UserInterface.GUI_CleaningProgressDirtTypeSection>(FindObjectsSortMode.None)
+            .FirstOrDefault(c => c && c.isActiveAndEnabled);
+        if (!card) return -1;
+        var bar = HarmonyLib.Traverse.Create(card).Field("progressSlider").GetValue<UnityEngine.UI.Slider>();
+        return bar ? (int)(bar.value * 100f) : -1;
     }
+
+    /// <summary>Finishes the Cleaning under way at once, as the game's cleaning cheat does; the part then goes back to the bench.</summary>
+    public static void FinishCleaning()
+    {
+        var service = WorkbenchSession.Service;
+        var state = service is null ? null : WorkbenchSession.ActiveState(service);
+        if (state is not Restory.Gameplay.Disassemble.StateMachine.CleaningDisassembleState cleaning)
+            throw new StepFailed("no Cleaning under way to finish");
+        cleaning.ForceCleaningComplete();
+    }
+
+    /// <summary>A part's condition by name: "Perfect", "Dirty", "Damaged" and so on.</summary>
+    public static string ConditionOf(ElementBase part) =>
+        part.ConditionHandler.ElementData.Condition is { } condition && condition
+            ? condition.GetType().Name.Replace("ElementCondition", "")
+            : "none";
 }

@@ -48,6 +48,9 @@ public static class FeatureManifests
     private static readonly PatchTarget ElementConditionHandler = new(ElementBase, "ConditionHandler");
     private static readonly PatchTarget ConditionHandlerData = new("Restory.Gameplay.Elements.ElementConditionHandler", "ElementData");
     private static readonly PatchTarget ElementDataCondition = new("Restory.Gameplay.Elements.ElementData", "Condition");
+    private static readonly PatchTarget BurntOutline = new("Restory.Data.Outline.ElementOutlineSettings", "BurntElementOutline");
+    private static readonly PatchTarget DirtyOutline = new("Restory.Data.Outline.ElementOutlineSettings", "DirtyElementOutline");
+    private static readonly PatchTarget DamagedOutline = new("Restory.Data.Outline.ElementOutlineSettings", "DamagedElementOutline");
     private static readonly PatchTarget DamagedCondition = new("Restory.Data.Elements.Condition.DamagedElementCondition");
     private static readonly PatchTarget InfoCategory = new("Restory.Data.Elements.ElementInfo", "Category");
     private static readonly PatchTarget CategorySmall = new("Restory.Data.Elements.ElementCategory", "Small");
@@ -533,9 +536,9 @@ public static class FeatureManifests
     public static readonly FeatureManifest EveryPartHint = new(nameof(EveryPartHint),
         HintShowDisassembling,
         ElementViewOutlineSettings,
-        new("Restory.Data.Outline.ElementOutlineSettings", "BurntElementOutline"),
-        new("Restory.Data.Outline.ElementOutlineSettings", "DirtyElementOutline"),
-        new("Restory.Data.Outline.ElementOutlineSettings", "DamagedElementOutline"),
+        BurntOutline,
+        DirtyOutline,
+        DamagedOutline,
         HintShowAssembling,
         HintHighlighter,
         ElementProjectionData,
@@ -670,9 +673,9 @@ public static class FeatureManifests
         ConditionHandlerData,
         ElementDataCondition,
         ElementDataIsInspected,
-        new("Restory.Data.Outline.ElementOutlineSettings", "BurntElementOutline"),
-        new("Restory.Data.Outline.ElementOutlineSettings", "DirtyElementOutline"),
-        new("Restory.Data.Outline.ElementOutlineSettings", "DamagedElementOutline"));
+        BurntOutline,
+        DirtyOutline,
+        DamagedOutline);
 
     public static readonly FeatureManifest NotepadInventorySwap = new(nameof(NotepadInventorySwap),
         new("RewiredConsts.Action+Copybook", "OpenCopybook"),
@@ -680,7 +683,14 @@ public static class FeatureManifests
 
     /// <summary>The end-to-end harness (RestoryMod.E2E): not shipped, but checked so a game update names what moved.</summary>
     public static readonly FeatureManifest EndToEndHarness = new(nameof(EndToEndHarness),
-        new List<PatchTarget>(SaveWrites) { CursorDetectorTryToDetect, HighlighterProjections, ElementViewElement, ElementViewOutline, ElementViewOutlineSettings });
+        new List<PatchTarget>(SaveWrites)
+        {
+            CursorDetectorTryToDetect, HighlighterProjections, HighlighterFrontOutline, PresetRenderStyle, PresetCommon, PresetFront,
+            ElementViewElement, ElementViewOutline, ElementViewOutlineSettings,
+            BurntOutline,
+            DirtyOutline,
+            DamagedOutline,
+        });
 
     public static IReadOnlyList<FeatureManifest> All { get; } = new[]
     {

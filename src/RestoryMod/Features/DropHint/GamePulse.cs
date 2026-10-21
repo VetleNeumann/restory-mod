@@ -165,12 +165,8 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
             settings = ViewSettings(view!);
             if (!settings) return null;
         }
-        var preset = look switch
-        {
-            Look.Burnt => settings!.BurntElementOutline,
-            Look.Damaged => settings!.DamagedElementOutline,
-            _ => settings!.DirtyElementOutline,
-        };
+        if (look.Condition() is not { } condition) return null;
+        var preset = ConditionLook.Preset(settings!, condition);
         if (!preset) return null;
         var drawn = Outline.Style(preset) == RenderStyle.FrontBack ? Outline.PresetFront(preset) : Outline.Common(preset);
         return drawn is null ? null : ToRgba(drawn.Color);
@@ -178,26 +174,6 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
 
     /// <summary>How far before a screw a hit still counts as its own hole, in metres.</summary>
     private const float OwnHoleDepth = 0.015f;
-
-    /// <summary>The look a ghost wears now, read off its preset; null for one the hint hasn't painted.</summary>
-    internal static Look? LookOf(ElementProjection ghost)
-    {
-        var worn = ghost.OutlinableAdapter.OverridePreset;
-        if (!worn) return null;
-        var i = System.Array.IndexOf(Presets, worn);
-        return i < 0 ? null : (Look)i;
-    }
-
-    /// <summary>
-    /// Whether a ghost's front is drawn in the hidden style now: its outline thinner than the pulse's.
-    /// Only a screw's ghost is wholly one or the other; another's front is drawn in plain view.
-    /// </summary>
-    internal static bool DrawnHidden(ProjectionHighlighterBase highlighter, ElementProjection ghost)
-    {
-        var pulse = Outline.Front(highlighter);
-        if (pulse is null) return false;
-        return ghost.OutlinableAdapter.Outlinable.FrontParameters.DilateShift < pulse.DilateShift * 0.75f;
-    }
 
     private static readonly RaycastHit[] Hits = new RaycastHit[16];
 
@@ -223,7 +199,20 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         return false;
     }
 
-    public void Unpaint(ElementProjection ghost)
+    public void Take(ElementProjection ghost, Look look)
+    {
+        Claim(ghost);
+        Paint(ghost, look);
+    }
+
+    // Even a ghost the game has put back in its pool: the next one made from it is the game's.
+    public void LetGo(ElementProjection ghost)
+    {
+        Unpaint(ghost);
+        Release(ghost);
+    }
+
+    private void Unpaint(ElementProjection ghost)
     {
         wearing.Remove(ghost);
         if (!own.TryGetValue(ghost, out var preset)) return;
@@ -231,7 +220,7 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         if (ghost) ghost.OutlinableAdapter.OverridePreset = preset;
     }
 
-    public void Claim(ElementProjection ghost)
+    private void Claim(ElementProjection ghost)
     {
         if (!ghost || claimed.ContainsKey(ghost) || !HintOutliner.Ensure()) return;
         var outline = ghost.OutlinableAdapter.Outlinable;
@@ -239,8 +228,7 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
         outline.OutlineLayer = HintOutliner.Layer;
     }
 
-    // Even a ghost the game has put back in its pool: the next one made from it is the game's.
-    public void Release(ElementProjection ghost)
+    private void Release(ElementProjection ghost)
     {
         if (!claimed.TryGetValue(ghost, out var layer)) return;
         claimed.Remove(ghost);

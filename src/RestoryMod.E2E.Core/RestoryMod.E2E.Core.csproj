@@ -1,8 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- The end-to-end harness's pure logic: no Unity, Rewired, or game references, so CI can test it. -->
+  <!-- The end-to-end harness's pure logic: no Unity, Rewired, or game references, so CI can test it. It
+       judges what it sees against the mod's pure rules in RestoryMod.Core (the look table). -->
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <RootNamespace>RestoryMod.E2E</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\RestoryMod.Core\RestoryMod.Core.csproj" />
+  </ItemGroup>
 </Project>

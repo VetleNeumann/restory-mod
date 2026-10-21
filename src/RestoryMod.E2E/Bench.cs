@@ -194,6 +194,13 @@ internal static class Bench
         _ => present ? Mark.Pulse : Mark.Ghost,
     };
 
+    private static readonly AccessTools.FieldRef<DeviceZoomController, float> TargetZoom =
+        AccessTools.FieldRefAccess<DeviceZoomController, float>(PatchTargets.ZoomTarget.MemberName);
+
+    /// <summary>Where the zoom is headed: 0 all the way out, 1 all the way in; as text for a check.</summary>
+    public static string Zoom() =>
+        Object.FindAnyObjectByType<DeviceZoomController>() is { } zoom && zoom ? TargetZoom(zoom).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) : "no zoom";
+
     /// <summary>The marks as one log line per thing, for a failure report or a dump.</summary>
     public static IEnumerable<string> Describe(Dictionary<string, Mark> marks) =>
         marks.Select(m => $"[E2E]     {m.Key}: {m.Value}");

@@ -78,6 +78,37 @@ internal sealed class Driver
         yield return Wait(0.15f);
     }
 
+    /// <summary>Pulls L2 fully and lets it go again: one tap.</summary>
+    public IEnumerator TapL2()
+    {
+        pad.Trigger(right: false, 1f);
+        yield return Wait(0.15f);
+        pad.Trigger(right: false, 0f);
+        yield return Wait(0.15f);
+    }
+
+    /// <summary>Holds a button down (true) or lets it go, for as long as the scenario needs.</summary>
+    public IEnumerator Hold(PadButton button, bool down)
+    {
+        pad.Button(button, down);
+        yield return Wait(0.15f);
+    }
+
+    /// <summary>Tilts the right stick, or lets it back to rest with <c>default</c>.</summary>
+    public void RightStick(Vec2 tilt) => pad.Stick(right: true, tilt);
+
+    /// <summary>
+    /// Tilts the left stick for <paramref name="seconds"/>, then lets it go: the cursor moves off by a
+    /// little, by however much the game's cursor speed makes of it, aiming at no thing.
+    /// </summary>
+    public IEnumerator Nudge(Vec2 tilt, float seconds)
+    {
+        SeeThrough.Target = null;
+        pad.Stick(right: false, tilt);
+        yield return Wait(seconds);
+        pad.Stick(right: false, default);
+    }
+
     private static Vector2 Cursor() =>
         Object.FindAnyObjectByType<PlayerMouse>() is { } mouse && mouse ? mouse.screenPosition
             : throw new StepFailed("no virtual cursor");
@@ -156,6 +187,15 @@ internal sealed class Driver
 
     public void LetGoOfA() => pad.Button(PadButton.A, false);
 
+    /// <summary>Steers the cursor onto the middle of a piece of screen UI, such as a parts box slot.</summary>
+    public IEnumerator MoveTo(RectTransform ui, string what)
+    {
+        var canvas = ui.GetComponentInParent<Canvas>();
+        var camera = canvas && canvas!.rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.rootCanvas.worldCamera : null;
+        var point = RectTransformUtility.WorldToScreenPoint(camera, ui.TransformPoint(ui.rect.center));
+        return MoveTo(point, what);
+    }
+
     /// <summary>Moves the cursor off the device, to the top left of the screen, so it hovers nothing.</summary>
     public IEnumerator Park() => MoveTo(new Vector2(Screen.width * 0.1f, Screen.height * 0.85f), "the parking spot");
 
@@ -193,9 +233,10 @@ internal sealed class Driver
 
     /// <summary>
     /// Sends a part away with a D-pad press while holding it (CONTEXT.md, Send): an attached part is taken
-    /// off first, a loose one picked up. Done once the part has left the bench and the hand.
+    /// off first, a loose one picked up. Done once the part has left the bench and the hand, or for a
+    /// destination that keeps it at the bench, once <paramref name="arrived"/> holds for it.
     /// </summary>
-    public IEnumerator Send(string thing, PadButton direction, string destination)
+    public IEnumerator Send(string thing, PadButton direction, string destination, System.Func<ElementBase, bool>? arrived = null)
     {
         var at = Thing(thing);
         ElementBase part;
@@ -212,8 +253,8 @@ internal sealed class Driver
             yield return HoldA(() => part.IsDragging, $"'{thing}' was picked up", seconds: 3f, keepHeld: true);
         }
         yield return Press(direction);
-        yield return Game.Until(() => !part || !part.IsDragging && Bench.Things().All(t => t.Loose != part),
-            5f, $"'{thing}' went to {destination}");
+        arrived ??= p => !p || !p.IsDragging && Bench.Things().All(t => t.Loose != p);
+        yield return Game.Until(() => arrived(part), 5f, $"'{thing}' went to {destination}");
         LetGoOfA();
         yield return Wait(0.3f);
     }
@@ -271,6 +312,10 @@ internal sealed class Driver
     public IEnumerator ExpectIncludes(string label, params (string thing, Mark mark)[] marks) =>
         Check(label, marks, exact: false, ExpectSeconds);
 
+    // A mark check with no device on the bench would find nothing marked and pass whatever it asked for.
+    public static List<BenchThing> ThingsOnBench() =>
+        Bench.Device() ? Bench.Things() : throw new StepFailed("no device at the workbench to check the marks of");
+
     private IEnumerator Check(string label, (string thing, Mark mark)[] marks, bool exact, float seconds)
     {
         if (!ledger.BeginCheck(label)) throw new StopHere();
@@ -278,7 +323,7 @@ internal sealed class Driver
         var end = Time.unscaledTime + seconds;
         while (true)
         {
-            var actual = Bench.Marks(Bench.Things());
+            var actual = Bench.Marks(ThingsOnBench());
             var mismatches = MarkCheck.Compare(expected, actual, exact);
             if (mismatches.Count == 0) yield break;
             if (Time.unscaledTime > end)
@@ -298,7 +343,7 @@ internal sealed class Driver
         var end = Time.unscaledTime + seconds;
         while (Time.unscaledTime < end)
         {
-            var actual = Bench.Marks(Bench.Things());
+            var actual = Bench.Marks(ThingsOnBench());
             var mismatches = MarkCheck.Compare(expected, actual, exact: true);
             if (mismatches.Count > 0)
             {
@@ -319,21 +364,15 @@ internal sealed class Driver
         var end = Time.unscaledTime + ExpectSeconds;
         while (true)
         {
-            var actual = Bench.Hidden(Bench.Things());
+            var actual = Bench.Hidden(ThingsOnBench());
             var wrong = expected
                 .Where(e => !actual.TryGetValue(e.thing, out var now) || now != e.hidden)
-                .Select(e => (e.thing, Style(e.hidden), actual.TryGetValue(e.thing, out var now) ? Style(now) : "no screw ghost"))
+                .Select(e => (e.thing, Style(e.hidden), (string?)(actual.TryGetValue(e.thing, out var now) ? Style(now) : "no screw ghost")))
                 .ToList();
             if (wrong.Count == 0) yield break;
             if (Time.unscaledTime > end)
             {
-                var shot = Path.Combine(outDir, $"fail-{ledger.Number}.png");
-                ScreenCapture.CaptureScreenshot(shot);
-                ledger.FailCheck(wrong!, shot);
-                foreach (var line in ledger.Report().Skip(Logged)) E2EPlugin.Log(line);
-                Logged = ledger.Report().Count;
-                yield return null;
-                yield return null;
+                yield return Fail(wrong);
                 yield break;
             }
             yield return null;
@@ -342,15 +381,59 @@ internal sealed class Driver
 
     private static string Style(bool hidden) => hidden ? "hidden" : "in view";
 
+    /// <summary>
+    /// A check of anything but the marks: <paramref name="what"/> reads <paramref name="expected"/>, as
+    /// <paramref name="actual"/> describes it now, within <paramref name="seconds"/>.
+    /// </summary>
+    public IEnumerator ExpectState(string label, string what, string expected, System.Func<string> actual,
+        float seconds = ExpectSeconds)
+    {
+        if (!ledger.BeginCheck(label)) throw new StopHere();
+        var end = Time.unscaledTime + seconds;
+        while (true)
+        {
+            var now = actual();
+            if (now == expected) yield break;
+            if (Time.unscaledTime > end)
+            {
+                yield return Fail(new[] { (what, expected, (string?)now) });
+                yield break;
+            }
+            yield return null;
+        }
+    }
+
+    /// <summary>As <see cref="ExpectState"/>, but it must read so at once and for all of <paramref name="seconds"/>.</summary>
+    public IEnumerator ExpectStateStays(string label, string what, string expected, System.Func<string> actual, float seconds)
+    {
+        if (!ledger.BeginCheck(label)) throw new StopHere();
+        var end = Time.unscaledTime + seconds;
+        while (Time.unscaledTime < end)
+        {
+            var now = actual();
+            if (now != expected)
+            {
+                yield return Fail(new[] { (what, expected, (string?)now) });
+                yield break;
+            }
+            yield return null;
+        }
+    }
+
     private IEnumerator Fail(IReadOnlyList<MarkMismatch> mismatches, Dictionary<string, Mark> actual)
+    {
+        yield return Fail(mismatches.Select(m => (m.Thing, m.Expected.ToString(), m.Actual?.ToString())));
+        E2EPlugin.Log("[E2E]   all marks:");
+        foreach (var line in Bench.Describe(actual)) E2EPlugin.Log(line);
+    }
+
+    private IEnumerator Fail(IEnumerable<(string thing, string expected, string? actual)> wrong)
     {
         var shot = Path.Combine(outDir, $"fail-{ledger.Number}.png");
         ScreenCapture.CaptureScreenshot(shot);
-        ledger.FailCheck(mismatches, shot);
+        ledger.FailCheck(wrong, shot);
         foreach (var line in ledger.Report().Skip(Logged)) E2EPlugin.Log(line);
         Logged = ledger.Report().Count;
-        E2EPlugin.Log("[E2E]   all marks:");
-        foreach (var line in Bench.Describe(actual)) E2EPlugin.Log(line);
         // The capture is written at the end of the frame.
         yield return null;
         yield return null;

@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using Restory.Gameplay.Elements;
 using RestoryMod.Features.DropHint;
 using UnityEngine;
 using static RestoryMod.E2E.Mark;
@@ -12,8 +14,9 @@ namespace RestoryMod.E2E.Scenarios;
 /// its tube keeps the hint on taking apart (the next battery sliding forward once read as one put in);
 /// a battery socket nothing on the bench can fill shows the missing look until a spare arrives; the
 /// first hover on a ready part shows its condition (the speaker damaged, the d-pad membrane dirty), and
-/// so does R2, in the pulse; the D-pad sends the speaker to the trash, the membrane to the washing bin and a
-/// button to the parts box. Every part starts unknown, so the hint asks for everything that can come out.
+/// so does R2, in the pulse; the D-pad sends the speaker to the trash and a button to the parts box, where
+/// it heads the list under "Missing parts" and goes on from its slot to the washing bin; last, the dirty
+/// membrane goes to the tool cup. Every part starts unknown, so the hint asks for everything that can come out.
 /// </summary>
 internal sealed class LynxHint : IScenario
 {
@@ -136,14 +139,41 @@ internal sealed class LynxHint : IScenario
 
         // Sends: each part leaves the hand for its destination with one D-pad press.
         yield return d.Send(Speaker, PadButton.Down, "the trash can");
-        yield return d.Send(DpadMembrane, PadButton.Up, "the washing bin");
         yield return d.Send(PowerButton, PadButton.Left, "the parts box");
         yield return d.Park();
         yield return Toggle();
-        yield return d.ExpectIncludes("sent away: nothing left of them to point at",
-            (Speaker, None), (DpadMembrane, None), (PowerButton, None));
+        yield return d.ExpectIncludes("sent away: nothing left of them to point at", (Speaker, None), (PowerButton, None));
         yield return Toggle();
         yield return d.ExpectWithin(0.5f, "R2 again: the hint goes at once");
+
+        // The parts box (X, swapped from the game's Square): the power button's socket is empty and nothing
+        // on the bench fills it, so its slot heads the list under "Missing parts".
+        yield return d.Press(PadButton.X);
+        yield return d.ExpectState("X: the parts box opens", "the inventory", "open", Screens.InventoryShown);
+        yield return d.ExpectState("the power button's slot sits under Missing parts", "the power button's slot",
+            "Missing", () => Screens.SectionOf(PowerButton));
+
+        // A part held from its slot goes with one D-pad press too: up, to the washing bin.
+        var inBox = Screens.CountOf(PowerButton);
+        yield return d.MoveTo((RectTransform)Screens.Slot(PowerButton).transform, "the power button's slot");
+        yield return d.Hold(PadButton.A, true);
+        yield return d.Press(PadButton.Up);
+        yield return Game.Until(() => Screens.CountOf(PowerButton) < inBox, 5f, "the power button came out of its slot");
+        yield return Game.Until(() => Object.FindObjectsByType<ElementBase>(FindObjectsSortMode.None).All(e => !e.IsDragging),
+            5f, "nothing left in hand");
+        d.LetGoOfA();
+        yield return d.ExpectState("D-pad up from its slot: the power button isn't left on the bench", "loose power buttons",
+            "0", () => Driver.ThingsOnBench().Count(t => t.Name.StartsWith(Loose(PowerButton))).ToString());
+        if (Screens.InventoryShown() != "open") yield return d.Press(PadButton.X);
+        yield return d.ExpectState("D-pad up from its slot: the power button leaves the parts box", "power buttons in the parts box",
+            (inBox - 1).ToString(), () => Screens.CountOf(PowerButton).ToString());
+        yield return d.Press(PadButton.X);
+        yield return d.ExpectState("X again: the parts box closes", "the inventory", "closed", Screens.InventoryShown);
+
+        // Last, as it takes the bench to cleaning: the dirty membrane goes right, to the tool cup, where it is
+        // the part to clean.
+        yield return d.Send(DpadMembrane, PadButton.Right, "the tool cup",
+            part => part && !part.IsDragging && Game.CleaningTarget() == part);
     }
 
     // A fresh spot along the lower mat for each part laid down, clear of the parts box and tool cup.

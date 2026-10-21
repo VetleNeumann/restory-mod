@@ -24,6 +24,7 @@ public class E2EPlugin : BaseUnityPlugin
 
     private static readonly Dictionary<string, Func<IScenario>> Scenarios = new()
     {
+        ["bench-controls"] = () => new BenchControls(),
         ["dump"] = () => new Dump(),
         ["full-repair-r2-hold"] = () => new FullRepairR2Hold(),
         ["lynx-hint"] = () => new LynxHint(),

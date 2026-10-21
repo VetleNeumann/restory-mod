@@ -185,6 +185,9 @@ internal static class Game
         Find<DeviceService>().PlacedDeviceContainer is { } container && container
         && container.Quality is Restory.Data.Devices.Quality.IdealDeviceQuality;
 
+    /// <summary>The part the tool cup's cleaning is set on now, or null.</summary>
+    public static ElementBase? CleaningTarget() => Find<ElementCleaner>().TargetElement is { } part && part ? part : null;
+
     /// <summary>Cleans a dirty part to perfect at once, as the game's cleaning cheat does.</summary>
     public static void Clean(ElementBase part)
     {

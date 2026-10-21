@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using static RestoryMod.Core.PatchTargets;
 
 namespace RestoryMod.Core;
@@ -12,6 +13,13 @@ namespace RestoryMod.Core;
 public sealed record FeatureManifest(string Name, IReadOnlyList<PatchTarget> Targets)
 {
     public FeatureManifest(string name, params PatchTarget[] targets) : this(name, (IReadOnlyList<PatchTarget>)targets) { }
+
+    /// <summary>The targets a patch checks that this manifest does not list, in the order given.</summary>
+    public IReadOnlyList<PatchTarget> NotListed(IEnumerable<PatchTarget> targets)
+    {
+        var listed = new HashSet<PatchTarget>(Targets);
+        return targets.Where(t => !listed.Contains(t)).ToList();
+    }
 
     public override string ToString() => Name;
 }

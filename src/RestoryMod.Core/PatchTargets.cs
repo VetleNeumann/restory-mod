@@ -356,6 +356,25 @@ public static class PatchTargets
     // the enlarged hitbox that wins instead of what it hit. Things are listed from the placed device
     // and the loose parts on the bench.
     public static readonly PatchTarget CursorDetectorTryToDetect = new("Restory.Gameplay.GameCursor.GameCursorDetector", "TryToDetect");
+
+    // The end-to-end harness keeps every save file as it was: each member here writes, moves or deletes
+    // files in the save folder.
+    private const string GlobalSaves = "Restory.Data.ReadWriteServices.GlobalReadWriteDataService";
+    private const string GameplaySaves = "Restory.Data.ReadWriteServices.GameplayReadWriteCombinedDataService";
+    public static readonly IReadOnlyList<PatchTarget> SaveWrites = new[]
+    {
+        new PatchTarget(GlobalSaves, "WriteToFileAsync"),
+        new PatchTarget(GlobalSaves, "SetFileAsCorrupted"),
+        new PatchTarget(GlobalSaves, "DeleteAll"),
+        new PatchTarget(GlobalSaves, "DeleteFile"),
+        new PatchTarget(GlobalSaves, "BackupSaveDataDirectory"),
+        new PatchTarget(GlobalSaves, "BackupSlot"),
+        new PatchTarget(GameplaySaves, "WriteToFileAsync"),
+        new PatchTarget(GameplaySaves, "SetFileAsCorrupted"),
+        new PatchTarget(GameplaySaves, "ReduceSaveRecordsCount"),
+        new PatchTarget(GameplaySaves, "DeleteAll"),
+        new PatchTarget(GameplaySaves, "DeleteFile"),
+    };
     public static readonly PatchTarget DisassembleDetectionDeviceService = new(DisassembleDetection, "deviceService");
     public static readonly PatchTarget EmptyDetectionDeviceService = new(EmptyDetection, "deviceService");
     public static readonly PatchTarget DeviceServiceWorkSurface = new("Restory.Gameplay.Devices.DeviceService", "workSurface");
@@ -380,7 +399,7 @@ public static class PatchTargets
     public static readonly PatchTarget PromptViewControllerId = new(PromptView, "controllerId");
     public static readonly PatchTarget PromptViewElementId = new(PromptView, "elementId");
 
-    // Blocked hover: the game's hover highlight on a part is set when its selection changes; the
+    // Blocked hover: the game's hover outline on a part is set when its selection changes; the
     // view's part and outline are read by name.
     internal const string ElementView = "Restory.Gameplay.Elements.ElementView";
     public static readonly PatchTarget ElementViewResolveSelection = new(ElementView, "ResolveSelectionStateChanged");

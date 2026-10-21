@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>RestoryMod.E2E</AssemblyName>
+    <RootNamespace>RestoryMod.E2E</RootNamespace>
+    <BepInExPluginGuid>com.zantox.restorymod.e2e</BepInExPluginGuid>
+    <Product>RestoryMod.E2E</Product>
+    <Version>0.1.0</Version>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+    <PackageReference Include="BepInEx.Core" Version="5.*" ExcludeAssets="runtime" />
+    <PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
+    <PackageReference Include="UnityEngine.Modules" Version="6000.3.10" IncludeAssets="compile" />
+    <!-- Drives a virtual Xbox 360 pad through the ViGEmBus driver, so the game sees a real gamepad. -->
+    <PackageReference Include="Nefarius.ViGEm.Client" Version="1.21.256" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../RestoryMod.Core/RestoryMod.Core.csproj" Private="false" />
+    <ProjectReference Include="../RestoryMod.E2E.Core/RestoryMod.E2E.Core.csproj" />
+    <ProjectReference Include="../RestoryMod/RestoryMod.csproj" Private="false" />
+  </ItemGroup>
+
+  <!-- Game assemblies come from the local install (see GamePaths.props). Never copied or committed. -->
+  <ItemGroup Condition="'$(GameManaged)' != ''">
+    <Reference Include="Restory.Assembly" HintPath="$(GameManaged)/Restory.Assembly.dll" Private="false" />
+    <Reference Include="Rewired_Core" HintPath="$(GameManaged)/Rewired_Core.dll" Private="false" />
+    <Reference Include="RewiredAssembly" HintPath="$(GameManaged)/RewiredAssembly.dll" Private="false" />
+    <Reference Include="Zenject" HintPath="$(GameManaged)/Zenject.dll" Private="false" />
+    <Reference Include="Zenject-usage" HintPath="$(GameManaged)/Zenject-usage.dll" Private="false" />
+    <Reference Include="UnityEngine.UI" HintPath="$(GameManaged)/UnityEngine.UI.dll" Private="false" />
+    <Reference Include="Unity.TextMeshPro" HintPath="$(GameManaged)/Unity.TextMeshPro.dll" Private="false" />
+    <Reference Include="EPO" HintPath="$(GameManaged)/EPO.dll" Private="false" />
+    <Reference Include="DOTween" HintPath="$(GameManaged)/DOTween.dll" Private="false" />
+    <Reference Include="Sirenix.Serialization" HintPath="$(GameManaged)/Sirenix.Serialization.dll" Private="false" />
+  </ItemGroup>
+</Project>

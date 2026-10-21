@@ -39,7 +39,7 @@ Moving a scrollable menu's view with the right stick, gliding at a speed that fo
 _Avoid_: Wheel scroll, stick navigation
 
 **Hover grace**:
-With a gamepad, a thing the virtual cursor can act on stays hovered for a short moment after the cursor leaves its hitbox, so pressing the button just after overshooting still acts on it. At the workbench it covers loose parts, screws and screw slots (not attached parts or part ghosts); away from it, objects on the bench (device boxes, packs, cash, decor). It applies only while the cursor is over nothing else it could act on (a blocked part counts as nothing): anything it could act on now wins, including the on-screen panels, and holding the rotate button ends it. It keeps the hover highlight on for the same moment. Platformers call the same forgiveness "coyote time".
+With a gamepad, a thing the virtual cursor can act on stays hovered for a short moment after the cursor leaves its hitbox, so pressing the button just after overshooting still acts on it. At the workbench it covers loose parts, screws and screw slots (not attached parts or part ghosts); away from it, objects on the bench (device boxes, packs, cash, decor). It applies only while the cursor is over nothing else it could act on (a blocked part counts as nothing): anything it could act on now wins, including the on-screen panels, and holding the rotate button ends it. It keeps the hover outline on for the same moment. Platformers call the same forgiveness "coyote time".
 _Avoid_: Grab grace, coyote grab, sticky cursor (that slows the cursor instead)
 
 **Blocked part**:
@@ -71,15 +71,15 @@ A socket that could take a part right now but that no loose part on the bench is
 _Avoid_: Empty slot, missing part
 
 **Hint**:
-The workbench aid that points out every ready part (a pulse on an attached part or screw, a part ghost in each socket a loose part or screw can fill), shows missing sockets with the missing look, and follows whether the player is taking the device apart or putting it back together; once no part left on the device needs work or is unknown, it shows putting back even before the first part goes in. R2 shows it again: while held, or until pressed again, as the "R2 hint" setting picks (Hold, Toggle or Off).
+The workbench aid that points out every ready part (a pulse on an attached part, screw or loose part, a part ghost in each screw slot a screw can fill), shows missing sockets with the missing look, and follows whether the player is taking the device apart or putting it back together; once no part left on the device needs work or is unknown, it shows putting back even before the first part goes in. R2 shows it again: while held, or until pressed again, as the "R2 hint" setting picks (Hold, Toggle or Off).
 _Avoid_: Highlight, drop hint, screw hint (that was its first, screws-only form)
 
-**Hover highlight**:
-The game's outline on the one thing under the cursor at the workbench, coloured by what a press would do and, on a part, by its condition. It never shows on a blocked part; a switch, or a part still going into its socket, keeps it.
-_Avoid_: Highlight (on its own it could mean the hint too), selection outline
+**Hover outline**:
+The game's own outline on the one thing under the virtual cursor at the workbench, coloured by what a press would do (orange when it acts) and, on a part, by its condition. It never shows on a blocked part; a switch, or a part still going into its socket, keeps it.
+_Avoid_: Highlight (on its own it could mean the hint too), selection outline, hover highlight
 
 **Look**:
-One of a fixed set of ways the hint and the hover highlight mark a thing: the ready look (the pulse on a ready part, and its ghost where it goes back), the missing look, the screw look (the game's own pulse on a screw or screw slot, hidden or not as a whole, since a screw is too small to be half hidden), and, still to come, the condition outline (burnt, damaged, dirty). Each thing gets its own outline, never merged with its neighbours, so overlapping things all stay visible.
+One of a fixed set of ways the hint and the hover outline mark a thing: the ready look (the pulse on a ready part, and its ghost where it goes back), the missing look, the screw look (the game's own pulse on a screw or screw slot, hidden or not as a whole, since a screw is too small to be half hidden), and, still to come, the condition outline (burnt, damaged, dirty). Each thing gets its own outline, never merged with its neighbours, so overlapping things all stay visible.
 _Avoid_: Style, highlight colour, preset
 
 **Missing look**:
@@ -93,6 +93,14 @@ _Avoid_: X-ray, see-through highlight
 **Faded**:
 Workbench state where the device on the bench shows only as a flat gray see-through silhouette and nothing on it takes a press: the cursor falls through to whatever lies behind it, such as a loose part dropped out of reach, and a held part dropped on it lands on the bench. It can still be rotated. L1 fades the device and brings it back, unless a screen that uses L1 (the Tool window, the inventory) claims it first; leaving the workbench or changing device brings it back too.
 _Avoid_: Ghost (a part ghost is something else), hidden (a Notepad state), x-ray
+
+**Mark**:
+The visible treatment one thing at the workbench carries at a given moment: a pulse, a part ghost (the ready look or the missing look), a hover outline, or none. A mark on a thing that is there (an attached part, a screw, a loose part) is a pulse; one in an empty socket is a part ghost. Every thing carries exactly one; where the hint and the hover outline meet on one thing, the hint's mark counts.
+_Avoid_: Highlight, outline (when any mark is meant), glow
+
+**Pulse**:
+The hint's mark on a thing that is there, an attached part, a screw or a loose part: an outline that runs white to yellow and back.
+_Avoid_: Flash, blink, highlight
 
 ### Hitboxes
 

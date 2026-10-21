@@ -21,6 +21,11 @@
     <ProjectReference Include="../RestoryMod.Core/RestoryMod.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The end-to-end harness reads the features' state; it ships only with scripts/dev.sh e2e. -->
+    <InternalsVisibleTo Include="RestoryMod.E2E" />
+  </ItemGroup>
+
   <!-- Game assemblies come from the local install (see GamePaths.props). Never copied or committed. -->
   <ItemGroup Condition="'$(GameManaged)' != ''">
     <Reference Include="Restory.Assembly" HintPath="$(GameManaged)/Restory.Assembly.dll" Private="false" />

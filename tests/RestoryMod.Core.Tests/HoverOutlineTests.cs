@@ -2,7 +2,7 @@ using RestoryMod.Core;
 
 namespace RestoryMod.Core.Tests;
 
-public class HoverHighlightTests
+public class HoverOutlineTests
 {
     [Theory]
     [InlineData(false, false, true)]
@@ -10,6 +10,6 @@ public class HoverHighlightTests
     [InlineData(true, false, false)]
     public void The_hover_highlight_never_shows_on_a_blocked_part(bool blocked, bool switchable, bool shows)
     {
-        Assert.Equal(shows, HoverHighlight.Shows(blocked, switchable));
+        Assert.Equal(shows, HoverOutline.Shows(blocked, switchable));
     }
 }

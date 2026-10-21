@@ -13,6 +13,12 @@
 #           If the game is not running, or runs the normal plugins/ install, switches to scripts/ and
 #           launches instead; later `hot` runs reload in place without a restart.
 #   install-hot  install ScriptEngine (pinned, checksummed) and set it to load + watch scripts/
+#   e2e [scenario] [--stop-at N] [key=value...]
+#           end-to-end run (default scenario full-repair-r2-hold): backs up the save folder, deploys the
+#           mod with the RestoryMod.E2E harness, launches, and prints the report. Exits 1 unless every check
+#           passed. --stop-at N replays to just before check N and leaves the game there, the scenario's
+#           settings still on (in memory only; restart the game to drop them). Needs ViGEmBus.
+#           Sets Steam to Invisible first. Every other deploy removes the harness again.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -37,6 +43,10 @@ game_dir() {
 
 GAME_DIR="$(game_dir)"
 PLUGIN_DEST="$GAME_DIR/BepInEx/plugins/RestoryMod"
+# The end-to-end harness: only `e2e` puts it here; every other deploy takes it out.
+E2E_PROJECT="$ROOT/src/RestoryMod.E2E/RestoryMod.E2E.csproj"
+E2E_DEST="$GAME_DIR/BepInEx/plugins/RestoryMod.E2E"
+E2E_DIR="$GAME_DIR/BepInEx/e2e"
 # Hot mode: ScriptEngine loads the mod from here instead, and reloads it when a DLL changes.
 SCRIPTS_DEST="$GAME_DIR/BepInEx/scripts"
 SCRIPT_ENGINE_DLL="$GAME_DIR/BepInEx/plugins/ScriptEngine/ScriptEngine.dll"
@@ -114,6 +124,7 @@ cmd_deploy() {
   # A copy in scripts/ too would load the plugin twice (ScriptEngine refuses the duplicate GUID).
   clear_build "$SCRIPTS_DEST"
   copy_build "$PLUGIN_DEST"
+  rm -rf "$E2E_DEST"
 }
 
 clear_build() {
@@ -191,6 +202,7 @@ cmd_hot() {
   # The normal install's DLL is locked while the game runs, so switching modes needs a restart.
   cmd_kill
   clear_build "$PLUGIN_DEST"
+  rm -rf "$E2E_DEST"
   copy_build "$SCRIPTS_DEST"
   cmd_launch
 }
@@ -251,6 +263,79 @@ cmd_launch() {
   echo "warn: no BepInEx startup within 90s; check $log" >&2
 }
 
+save_dir() {
+  local dirs=(/mnt/c/Users/*/AppData/LocalLow/Mandragora/Restory/SaveData)
+  if [[ ${#dirs[@]} -ne 1 || ! -d "${dirs[0]}" ]]; then
+    echo "error: expected one ReStory save folder, found: ${dirs[*]}" >&2
+    exit 1
+  fi
+  echo "${dirs[0]}"
+}
+
+# The harness blocks every save write, but a copy of the save folder is taken first all the same.
+backup_saves() {
+  local saves backups stamp
+  saves="$(save_dir)"
+  backups="$(dirname "$saves")/SaveData-e2e-backups"
+  stamp="$(date +%Y%m%d-%H%M%S)"
+  mkdir -p "$backups"
+  cp -r "$saves" "$backups/$stamp"
+  # Keep the five newest.
+  ls -1d "$backups"/*/ | head -n -5 | xargs -r rm -rf
+  echo "save folder backed up to $backups/$stamp"
+}
+
+cmd_e2e() {
+  local scenario=full-repair-r2-hold stop_at="" options=()
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --stop-at) stop_at="$2"; shift 2 ;;
+      *=*) options+=("$1"); shift ;;
+      *) scenario="$1"; shift ;;
+    esac
+  done
+
+  cmd_check
+  # Every run starts the game afresh: go Invisible so friends aren't told each time.
+  (cd /mnt/c && cmd.exe /c start "" "steam://friends/status/invisible")
+  dotnet build "$E2E_PROJECT" -c "$CONFIG"
+  cmd_deploy
+  # After deploy has closed the game, so the copy holds what it saved on the way out.
+  backup_saves
+  local out="$ROOT/src/RestoryMod.E2E/bin/$CONFIG/netstandard2.1"
+  mkdir -p "$E2E_DEST" "$E2E_DIR"
+  cp "$out"/RestoryMod.E2E.dll "$out"/RestoryMod.E2E.pdb "$out"/RestoryMod.E2E.Core.dll "$out"/Nefarius.ViGEm.Client.dll "$E2E_DEST/"
+  rm -f "$E2E_DIR"/result.txt "$E2E_DIR"/log.txt "$E2E_DIR"/*.png
+  {
+    echo "scenario=$scenario"
+    [[ -n "$stop_at" ]] && echo "stopAt=$stop_at"
+    for option in "${options[@]}"; do echo "$option"; done
+  } > "$E2E_DIR/request.txt"
+  cmd_launch
+
+  echo "running $scenario..."
+  for _ in $(seq 1 600); do
+    [[ -f "$E2E_DIR/result.txt" ]] && break
+    game_running || break
+    sleep 1
+  done
+  if [[ ! -f "$E2E_DIR/result.txt" ]]; then
+    # Exceptions outside the harness's own handling land only in Unity's Player.log.
+    echo "error: no result (game closed, or none within 10 minutes); check $GAME_DIR/BepInEx/LogOutput.log" \
+      "and $(dirname "$(save_dir)")/Player.log" >&2
+    exit 1
+  fi
+  # Everything the harness logged, then the failures on their own.
+  cat "$E2E_DIR/log.txt"
+  if grep -qF "] FAIL #" "$E2E_DIR/result.txt"; then
+    echo
+    echo "failed checks:"
+    grep -F "] FAIL #" "$E2E_DIR/result.txt"
+  fi
+  # A stop counts as a pass only if no check failed before it.
+  grep -qE "RESULT PASSED|STOPPED before" "$E2E_DIR/result.txt" && ! grep -qF "] FAIL #" "$E2E_DIR/result.txt"
+}
+
 case "${1:-run}" in
   build)  cmd_build ;;
   deploy) cmd_deploy ;;
@@ -261,5 +346,6 @@ case "${1:-run}" in
   run)    cmd_check; cmd_build; cmd_deploy; cmd_launch ;;
   hot)    cmd_check; cmd_build; cmd_hot ;;
   install-hot) cmd_install_hot ;;
-  *) echo "usage: $0 [build|deploy|launch|focus|kill|check|run|hot|install-hot]" >&2; exit 2 ;;
+  e2e)    shift; cmd_e2e "$@" ;;
+  *) echo "usage: $0 [build|deploy|launch|focus|kill|check|run|hot|install-hot|e2e]" >&2; exit 2 ;;
 esac

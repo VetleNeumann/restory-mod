@@ -13,7 +13,7 @@ using RestoryMod.Features.DropHint;
 using RestoryMod.Features.DropdownModes;
 using RestoryMod.Features.Hitboxes;
 using RestoryMod.Features.HoverGrace;
-using RestoryMod.Features.HoverHighlight;
+using RestoryMod.Features.HoverOutline;
 using RestoryMod.Features.MailList;
 using RestoryMod.Features.Notepad;
 using RestoryMod.Features.PartsBox;

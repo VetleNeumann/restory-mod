@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\RestoryMod.Core\RestoryMod.Core.csproj" />
+    <ProjectReference Include="..\..\src\RestoryMod.E2E.Core\RestoryMod.E2E.Core.csproj" />
   </ItemGroup>
 
 </Project>

@@ -71,7 +71,7 @@ A socket that could take a part right now but that no loose part on the bench is
 _Avoid_: Empty slot, missing part
 
 **Hint**:
-The workbench aid that points out every ready part (a pulse on an attached part or screw, a part ghost in each socket a loose part or screw can fill), shows missing sockets in red and waiting parts faint, and follows whether the player is taking the device apart or putting it back together; once no part left on the device needs work or is unknown, it shows putting back even before the first part goes in. R2 shows it again: while held, or until pressed again, as the "R2 hint" setting picks (Hold, Toggle or Off).
+The workbench aid that points out every ready part (a pulse on an attached part, screw or loose part, a part ghost in each screw slot a screw can fill), shows missing sockets in red and waiting parts faint, and follows whether the player is taking the device apart or putting it back together; once no part left on the device needs work or is unknown, it shows putting back even before the first part goes in. R2 shows it again: while held, or until pressed again, as the "R2 hint" setting picks (Hold, Toggle or Off).
 _Avoid_: Highlight, drop hint, screw hint (that was its first, screws-only form)
 
 **Faded**:
@@ -79,8 +79,20 @@ Workbench state where the device on the bench shows only as a flat gray see-thro
 _Avoid_: Ghost (a part ghost is something else), hidden (a Notepad state), x-ray
 
 **Waiting part**:
-A loose part whose socket could take it, but only after the screws that go in first; the hint shows its part ghost faint until they are in.
+A loose part whose socket could take it, but only after the screws that go in first; the hint gives it a faint pulse until they are in.
 _Avoid_: Pending part, blocked part (that is an attached part that can't come off)
+
+**Mark**:
+The visible treatment one thing at the workbench carries at a given moment: a pulse (or a faint pulse), a part ghost (yellow or red), a hover outline, or none. A mark on a thing that is there (an attached part, a screw, a loose part) is a pulse; one in an empty socket is a part ghost. Every thing carries exactly one; where the hint and the hover outline meet on one thing, the hint's mark counts.
+_Avoid_: Highlight, outline (when any mark is meant), glow
+
+**Pulse**:
+The hint's mark on a thing that is there, an attached part, a screw or a loose part: an outline that runs white to yellow and back. A waiting part's is faint and holds still.
+_Avoid_: Flash, blink, highlight
+
+**Hover outline**:
+The game's own orange outline on the thing under the virtual cursor that a press would act on.
+_Avoid_: Highlight, selection, hover highlight
 
 ### Hitboxes
 

@@ -2,6 +2,8 @@
   <Folder Name="/src/">
     <Project Path="src/RestoryMod.Core/RestoryMod.Core.csproj" />
     <Project Path="src/RestoryMod/RestoryMod.csproj" />
+    <Project Path="src/RestoryMod.E2E.Core/RestoryMod.E2E.Core.csproj" />
+    <Project Path="src/RestoryMod.E2E/RestoryMod.E2E.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/RestoryMod.Core.Tests/RestoryMod.Core.Tests.csproj" />

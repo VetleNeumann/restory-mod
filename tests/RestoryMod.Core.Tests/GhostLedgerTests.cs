@@ -205,6 +205,17 @@ public class GhostLedgerTests
     }
 
     [Fact]
+    public void A_ghost_shown_again_as_something_other_than_a_screw_slot_gives_the_marker_back()
+    {
+        pulse.Markers.Add("slot");
+        ledger.Show(Item("slot", HintKind.ScrewSlot));
+        ledger.Show(Item("slot", HintKind.Missing));
+
+        Assert.Single(pulse.Ghosts);
+        Assert.Empty(pulse.Muted);
+    }
+
+    [Fact]
     public void Reconcile_drops_ghosts_no_longer_ready_and_restores_their_look()
     {
         ledger.Show(Item("lid", HintKind.Part));

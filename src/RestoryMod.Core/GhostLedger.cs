@@ -229,6 +229,11 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
         entry.Kind = item.Kind;
         entry.Look = Looks.OfHint(item.Kind, item.Condition);
         if (item.Kind == HintKind.ScrewSlot && entry.Muted is null) entry.Muted = pulse.MuteMarker(spot);
+        else if (item.Kind != HintKind.ScrewSlot && entry.Muted is not null)
+        {
+            pulse.Unmute(entry.Muted);
+            entry.Muted = null;
+        }
         pulse.Paint(entry.Ghost, entry.Look);
     }
 

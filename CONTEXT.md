@@ -95,7 +95,7 @@ Workbench state where the device on the bench shows only as a flat gray see-thro
 _Avoid_: Ghost (a part ghost is something else), hidden (a Notepad state), x-ray
 
 **Mark**:
-The visible treatment one thing at the workbench carries at a given moment: a pulse, a part ghost (the ready look or the missing look), a hover outline, or none. A mark on a thing that is there (an attached part, a screw, a loose part) is a pulse; one in an empty socket is a part ghost. Every thing carries exactly one; where the hint and the hover outline meet on one thing, the hint's mark counts.
+The visible treatment one thing at the workbench carries at a given moment: a pulse, a part ghost (the ready look or the missing look), a hover outline, or none. A mark on a thing that is there (an attached part, a screw, a loose part) is a pulse; one in an empty socket is a part ghost. A missing socket always carries the missing look, even a battery tube whose entry holds a battery with room behind it. Every thing carries exactly one; where the hint and the hover outline meet on one thing, the hint's mark counts.
 _Avoid_: Highlight, outline (when any mark is meant), glow
 
 **Pulse**:

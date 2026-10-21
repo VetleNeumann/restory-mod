@@ -21,12 +21,12 @@ public class MarkCheckTests
     [Fact]
     public void Subset_check_looks_only_at_the_things_it_names()
     {
-        var expected = Marks(("Battery", Mark.RedGhost));
-        var actual = Marks(("Back cover", Mark.Pulse), ("Battery", Mark.FaintPulse));
+        var expected = Marks(("Battery", Mark.MissingGhost));
+        var actual = Marks(("Back cover", Mark.Pulse), ("Battery", Mark.Ghost));
 
         var mismatches = MarkCheck.Compare(expected, actual, exact: false);
 
-        Assert.Equal(new[] { new MarkMismatch("Battery", Mark.RedGhost, Mark.FaintPulse) }, mismatches);
+        Assert.Equal(new[] { new MarkMismatch("Battery", Mark.MissingGhost, Mark.Ghost) }, mismatches);
     }
 
     [Fact]

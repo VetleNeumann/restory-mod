@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace RestoryMod.E2E;
 
@@ -48,15 +49,22 @@ public sealed class RunLedger
     }
 
     /// <summary>Records that the check begun last found these mismatches.</summary>
-    public void FailCheck(IReadOnlyList<MarkMismatch> mismatches, string? screenshot)
+    public void FailCheck(IReadOnlyList<MarkMismatch> mismatches, string? screenshot) =>
+        FailCheck(mismatches.Select(m => (m.Thing, m.Expected.ToString(), m.Actual?.ToString())), screenshot);
+
+    /// <summary>
+    /// As the mark overload, for a check of anything else: each thing with what was expected and what it
+    /// is now (null: not at the workbench).
+    /// </summary>
+    public void FailCheck(IEnumerable<(string thing, string expected, string? actual)> mismatches, string? screenshot)
     {
         failed++;
         Verdict = RunVerdict.Failed;
         report.Add($"[E2E] FAIL #{number} {label}");
-        foreach (var m in mismatches)
+        foreach (var (thing, expected, actual) in mismatches)
         {
-            var actual = m.Actual is { } mark ? $"got {mark}" : "not at the workbench";
-            report.Add($"[E2E]   {m.Thing}: expected {m.Expected}, {actual}");
+            var got = actual is not null ? $"got {actual}" : "not at the workbench";
+            report.Add($"[E2E]   {thing}: expected {expected}, {got}");
         }
         if (screenshot is not null) report.Add($"[E2E]   screenshot: {screenshot}");
     }

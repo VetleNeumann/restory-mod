@@ -282,6 +282,39 @@ internal sealed class Driver
         }
     }
 
+    /// <summary>
+    /// These screws or screw slots are drawn in the hidden style (true) or in plain view (false), waiting
+    /// up to the usual time; the others aren't looked at.
+    /// </summary>
+    public IEnumerator ExpectHidden(string label, params (string thing, bool hidden)[] expected)
+    {
+        if (!ledger.BeginCheck(label)) throw new StopHere();
+        var end = Time.unscaledTime + ExpectSeconds;
+        while (true)
+        {
+            var actual = Bench.Hidden(Bench.Things());
+            var wrong = expected
+                .Where(e => !actual.TryGetValue(e.thing, out var now) || now != e.hidden)
+                .Select(e => (e.thing, Style(e.hidden), actual.TryGetValue(e.thing, out var now) ? Style(now) : "no screw ghost"))
+                .ToList();
+            if (wrong.Count == 0) yield break;
+            if (Time.unscaledTime > end)
+            {
+                var shot = Path.Combine(outDir, $"fail-{ledger.Number}.png");
+                ScreenCapture.CaptureScreenshot(shot);
+                ledger.FailCheck(wrong!, shot);
+                foreach (var line in ledger.Report().Skip(Logged)) E2EPlugin.Log(line);
+                Logged = ledger.Report().Count;
+                yield return null;
+                yield return null;
+                yield break;
+            }
+            yield return null;
+        }
+    }
+
+    private static string Style(bool hidden) => hidden ? "hidden" : "in view";
+
     private IEnumerator Fail(IReadOnlyList<MarkMismatch> mismatches, Dictionary<string, Mark> actual)
     {
         var shot = Path.Combine(outDir, $"fail-{ledger.Number}.png");

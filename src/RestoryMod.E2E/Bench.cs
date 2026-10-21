@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EPOOutline;
 using HarmonyLib;
+using Restory.Gameplay.Common;
 using Restory.Gameplay.Devices;
 using Restory.Gameplay.Elements;
 using RestoryMod.Core;
@@ -42,8 +43,8 @@ internal sealed class BenchThing
 
 /// <summary>
 /// Reads what the player sees at the workbench: every thing there and its mark (CONTEXT.md, Mark). The
-/// hint's ghosts are read off the game's pulse highlighter by the spot they sit on and the color they
-/// draw in, so the check sees the outcome on screen rather than the mod's own bookkeeping.
+/// hint's ghosts are read off the game's pulse highlighter by the spot they sit on and the look preset they
+/// wear, which is what decides how each is drawn.
 /// </summary>
 internal static class Bench
 {
@@ -100,8 +101,54 @@ internal static class Bench
         return things;
     }
 
+    private static readonly AccessTools.FieldRef<ElementView, ElementBase> ViewElement =
+        AccessTools.FieldRefAccess<ElementView, ElementBase>(PatchTargets.ElementViewElement.MemberName);
+    private static readonly AccessTools.FieldRef<ElementView, OutlinableAdapter> ViewOutline =
+        AccessTools.FieldRefAccess<ElementView, OutlinableAdapter>(PatchTargets.ElementViewOutline.MemberName);
+
+    // The game's own outline is on, not just the part selected: the mod keeps a blocked part's off.
+    private static bool HoverOutlined(ElementBase part)
+    {
+        if (!part.IsSelected) return false;
+        var view = part.GetComponentsInChildren<ElementView>().FirstOrDefault(v => ViewElement(v) == part);
+        if (!view) return false;
+        var outline = ViewOutline(view!);
+        return outline && outline.IsActive;
+    }
+
     /// <summary>The mark each thing carries now. A hint mark counts over the hover outline.</summary>
     public static Dictionary<string, Mark> Marks(List<BenchThing> things)
+    {
+        var marks = things.ToDictionary(t => t.Name, t => t.Part && HoverOutlined(t.Part!) ? Mark.HoverOutline : Mark.None);
+
+        var service = WorkbenchSession.Service;
+        var highlighter = service is null ? null : WorkbenchSession.Highlighter(service);
+        if (!highlighter) return marks;
+        foreach (var (thing, ghost) in Drawn(things, highlighter!))
+            marks[thing.Name] = MarkOf(present: thing.Loose || thing.Part, GamePulse.LookOf(ghost));
+        return marks;
+    }
+
+    /// <summary>
+    /// For each thing whose hint ghost wears the screw look (a screw or screw slot): whether it is drawn
+    /// in the hidden style now, as one whole (CONTEXT.md, Hidden style).
+    /// </summary>
+    public static Dictionary<string, bool> Hidden(List<BenchThing> things)
+    {
+        var hidden = new Dictionary<string, bool>();
+        var service = WorkbenchSession.Service;
+        var highlighter = service is null ? null : WorkbenchSession.Highlighter(service);
+        if (!highlighter) return hidden;
+        foreach (var (thing, ghost) in Drawn(things, highlighter!))
+        {
+            if (GamePulse.LookOf(ghost) == Look.Screw) hidden[thing.Name] = GamePulse.DrawnHidden(highlighter!, ghost);
+        }
+        return hidden;
+    }
+
+    // Every ghost the pulse highlighter draws now, with the thing it sits on.
+    private static IEnumerable<(BenchThing thing, ElementProjection ghost)> Drawn(List<BenchThing> things,
+        ProjectionHighlighterBase highlighter)
     {
         var bySpot = new Dictionary<Transform, BenchThing>();
         foreach (var thing in things)
@@ -109,31 +156,24 @@ internal static class Bench
             if (thing.Socket) bySpot[thing.Socket!.transform] = thing;
             else if (thing.Loose) bySpot[thing.Loose!.transform] = thing;
         }
-        var marks = things.ToDictionary(t => t.Name, t => t.Part && t.Part!.IsSelected ? Mark.HoverOutline : Mark.None);
-
-        var service = WorkbenchSession.Service;
-        var highlighter = service is null ? null : WorkbenchSession.Highlighter(service);
-        if (!highlighter) return marks;
-        foreach (var ghost in Ghosts(highlighter!))
+        foreach (var ghost in Ghosts(highlighter))
         {
             if (!ghost || !ghost.gameObject.activeInHierarchy) continue;
             var outline = ghost.OutlinableAdapter.Outlinable;
             if (!outline || !outline.enabled) continue;
             if (!ghost.transform.parent || !bySpot.TryGetValue(ghost.transform.parent, out var thing)) continue;
-            var drawn = outline.RenderStyle == RenderStyle.Single ? outline.OutlineParameters : outline.FrontParameters;
-            marks[thing.Name] = MarkOf(present: thing.Loose || thing.Part, drawn.Color);
+            yield return (thing, ghost);
         }
-        return marks;
     }
 
-    // On a thing that is there the ghost draws over it: a pulse. In an empty socket it stands for the part
-    // that goes there: a ghost. The hint draws missing sockets red, waiting parts a dim steady yellow,
-    // everything else in the pulse's white-to-yellow (see GamePulse.Paint).
-    private static Mark MarkOf(bool present, Color color)
+    // A missing socket wears the missing look, even a tube's entry with a part in it and room behind. Else
+    // on a thing that is there the ghost draws over it: a pulse; in an empty socket it stands for the part
+    // that goes there: a ghost. The look is read off the preset the ghost wears, which decides how it is
+    // drawn (see GamePulse.Paint).
+    private static Mark MarkOf(bool present, Look? look)
     {
-        var faint = Mathf.Max(color.r, color.g) < 0.5f && color.b < 0.1f;
-        if (present) return faint ? Mark.FaintPulse : Mark.Pulse;
-        return color.r > 0.3f && color.g < color.r * 0.5f ? Mark.RedGhost : Mark.Ghost;
+        if (look == Look.Missing) return Mark.MissingGhost;
+        return present ? Mark.Pulse : Mark.Ghost;
     }
 
     /// <summary>The marks as one log line per thing, for a failure report or a dump.</summary>

@@ -26,7 +26,7 @@ public class RunLedgerTests
         run.FailCheck(new[]
         {
             new MarkMismatch("Screw 1", Mark.None, Mark.Pulse),
-            new MarkMismatch("Battery", Mark.RedGhost, null),
+            new MarkMismatch("Battery", Mark.MissingGhost, null),
         }, screenshot: "e2e/fail-2.png");
         Assert.True(run.BeginCheck("after R2 released"));
         run.Finish();
@@ -36,7 +36,7 @@ public class RunLedgerTests
         {
             "[E2E] FAIL #2 after removing back cover",
             "[E2E]   Screw 1: expected None, got Pulse",
-            "[E2E]   Battery: expected RedGhost, not at the workbench",
+            "[E2E]   Battery: expected MissingGhost, not at the workbench",
             "[E2E]   screenshot: e2e/fail-2.png",
             "[E2E] RESULT FAILED: 1 of 3 checks failed",
         }, run.Report());

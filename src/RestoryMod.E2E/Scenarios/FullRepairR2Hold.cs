@@ -95,7 +95,7 @@ internal sealed class FullRepairR2Hold : IScenario
         yield return d.PutBack(Loose(Board), Board);
         yield return d.Park();
         yield return Hint("board in: base and wire pulse, the button's socket is missing, in red",
-            (Loose(Base), Pulse), (Loose(Wire), Pulse), (Button, RedGhost));
+            (Loose(Base), Pulse), (Loose(Wire), Pulse), (Button, MissingGhost));
 
         // A spare from the parts box.
         yield return Game.SpawnSpare(Game.Element(Model, Button));

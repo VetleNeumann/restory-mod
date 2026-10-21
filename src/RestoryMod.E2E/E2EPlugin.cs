@@ -26,6 +26,7 @@ public class E2EPlugin : BaseUnityPlugin
     {
         ["dump"] = () => new Dump(),
         ["full-repair-r2-hold"] = () => new FullRepairR2Hold(),
+        ["lynx-hint"] = () => new LynxHint(),
     };
 
     private string outDir = "";

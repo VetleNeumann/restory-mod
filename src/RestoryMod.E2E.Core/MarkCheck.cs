@@ -10,14 +10,11 @@ public enum Mark
     /// <summary>The hint's outline on a thing that is there: an attached part, a screw, a loose part.</summary>
     Pulse,
 
-    /// <summary>The hint's dim, steady outline on a waiting part.</summary>
-    FaintPulse,
-
-    /// <summary>The hint's yellow part ghost in an empty socket: a screw slot whose screw can go in now.</summary>
+    /// <summary>The hint's part ghost in an empty socket: a screw slot whose screw can go in now.</summary>
     Ghost,
 
-    /// <summary>The hint's red part ghost in a missing socket.</summary>
-    RedGhost,
+    /// <summary>The hint's part ghost in a missing socket, in the missing look.</summary>
+    MissingGhost,
 
     /// <summary>The game's own outline on the thing under the virtual cursor.</summary>
     HoverOutline,

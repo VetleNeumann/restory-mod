@@ -15,6 +15,7 @@ internal sealed class Dump : IScenario
 
     public IEnumerator Run(Driver d)
     {
+        d.Setting("Controller", "R2Hint", Core.HintButtonMode.Hold);
         yield return Game.LoadSave();
         foreach (var line in Game.DescribeModels()) E2EPlugin.Log("[E2E] model " + line);
         if (!Options.TryGetValue("model", out var model)) yield break;
@@ -31,6 +32,34 @@ internal sealed class Dump : IScenario
         yield return d.R2(false);
         yield return Driver.Wait(1f);
         Log("R2 let go");
+        if (Options.ContainsKey("apart")) yield return Apart(d);
+    }
+
+    // Follows the hint: takes off the first attached thing it pulses, logs, and again until none pulses.
+    private IEnumerator Apart(Driver d)
+    {
+        for (var step = 0; step < 60; step++)
+        {
+            yield return d.R2(true);
+            yield return Driver.Wait(0.5f);
+            var things = Bench.Things();
+            var marks = Bench.Marks(things);
+            yield return d.R2(false);
+            var next = things.FirstOrDefault(t => t.Socket && t.Part && marks[t.Name] == Mark.Pulse);
+            if (next is null)
+            {
+                Log($"step {step}: no attached part pulses");
+                yield break;
+            }
+            E2EPlugin.Log($"[E2E] step {step}: taking off {next.Name}");
+            var drop = Driver.OnScreen(0.25f + 0.1f * (step % 6), step % 2 == 0 ? 0.2f : 0.28f);
+            yield return d.TakeOff(next.Name, drop);
+            yield return d.Park();
+            yield return d.R2(true);
+            yield return Driver.Wait(0.5f);
+            Log($"after step {step}, R2 held");
+            yield return d.R2(false);
+        }
     }
 
     private IEnumerable<string> List(string key) =>
@@ -39,6 +68,9 @@ internal sealed class Dump : IScenario
     private static void Log(string when)
     {
         E2EPlugin.Log($"[E2E] marks {when}:");
-        foreach (var line in Bench.Describe(Bench.Marks(Bench.Things()))) E2EPlugin.Log(line);
+        var things = Bench.Things();
+        foreach (var line in Bench.Describe(Bench.Marks(things))) E2EPlugin.Log(line);
+        foreach (var screw in Bench.Hidden(things))
+            E2EPlugin.Log($"[E2E]     {screw.Key}: {(screw.Value ? "hidden" : "in view")}");
     }
 }

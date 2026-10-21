@@ -95,6 +95,14 @@ internal static class EveryPartHintFeature
         return device ? Hint.Plan(Snapshot(device!), WorkbenchSession.TakingApart(service)) : null;
     }
 
+    /// <summary>An attached part the hint points out now as one to take off (glossary: Ready part).</summary>
+    public static bool IsReadyToTakeOff(ElementBase part)
+    {
+        var plan = PlanNow();
+        return plan is not null && plan.Any(i =>
+            i.Kind == HintKind.Part && Sockets.TryGetValue(i.Target, out var socket) && socket && socket.NestedElement == part);
+    }
+
     /// <summary>
     /// A prefix's body: ghosts what <paramref name="show"/> picks and returns whether the game's own
     /// hint should run instead (only when this is off or fails).
@@ -126,7 +134,13 @@ internal static class EveryPartHintFeature
     private static void Show(Device device, TooltipProjectionHighlighter highlighter, bool takingApart)
     {
         var ledger = HintGhosts.For(highlighter);
-        var plan = Hint.Plan(Snapshot(device), takingApart);
+        // Shown, a part to take off counts as seen, as the game's own pick-up does: its condition shows now.
+        var plan = Hint.PlanRevealing(Snapshot(device), takingApart, part =>
+        {
+            var data = part.GetComponent<ElementBase>().ConditionHandler.ElementData;
+            data.IsInspected = true;
+            return BenchState.ConditionOf(data.Condition);
+        });
         foreach (var item in plan) ledger.Show(item);
         ledger.Reconcile(plan);
     }
@@ -156,8 +170,8 @@ internal static class EveryPartHintFeature
         {
             var socket = unfilled.Dequeue();
             var record = records[socket];
-            record.Part = PartOf(socket.NestedElement, installed: true);
-            record.LastPart = PartOf(socket.LastNestedElement, installed: false);
+            record.Part = PartOf(socket.NestedElement);
+            record.LastPart = PartOf(socket.LastNestedElement);
             record.Blocked = socket.IsBlocked;
             record.Available = socket.IsAvailable;
             // A flip group's lid blocks the part inside through the runtime set, not the serialized list.
@@ -174,19 +188,19 @@ internal static class EveryPartHintFeature
         var loose = BenchState.LooseParts(device).Where(p => p).Select(p =>
         {
             Loose[p.transform] = p;
-            return PartOf(p, installed: false)!;
+            return PartOf(p)!;
         }).ToList();
         return new Bench<Transform>(sockets, loose);
     }
 
-    // The condition is read only for an installed part once inspected: the hint never reveals what the
-    // game knows about an unknown part, and screws are never repaired.
-    private static BenchPart<Transform>? PartOf(ElementBase? part, bool installed)
+    // The condition is read only once the part is inspected (taken out, or shown by the hint): the hint
+    // never reveals what the game knows about an unknown part, and screws are never repaired.
+    private static BenchPart<Transform>? PartOf(ElementBase? part)
     {
         if (!part) return null;
         var screw = part!.Info.Category == ElementCategory.Small;
         PartCondition? condition = null;
-        if (installed && !screw)
+        if (!screw)
         {
             var data = part.ConditionHandler.ElementData;
             condition = data.IsInspected ? BenchState.ConditionOf(data.Condition) : null;

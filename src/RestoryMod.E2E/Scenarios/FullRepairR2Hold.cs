@@ -61,23 +61,31 @@ internal sealed class FullRepairR2Hold : IScenario
 
         yield return d.TakeOff(Lid, Driver.OnScreen(0.25f, 0.3f));
         yield return d.Park();
-        // Every part still unknown, so every part that can come out now pulses; the board lies under them.
-        yield return Hint("lid off: everything on top pulses", (Button, Pulse), (Wire, Pulse), (Base, Pulse));
+        // Every part on top can come out now, so R2 shows each one's condition: the button is damaged.
+        // The board, under them, stays unknown.
+        yield return Hint("lid off: everything on top pulses, the button in the damaged colour",
+            (Button, DamagedPulse), (Wire, Pulse), (Base, Pulse));
 
         yield return d.TakeOff(Button, Driver.OnScreen(0.35f, 0.2f));
         yield return d.Park();
-        yield return Hint("button off: the rest on top still pulses", (Wire, Pulse), (Base, Pulse));
+        // The damaged button, out on the bench, still needs throwing away before the device is done.
+        yield return Hint("button off: the rest on top still pulses, and the damaged button on the bench",
+            (Wire, Pulse), (Base, Pulse), (Loose(Button), DamagedPulse));
 
         yield return d.TakeOff(Wire, Driver.OnScreen(0.45f, 0.2f));
         yield return d.Park();
-        yield return Hint("wire off: the base still pulses", (Base, Pulse));
+        yield return Hint("wire off: the base still pulses", (Base, Pulse), (Loose(Button), DamagedPulse));
         yield return d.TakeOff(Base, Driver.OnScreen(0.55f, 0.2f));
         yield return d.Park();
-        yield return Hint("wire and base off: the board pulses", (Board, Pulse));
+        yield return Hint("wire and base off: the board pulses in the dirty colour",
+            (Board, DirtyPulse), (Loose(Button), DamagedPulse));
 
         yield return d.TakeOff(Board, Driver.OnScreen(0.65f, 0.2f));
         yield return d.Park();
-        yield return Hint("board off: the bottom part pulses", (BotPart, Pulse));
+        // The bottom part, shown fine and with nothing behind it, isn't asked for; the board and the
+        // button still need work, so the hint stays on taking apart instead of offering them back.
+        yield return Hint("board off: the dirty board and the damaged button pulse, nothing goes back yet",
+            (Loose(Board), DirtyPulse), (Loose(Button), DamagedPulse));
         yield return d.TakeOff(BotPart, Driver.OnScreen(0.75f, 0.25f));
         yield return d.Park();
 

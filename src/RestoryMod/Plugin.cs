@@ -145,6 +145,7 @@ public class Plugin : BaseUnityPlugin
             typeof(OutlineAdapterPresetPatch),
             typeof(ProjectionPulsePatch),
             typeof(BlockedHoverPatch),
+            typeof(ConditionHoverPatch),
             typeof(DropHintGraphPatch),
             typeof(ButtonPromptsPatch),
             typeof(PlayStationArtPatch));

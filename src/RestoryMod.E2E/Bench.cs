@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using EPOOutline;
 using HarmonyLib;
+using Restory.Data.Outline;
 using Restory.Gameplay.Common;
 using Restory.Gameplay.Devices;
 using Restory.Gameplay.Elements;
@@ -106,20 +107,33 @@ internal static class Bench
     private static readonly AccessTools.FieldRef<ElementView, OutlinableAdapter> ViewOutline =
         AccessTools.FieldRefAccess<ElementView, OutlinableAdapter>(PatchTargets.ElementViewOutline.MemberName);
 
-    // The game's own outline is on, not just the part selected: the mod keeps a blocked part's off.
-    private static bool HoverOutlined(ElementBase part)
+    private static readonly AccessTools.FieldRef<ElementView, ElementOutlineSettings> ViewSettings =
+        AccessTools.FieldRefAccess<ElementView, ElementOutlineSettings>(PatchTargets.ElementViewOutlineSettings.MemberName);
+
+    // The game's own outline is on, not just the part selected (the mod keeps a blocked part's off), and
+    // in which colour: the preset it wears names a condition, or none.
+    private static Mark HoverMark(ElementBase part)
     {
-        if (!part.IsSelected) return false;
+        if (!part.IsSelected) return Mark.None;
         var view = part.GetComponentsInChildren<ElementView>().FirstOrDefault(v => ViewElement(v) == part);
-        if (!view) return false;
+        if (!view) return Mark.None;
         var outline = ViewOutline(view!);
-        return outline && outline.IsActive;
+        if (!outline || !outline.IsActive) return Mark.None;
+        var settings = ViewSettings(view!);
+        var preset = outline.OverridePreset;
+        if (settings && preset)
+        {
+            if (preset == settings.DirtyElementOutline) return Mark.DirtyOutline;
+            if (preset == settings.DamagedElementOutline) return Mark.DamagedOutline;
+            if (preset == settings.BurntElementOutline) return Mark.BurntOutline;
+        }
+        return Mark.HoverOutline;
     }
 
     /// <summary>The mark each thing carries now. A hint mark counts over the hover outline.</summary>
     public static Dictionary<string, Mark> Marks(List<BenchThing> things)
     {
-        var marks = things.ToDictionary(t => t.Name, t => t.Part && HoverOutlined(t.Part!) ? Mark.HoverOutline : Mark.None);
+        var marks = things.ToDictionary(t => t.Name, t => t.Part ? HoverMark(t.Part!) : Mark.None);
 
         var service = WorkbenchSession.Service;
         var highlighter = service is null ? null : WorkbenchSession.Highlighter(service);
@@ -166,15 +180,19 @@ internal static class Bench
         }
     }
 
-    // A missing socket wears the missing look, even a tube's entry with a part in it and room behind. Else
+    // A missing socket wears the missing look, even a tube's entry with a part in it and room behind; a
+    // part shown to need work, its condition's. Else
     // on a thing that is there the ghost draws over it: a pulse; in an empty socket it stands for the part
     // that goes there: a ghost. The look is read off the preset the ghost wears, which decides how it is
     // drawn (see GamePulse.Paint).
-    private static Mark MarkOf(bool present, Look? look)
+    private static Mark MarkOf(bool present, Look? look) => look switch
     {
-        if (look == Look.Missing) return Mark.MissingGhost;
-        return present ? Mark.Pulse : Mark.Ghost;
-    }
+        Look.Missing => Mark.MissingGhost,
+        Look.Dirty => Mark.DirtyPulse,
+        Look.Damaged => Mark.DamagedPulse,
+        Look.Burnt => Mark.BurntPulse,
+        _ => present ? Mark.Pulse : Mark.Ghost,
+    };
 
     /// <summary>The marks as one log line per thing, for a failure report or a dump.</summary>
     public static IEnumerable<string> Describe(Dictionary<string, Mark> marks) =>

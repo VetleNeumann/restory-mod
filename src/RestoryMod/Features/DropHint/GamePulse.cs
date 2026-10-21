@@ -142,8 +142,38 @@ internal sealed class GamePulse : IGhostPulse<Transform, ElementProjection>
             Paint(outline.BackParameters, screw, front);
             return;
         }
-        Paint(outline.FrontParameters, Looks.Paint(look, pulse, hidden: false), front);
-        Paint(outline.BackParameters, Looks.Paint(look, pulse, hidden: true), front);
+        var condition = look.IsCondition() ? ConditionColor(look) : null;
+        Paint(outline.FrontParameters, Looks.Paint(look, pulse, hidden: false, condition), front);
+        Paint(outline.BackParameters, Looks.Paint(look, pulse, hidden: true, condition), front);
+    }
+
+    private static readonly AccessTools.FieldRef<ElementView, ElementOutlineSettings> ViewSettings =
+        AccessTools.FieldRefAccess<ElementView, ElementOutlineSettings>(PatchTargets.ElementViewOutlineSettings.MemberName);
+
+    private static ElementOutlineSettings? settings;
+
+    /// <summary>
+    /// The colour the game's hover outline gives this condition, so the hint and the hover agree; null
+    /// (the look's own stand-in) until some part's view is found.
+    /// </summary>
+    private static Rgba? ConditionColor(Look look)
+    {
+        if (!settings)
+        {
+            var view = UnityEngine.Object.FindAnyObjectByType<ElementView>();
+            if (!view) return null;
+            settings = ViewSettings(view!);
+            if (!settings) return null;
+        }
+        var preset = look switch
+        {
+            Look.Burnt => settings!.BurntElementOutline,
+            Look.Damaged => settings!.DamagedElementOutline,
+            _ => settings!.DirtyElementOutline,
+        };
+        if (!preset) return null;
+        var drawn = Outline.Style(preset) == RenderStyle.FrontBack ? Outline.PresetFront(preset) : Outline.Common(preset);
+        return drawn is null ? null : ToRgba(drawn.Color);
     }
 
     /// <summary>How far before a screw a hit still counts as its own hole, in metres.</summary>

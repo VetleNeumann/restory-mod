@@ -524,6 +524,10 @@ public static class FeatureManifests
 
     public static readonly FeatureManifest EveryPartHint = new(nameof(EveryPartHint),
         HintShowDisassembling,
+        ElementViewOutlineSettings,
+        new("Restory.Data.Outline.ElementOutlineSettings", "BurntElementOutline"),
+        new("Restory.Data.Outline.ElementOutlineSettings", "DirtyElementOutline"),
+        new("Restory.Data.Outline.ElementOutlineSettings", "DamagedElementOutline"),
         HintShowAssembling,
         HintHighlighter,
         ElementProjectionData,
@@ -643,9 +647,28 @@ public static class FeatureManifests
         new(ElementBase, "IsInstalling"),
         new(OutlinableAdapter, "IsActive"));
 
+    /// <summary>A ready part's hover outline shows its condition, and the hover counts as seeing it.</summary>
+    public static readonly FeatureManifest ConditionHover = new(nameof(ConditionHover),
+        ElementViewResolveSelection,
+        ElementViewElement,
+        ElementViewOutline,
+        ElementViewOutlineSettings,
+        ElementIsBlocked,
+        ElementIsOnSurface,
+        new(ElementBase, "IsInstalling"),
+        new(OutlinableAdapter, "IsActive"),
+        OutlinableOverridePreset,
+        ElementConditionHandler,
+        ConditionHandlerData,
+        ElementDataCondition,
+        ElementDataIsInspected,
+        new("Restory.Data.Outline.ElementOutlineSettings", "BurntElementOutline"),
+        new("Restory.Data.Outline.ElementOutlineSettings", "DirtyElementOutline"),
+        new("Restory.Data.Outline.ElementOutlineSettings", "DamagedElementOutline"));
+
     /// <summary>The end-to-end harness (RestoryMod.E2E): not shipped, but checked so a game update names what moved.</summary>
     public static readonly FeatureManifest EndToEndHarness = new(nameof(EndToEndHarness),
-        new List<PatchTarget>(SaveWrites) { CursorDetectorTryToDetect, HighlighterProjections, ElementViewElement, ElementViewOutline });
+        new List<PatchTarget>(SaveWrites) { CursorDetectorTryToDetect, HighlighterProjections, ElementViewElement, ElementViewOutline, ElementViewOutlineSettings });
 
     public static IReadOnlyList<FeatureManifest> All { get; } = new[]
     {
@@ -682,6 +705,7 @@ public static class FeatureManifests
         GamepadBindingsDump,
         OutlineDiagnostics,
         BlockedHover,
+        ConditionHover,
         EndToEndHarness,
     };
 }

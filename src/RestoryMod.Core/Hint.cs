@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -107,9 +108,9 @@ public enum HintKind
 
 /// <summary>
 /// One thing the hint points out. <see cref="Target"/> is the socket, or the loose part for
-/// <see cref="HintKind.LoosePart"/>.
+/// <see cref="HintKind.LoosePart"/>. <see cref="Condition"/>: a part to take off, as far as it is known.
 /// </summary>
-public readonly record struct HintItem<T>(T Target, HintKind Kind);
+public readonly record struct HintItem<T>(T Target, HintKind Kind, PartCondition? Condition = null);
 
 /// <summary>What the workbench hint points out: every ready part and missing socket.</summary>
 public static class Hint
@@ -119,7 +120,28 @@ public static class Hint
     /// device is done: the hint shows putting back, though the game only switches once a part goes in.
     /// </summary>
     public static List<HintItem<T>> Plan<T>(Bench<T> bench, bool takingApart) =>
-        takingApart && bench.Sockets.Any(IsTarget) ? TakingApart(bench) : PuttingBack(bench);
+        takingApart && (bench.Sockets.Any(IsTarget) || bench.Loose.Any(p => NeedsWork(bench, p)))
+            ? TakingApart(bench)
+            : PuttingBack(bench);
+
+    /// <summary>
+    /// The hint as shown to the player: every ready part it points out counts as seen, so its condition
+    /// shows before it comes off (glossary: Unknown part). <paramref name="reveal"/> reads a part's
+    /// condition from the game and marks it seen. A part found fine drops out unless it is in the way.
+    /// </summary>
+    public static List<HintItem<T>> PlanRevealing<T>(Bench<T> bench, bool takingApart, Func<T, PartCondition> reveal)
+    {
+        var plan = Plan(bench, takingApart);
+        var ready = new HashSet<T>(plan.Where(i => i.Kind == HintKind.Part).Select(i => i.Target));
+        var revealed = false;
+        foreach (var socket in bench.Sockets)
+        {
+            if (socket.Part is not { IsScrew: false, Condition: null } part || !ready.Contains(socket.Handle)) continue;
+            part.Condition = reveal(part.Handle);
+            revealed = true;
+        }
+        return revealed ? Plan(bench, takingApart) : plan;
+    }
 
     private static List<HintItem<T>> TakingApart<T>(Bench<T> bench)
     {
@@ -147,10 +169,21 @@ public static class Hint
                 if (blocker.Part is not null) pending.Push(blocker);
             }
         }
-        return bench.Sockets.Where(s => inTheWay.Contains(s) && !s.Blocked)
-            .Select(s => new HintItem<T>(s.Handle, s.Part!.IsScrew ? HintKind.Screw : HintKind.Part))
+        var items = bench.Sockets.Where(s => inTheWay.Contains(s) && !s.Blocked)
+            .Select(s => s.Part!.IsScrew
+                ? new HintItem<T>(s.Handle, HintKind.Screw)
+                : new HintItem<T>(s.Handle, HintKind.Part, s.Part.Condition))
             .ToList();
+        // A part already out but still needing work: it goes to be cleaned or replaced before it goes back.
+        items.AddRange(bench.Loose.Where(p => NeedsWork(bench, p) && p.OnSurface && !p.Dragging)
+            .Select(p => new HintItem<T>(p.Handle, HintKind.LoosePart, p.Condition)));
+        return items;
     }
+
+    // A loose part one of the device's sockets takes, known to be burnt, damaged or dirty.
+    private static bool NeedsWork<T>(Bench<T> bench, BenchPart<T> part) =>
+        !part.IsScrew && part.Condition is PartCondition.Burnt or PartCondition.Damaged or PartCondition.Dirty
+        && bench.Sockets.Any(s => s.Takes == part.Type);
 
     /// <summary>
     /// Screw slots that can take their screw now, loose parts that can go in now, and missing sockets.

@@ -8,6 +8,37 @@ public class LookTests
     private static readonly Rgba Yellow = new(1f, 1f, 0f, 1f);
 
     [Theory]
+    [InlineData(PartCondition.Burnt, Look.Burnt)]
+    [InlineData(PartCondition.Damaged, Look.Damaged)]
+    [InlineData(PartCondition.Dirty, Look.Dirty)]
+    [InlineData(PartCondition.Perfect, Look.Ready)]
+    public void A_ready_part_known_to_need_work_wears_its_condition(PartCondition condition, Look look)
+    {
+        Assert.Equal(look, Looks.OfHint(HintKind.Part, condition));
+        Assert.Equal(look, Looks.OfHint(HintKind.LoosePart, condition));
+    }
+
+    [Fact]
+    public void A_condition_look_pulses_in_the_condition_colour_brightest_at_the_peak()
+    {
+        var damaged = new Rgba(0.9f, 0.1f, 0.1f, 1f);
+        var peak = Looks.Paint(Look.Damaged, Yellow, hidden: false, damaged);
+        var start = Looks.Paint(Look.Damaged, White, hidden: false, damaged);
+        Assert.Equal(damaged with { A = 1f }, peak.Outline);
+        Assert.True(start.Outline.R < peak.Outline.R);
+        Assert.True(peak.Fill.A > start.Fill.A);
+    }
+
+    [Fact]
+    public void A_condition_look_takes_the_hidden_style_behind_things()
+    {
+        var dirty = new Rgba(0.6f, 0.4f, 0.1f, 1f);
+        var hidden = Looks.Paint(Look.Dirty, Yellow, hidden: true, dirty);
+        Assert.Equal(0f, hidden.Fill.A);
+        Assert.True(hidden.Outline.R < dirty.R);
+    }
+
+    [Theory]
     [InlineData(HintKind.Part, Look.Ready)]
     [InlineData(HintKind.LoosePart, Look.Ready)]
     [InlineData(HintKind.Missing, Look.Missing)]

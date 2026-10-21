@@ -405,6 +405,7 @@ public static class PatchTargets
     public static readonly PatchTarget ElementViewResolveSelection = new(ElementView, "ResolveSelectionStateChanged");
     public static readonly PatchTarget ElementViewElement = new(ElementView, "element");
     public static readonly PatchTarget ElementViewOutline = new(ElementView, "outlineAdapter");
+    public static readonly PatchTarget ElementViewOutlineSettings = new(ElementView, "outlineSettings");
 
     /// <summary>Named targets TargetCheck can't resolve, each with the reason.</summary>
     public static IReadOnlyList<PatchTarget> Unchecked { get; } = new[]

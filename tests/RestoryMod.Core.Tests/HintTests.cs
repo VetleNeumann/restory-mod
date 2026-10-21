@@ -147,6 +147,110 @@ public class HintTests
     }
 
     [Fact]
+    public void Taking_apart_a_loose_part_still_needing_work_keeps_taking_apart_and_is_ready()
+    {
+        // The board is out but still dirty: it must be cleaned before it goes back, or the game won't ship.
+        var lid = Socket("lid", Lid, Part("l", Lid));
+        var board = Socket("board", Board);
+        var plan = Hint.Plan(new Bench<string>(new[] { lid, board }, new[] { Part("loose board", Board, PartCondition.Dirty) }),
+            takingApart: true);
+        Assert.Equal(new[] { new HintItem<string>("loose board", HintKind.LoosePart, PartCondition.Dirty) }, plan);
+    }
+
+    [Fact]
+    public void Taking_apart_a_loose_part_needing_work_is_ready_beside_the_parts_still_in()
+    {
+        var lid = Socket("lid", Lid, Part("l", Lid, PartCondition.Damaged));
+        var board = Socket("board", Board);
+        var plan = Hint.Plan(new Bench<string>(new[] { lid, board }, new[] { Part("loose board", Board, PartCondition.Burnt) }),
+            takingApart: true);
+        Assert.Equal(new[] { "Part lid", "LoosePart loose board" }, plan.Select(i => $"{i.Kind} {i.Target}"));
+    }
+
+    [Fact]
+    public void Taking_apart_a_held_part_needing_work_keeps_taking_apart_without_marking_it()
+    {
+        var board = Socket("board", Board);
+        var held = Part("loose board", Board, PartCondition.Damaged);
+        held.Dragging = true;
+        Assert.Empty(Hint.Plan(new Bench<string>(new[] { board }, new[] { held }), takingApart: true));
+    }
+
+    [Fact]
+    public void Taking_apart_a_loose_part_no_socket_takes_does_not_hold_back_putting_back()
+    {
+        var lid = Socket("lid", Lid);
+        var plan = Hint.Plan(new Bench<string>(new[] { lid },
+            new[] { Part("loose lid", Lid), Part("stray board", Board, PartCondition.Dirty) }), takingApart: true);
+        Assert.Equal(new[] { "LoosePart loose lid" }, plan.Select(i => $"{i.Kind} {i.Target}"));
+    }
+
+    // What the game knows of each part, handed over only when the hint reveals it.
+    private static List<HintItem<string>> Revealing(Bench<string> bench, Dictionary<string, PartCondition> truth,
+        List<string>? revealed = null) =>
+        Hint.PlanRevealing(bench, takingApart: true, part =>
+        {
+            revealed?.Add(part);
+            return truth[part];
+        });
+
+    [Fact]
+    public void Revealing_a_ready_part_shows_its_condition()
+    {
+        var board = Socket("board", Board, Part("b", Board, condition: null));
+        var plan = Revealing(new Bench<string>(new[] { board }), new() { ["b"] = PartCondition.Dirty });
+        Assert.Equal(new[] { new HintItem<string>("board", HintKind.Part, PartCondition.Dirty) }, plan);
+    }
+
+    [Fact]
+    public void Revealing_a_ready_part_found_fine_with_nothing_behind_it_drops_it()
+    {
+        var knob = Socket("knob", Lid, Part("k", Lid, condition: null));
+        var board = Socket("board", Board, Part("b", Board, condition: null));
+        var plan = Revealing(new Bench<string>(new[] { knob, board }),
+            new() { ["k"] = PartCondition.Perfect, ["b"] = PartCondition.Damaged });
+        Assert.Equal(new[] { new HintItem<string>("board", HintKind.Part, PartCondition.Damaged) }, plan);
+    }
+
+    [Fact]
+    public void Revealing_a_fine_part_in_the_way_of_an_unknown_one_keeps_it_plain()
+    {
+        var lid = Socket("lid", Lid, Part("l", Lid, condition: null));
+        var board = Socket("board", Board, Part("b", Board, condition: null));
+        Block(board, lid);
+        var revealed = new List<string>();
+        var plan = Revealing(new Bench<string>(new[] { lid, board }),
+            new() { ["l"] = PartCondition.Perfect, ["b"] = PartCondition.Burnt }, revealed);
+        Assert.Equal(new[] { new HintItem<string>("lid", HintKind.Part, PartCondition.Perfect) }, plan);
+        // The board is out of reach: its condition stays unknown.
+        Assert.Equal(new[] { "l" }, revealed);
+    }
+
+    [Fact]
+    public void Revealing_never_touches_screws_or_known_parts()
+    {
+        var screw = Socket("screw", Screw, Part("s", Screw, condition: null));
+        var board = Socket("board", Board, Part("b", Board, PartCondition.Dirty));
+        var revealed = new List<string>();
+        Revealing(new Bench<string>(new[] { screw, board }), new(), revealed);
+        Assert.Empty(revealed);
+    }
+
+    [Fact]
+    public void Putting_back_reveals_nothing()
+    {
+        var board = Socket("board", Board);
+        var revealed = new List<string>();
+        Hint.PlanRevealing(new Bench<string>(new[] { board }, new[] { Part("loose board", Board) }), takingApart: false,
+            part =>
+            {
+                revealed.Add(part);
+                return PartCondition.Perfect;
+            });
+        Assert.Empty(revealed);
+    }
+
+    [Fact]
     public void Putting_back_an_empty_screw_slot_is_ready()
     {
         Assert.Equal(new[] { "ScrewSlot slot" }, PuttingBack(new[] { Slot("slot") }));

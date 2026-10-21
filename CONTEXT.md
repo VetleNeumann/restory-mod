@@ -59,11 +59,11 @@ The see-through copy of a removed part shown in its empty socket; a press on it 
 _Avoid_: Projection, empty slot
 
 **Ready part**:
-A part or screw the hint points out because the player can act on it right now: while taking a device apart, one that isn't a blocked part and stands in the way of a broken, dirty or unknown part (or is one); while putting it back together, a screw whose slot can take it now, or a loose part whose socket can take it now.
+A part or screw the hint points out because the player can act on it right now: while taking a device apart, one that isn't a blocked part and stands in the way of a broken, dirty or unknown part (or is one), or a loose part on the bench that is broken or dirty (it needs cleaning or replacing before it goes back, so the hint stays on taking apart); while putting it back together, a screw whose slot can take it now, or a loose part whose socket can take it now.
 _Avoid_: Next part, available part, removable part
 
 **Unknown part**:
-A part whose condition the player hasn't seen yet: it has never been taken out and has not yet been a ready part; the notepad lists it as unknown. A part counts as seen once it is ready, so its condition shows right before the player would pick it up. Nothing reveals the condition of a part still out of reach.
+A part whose condition the player hasn't seen yet: it has never been taken out and has not yet been a ready part; the notepad lists it as unknown. A part counts as seen once the hint shows it as ready (R2) or the player hovers it while it is ready, so its condition shows right before the player would pick it up. Nothing reveals the condition of a part still out of reach.
 _Avoid_: Uninspected part, hidden part
 
 **Missing socket**:
@@ -79,7 +79,7 @@ The game's own outline on the one thing under the virtual cursor at the workbenc
 _Avoid_: Highlight (on its own it could mean the hint too), selection outline, hover highlight
 
 **Look**:
-One of a fixed set of ways the hint and the hover outline mark a thing: the ready look (the pulse on a ready part, and its ghost where it goes back), the missing look, the screw look (the game's own pulse on a screw or screw slot, hidden or not as a whole, since a screw is too small to be half hidden), and, still to come, the condition outline (burnt, damaged, dirty). Each thing gets its own outline, never merged with its neighbours, so overlapping things all stay visible.
+One of a fixed set of ways the hint and the hover outline mark a thing: the ready look (the pulse on a ready part, and its ghost where it goes back), the missing look, the screw look (the game's own pulse on a screw or screw slot, hidden or not as a whole, since a screw is too small to be half hidden), and the condition look (burnt, damaged, dirty: the game's own condition colours, on a ready part's pulse and on its hover outline). Each thing gets its own outline, never merged with its neighbours, so overlapping things all stay visible.
 _Avoid_: Style, highlight colour, preset
 
 **Missing look**:

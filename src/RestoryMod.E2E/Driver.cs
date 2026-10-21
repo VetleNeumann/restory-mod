@@ -191,6 +191,33 @@ internal sealed class Driver
         yield return Wait(0.3f);
     }
 
+    /// <summary>
+    /// Sends a part away with a D-pad press while holding it (CONTEXT.md, Send): an attached part is taken
+    /// off first, a loose one picked up. Done once the part has left the bench and the hand.
+    /// </summary>
+    public IEnumerator Send(string thing, PadButton direction, string destination)
+    {
+        var at = Thing(thing);
+        ElementBase part;
+        yield return MoveTo(thing);
+        if (at.Socket)
+        {
+            var socket = at.Socket!;
+            part = socket.NestedElement ? socket.NestedElement : throw new StepFailed($"'{thing}' holds no part");
+            yield return HoldA(() => socket.NestedElement != part && part.IsDragging, $"'{thing}' came out in hand", keepHeld: true);
+        }
+        else
+        {
+            part = LooseOf(thing);
+            yield return HoldA(() => part.IsDragging, $"'{thing}' was picked up", seconds: 3f, keepHeld: true);
+        }
+        yield return Press(direction);
+        yield return Game.Until(() => !part || !part.IsDragging && Bench.Things().All(t => t.Loose != part),
+            5f, $"'{thing}' went to {destination}");
+        LetGoOfA();
+        yield return Wait(0.3f);
+    }
+
     /// <summary>Puts a screw back in its slot: press the slot, then hold A until it is screwed in.</summary>
     public IEnumerator ScrewIn(string socketThing)
     {

@@ -15,6 +15,15 @@ public enum Look
 
     /// <summary>A screw or screw slot: the game's own pulse look, given the hidden style behind things.</summary>
     Screw,
+
+    /// <summary>A ready part known to be burnt: the pulse in the game's burnt colour.</summary>
+    Burnt,
+
+    /// <summary>A ready part known to be damaged: the pulse in the game's damaged colour.</summary>
+    Damaged,
+
+    /// <summary>A ready part known to be dirty: the pulse in the game's dirty colour.</summary>
+    Dirty,
 }
 
 /// <summary>A color, 0..1 per channel, kept apart from the engine's so the looks can be tested.</summary>
@@ -54,19 +63,45 @@ public static class Looks
     private const float HiddenWidth = 0.5f;
     private const float HiddenBrightness = 0.3f;
 
-    /// <summary>The look a hint item wears.</summary>
-    public static Look OfHint(HintKind kind) => kind switch
+    // A condition look at the bottom of the pulse, as a share of its full colour at the peak.
+    private const float DimCondition = 0.55f;
+
+    // Stand-ins for the game's condition outline colours, should its settings not be found.
+    private static readonly Rgba BurntColor = new(0.55f, 0.2f, 0.05f, 1f);
+    private static readonly Rgba DamagedColor = new(0.95f, 0.15f, 0.1f, 1f);
+    private static readonly Rgba DirtyColor = new(0.65f, 0.45f, 0.15f, 1f);
+
+    /// <summary>The look a hint item wears; a part known to need work wears its condition.</summary>
+    public static Look OfHint(HintKind kind, PartCondition? condition = null) => kind switch
     {
         HintKind.Screw or HintKind.ScrewSlot => Look.Screw,
         HintKind.Missing => Look.Missing,
+        HintKind.Part or HintKind.LoosePart when condition == PartCondition.Burnt => Look.Burnt,
+        HintKind.Part or HintKind.LoosePart when condition == PartCondition.Damaged => Look.Damaged,
+        HintKind.Part or HintKind.LoosePart when condition == PartCondition.Dirty => Look.Dirty,
         _ => Look.Ready,
     };
 
-    /// <summary>A look at the pulse's current color, in plain view or hidden behind something.</summary>
-    public static LookPaint Paint(Look look, Rgba pulse, bool hidden)
+    public static bool IsCondition(this Look look) => look is Look.Burnt or Look.Damaged or Look.Dirty;
+
+    /// <summary>
+    /// A look at the pulse's current color, in plain view or hidden behind something. A condition look
+    /// takes <paramref name="condition"/>, the game's outline colour for it, brightening with the pulse.
+    /// </summary>
+    public static LookPaint Paint(Look look, Rgba pulse, bool hidden, Rgba? condition = null)
     {
         var missing = look == Look.Missing;
         var color = missing ? Red(pulse) : pulse;
+        if (look.IsCondition())
+        {
+            var full = condition ?? look switch
+            {
+                Look.Burnt => BurntColor,
+                Look.Damaged => DamagedColor,
+                _ => DirtyColor,
+            };
+            color = Scale(full, Lerp(DimCondition, 1f, 1f - pulse.B)) with { A = 1f };
+        }
         var alpha = Lerp(DimFill, BrightFill, 1f - pulse.B);
         if (missing) alpha *= DotStrength;
         var pattern = look switch

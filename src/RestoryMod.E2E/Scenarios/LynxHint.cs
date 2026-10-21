@@ -10,8 +10,10 @@ namespace RestoryMod.E2E.Scenarios;
 /// The highlight rework on an Atari Lynx, R2 hint on Toggle: a blocked part stays dark under the cursor;
 /// screws under the device are drawn hidden and screws in plain view are not; taking a battery out of
 /// its tube keeps the hint on taking apart (the next battery sliding forward once read as one put in);
-/// a battery socket nothing on the bench can fill shows the missing look until a spare arrives.
-/// Every part starts unknown, so the hint asks for everything that can come out.
+/// a battery socket nothing on the bench can fill shows the missing look until a spare arrives; the
+/// first hover on a ready part shows its condition (the speaker damaged, the d-pad membrane dirty), and
+/// so does R2, in the pulse; the D-pad sends the speaker to the trash, the membrane to the washing bin and a
+/// button to the parts box. Every part starts unknown, so the hint asks for everything that can come out.
 /// </summary>
 internal sealed class LynxHint : IScenario
 {
@@ -22,6 +24,9 @@ internal sealed class LynxHint : IScenario
     private const string FrontCase = P + "FrontCase";
     private const string CartridgeCap = P + "CartridgeCap";
     private const string Battery = P + "Battery_1";
+    private const string Speaker = P + "Dynamic_PW";
+    private const string DpadMembrane = P + "MembranaCrest";
+    private const string PowerButton = P + "ButtonsPower";
 
     // The two battery tubes' entries: a battery comes out of and goes into a tube only there.
     private const string TubeA = Battery + " #1";
@@ -42,7 +47,11 @@ internal sealed class LynxHint : IScenario
         d.Setting("Controller", "R2Hint", Core.HintButtonMode.Toggle);
         d.Setting("Workbench", "HintShowsEveryPart", true);
         yield return Game.LoadSave();
-        yield return Game.PlaceDevice(Game.Model(Model), new Dictionary<string, Condition>());
+        yield return Game.PlaceDevice(Game.Model(Model), new Dictionary<string, Condition>
+        {
+            [Speaker] = Condition.Damaged,
+            [DpadMembrane] = Condition.Dirty,
+        });
         yield return Game.EnterWorkbench();
         yield return d.Park();
         yield return d.ExpectStays("nothing marked before R2", 1f);
@@ -105,11 +114,34 @@ internal sealed class LynxHint : IScenario
         yield return d.TakeOff(FrontCase, Drop());
         yield return d.Park();
 
+        // Condition on hover: before R2 has shown the inside, a ready part shows its condition while
+        // still on the device.
+        yield return d.MoveTo(Speaker);
+        yield return d.ExpectIncludes("first hover on the speaker, still in place: its damaged outline", (Speaker, DamagedOutline));
+        yield return d.MoveTo(DpadMembrane);
+        yield return d.ExpectIncludes("first hover on the d-pad membrane, still in place: its dirty outline", (DpadMembrane, DirtyOutline));
+        yield return d.MoveTo(PowerButton);
+        yield return d.ExpectIncludes("first hover on the power button, still in place: the plain outline", (PowerButton, HoverOutline));
+        yield return d.Park();
+
+        // Condition on R2: the parts to take off show theirs in the pulse, so nothing surprises on pick-up.
         // Inside, face up: nothing but their own holes around the inner screws, so they show in plain view.
         yield return Toggle();
-        yield return d.ExpectIncludes("cases off: the inner screws pulse", (InnerScrew(1), Pulse), (InnerScrew(2), Pulse));
+        yield return d.ExpectIncludes("cases off: the speaker pulses damaged, the d-pad membrane dirty, the inner screws plain",
+            (Speaker, DamagedPulse), (DpadMembrane, DirtyPulse), (InnerScrew(1), Pulse), (InnerScrew(2), Pulse));
         yield return d.ExpectHidden("the inner screws face the camera: drawn in plain view",
             (InnerScrew(1), false), (InnerScrew(2), false));
+        yield return Toggle();
+        yield return d.ExpectWithin(0.5f, "R2 again: the hint goes at once");
+
+        // Sends: each part leaves the hand for its destination with one D-pad press.
+        yield return d.Send(Speaker, PadButton.Down, "the trash can");
+        yield return d.Send(DpadMembrane, PadButton.Up, "the washing bin");
+        yield return d.Send(PowerButton, PadButton.Left, "the parts box");
+        yield return d.Park();
+        yield return Toggle();
+        yield return d.ExpectIncludes("sent away: nothing left of them to point at",
+            (Speaker, None), (DpadMembrane, None), (PowerButton, None));
         yield return Toggle();
         yield return d.ExpectWithin(0.5f, "R2 again: the hint goes at once");
     }

@@ -66,6 +66,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
 
         public TGhost Ghost { get; }
         public HintKind Kind { get; set; }
+        public Look Look { get; set; }
         public TGhost? Muted { get; set; }
     }
 
@@ -124,7 +125,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
             entries[item.Target] = entry;
             pulse.Claim(ghost);
         }
-        Restyle(item.Target, entry, item.Kind);
+        Restyle(item.Target, entry, item);
     }
 
     /// <summary>
@@ -157,7 +158,12 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
         foreach (var item in plan) wanted[item.Target] = item;
         foreach (var (spot, entry) in entries.ToList())
         {
-            if (wanted.TryGetValue(spot, out var item) && item.Kind == entry.Kind) continue;
+            if (wanted.TryGetValue(spot, out var item) && item.Kind == entry.Kind)
+            {
+                // A part's condition can come to light while its ghost stays.
+                entry.Look = Looks.OfHint(item.Kind, item.Condition);
+                continue;
+            }
             entries.Remove(spot);
             Forget(entry);
             pulse.Destroy(entry.Ghost);
@@ -173,7 +179,7 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
             try
             {
                 alive = pulse.Alive(entry.Ghost);
-                if (alive) pulse.Paint(entry.Ghost, Looks.OfHint(entry.Kind));
+                if (alive) pulse.Paint(entry.Ghost, entry.Look);
             }
             catch (Exception)
             {
@@ -214,15 +220,16 @@ public sealed class GhostLedger<TSpot, TGhost> where TSpot : notnull where TGhos
             var entry = new Entry(ghost, item.Kind);
             entries[item.Target] = entry;
             pulse.Claim(ghost);
-            Restyle(item.Target, entry, item.Kind);
+            Restyle(item.Target, entry, item);
         }
     }
 
-    private void Restyle(TSpot spot, Entry entry, HintKind kind)
+    private void Restyle(TSpot spot, Entry entry, HintItem<TSpot> item)
     {
-        entry.Kind = kind;
-        if (kind == HintKind.ScrewSlot && entry.Muted is null) entry.Muted = pulse.MuteMarker(spot);
-        pulse.Paint(entry.Ghost, Looks.OfHint(kind));
+        entry.Kind = item.Kind;
+        entry.Look = Looks.OfHint(item.Kind, item.Condition);
+        if (item.Kind == HintKind.ScrewSlot && entry.Muted is null) entry.Muted = pulse.MuteMarker(spot);
+        pulse.Paint(entry.Ghost, entry.Look);
     }
 
     private void ForgetAll()

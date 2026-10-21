@@ -18,3 +18,6 @@ GamePaths.props
 
 # scripts/screenshot.sh output
 screenshots/
+
+# Claude Code worktrees (recreated on demand)
+.claude/worktrees/
